@@ -35,10 +35,9 @@ export default function Home() {
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
 
-  // BACKEND-STATUS & PRE-TRIGGER STATE
-  const [backendStatus, setBackendStatus] = useState('sleeping'); // 'sleeping', 'waking', 'ready'
+  // BACKEND-STATUS STATE
+  const [backendStatus, setBackendStatus] = useState('sleeping');
 
-  // AUTOMATISCHER TRIGGER: Weckt das Backend im Hintergrund auf, sobald die App geladen wird
   useEffect(() => {
     pingBackend();
   }, []);
@@ -193,7 +192,7 @@ export default function Home() {
   };
 
   const handleQmChange = (newQm) => {
-    pingBackend(); // Frühes Aufwecken bei Interaktion
+    pingBackend();
     const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
     let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
     if (!isTargetCustomized) {
@@ -270,7 +269,7 @@ export default function Home() {
   };
 
   const updateField = (field, value) => {
-    pingBackend(); // Trigger bei Feldänderung
+    pingBackend();
     let updated = { ...formData, [field]: value };
 
     if (field === 'bundesland' && grunderwerbsteuerSätze[value] !== undefined) {
@@ -324,7 +323,13 @@ export default function Home() {
         val_inc: formData.val_inc / 100,
         exit_cost: formData.exit_cost / 100,
         afa_lin: formData.afa_lin / 100,
-        capex_list: capexList.map(item => ({ year: Number(item.year), amount: Number(item.amount) }))
+        // Sende sowohl deutsche als auch englische Keys für maximale Kompatibilität mit dem Backend:
+        capex_list: capexList.map(item => ({
+          jahr: Number(item.year),
+          year: Number(item.year),
+          betrag: Number(item.amount),
+          amount: Number(item.amount)
+        }))
       };
 
       const res = await fetch(`${BACKEND_URL}/api/calculate`, {
@@ -357,7 +362,7 @@ export default function Home() {
   return (
     <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
       
-      {/* Header mit Backend-Statusanzeige */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '2rem', fontWeight: '800', color: '#13381A' }}>Valuon Estate</div>
@@ -365,7 +370,6 @@ export default function Home() {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          {/* Status-Lämpchen */}
           <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 12px', borderRadius: '20px', border: '1px solid #E2D9CE' }}>
             {backendStatus === 'ready' && <span style={{ color: '#38A169', fontWeight: 'bold' }}>🟢 Backend Bereit</span>}
             {backendStatus === 'waking' && <span style={{ color: '#D69E2E', fontWeight: 'bold' }}>🟡 Backend wird aufgeweckt...</span>}

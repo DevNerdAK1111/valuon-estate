@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
-// Formatierungs-Helfer mit strengen Tabellenziffern
 const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 const formatEuroInt = (val) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.round(val || 0));
 const formatPct = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
@@ -33,13 +32,12 @@ export default function Home() {
   const [navChoice, setNavChoice] = useState('Analyse');
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
-  const [tableTheme, setTableTheme] = useState('Mieten & Cashflow');
+  const [tableTheme, setTableTheme] = useState('Kapitaldienst & Steuern');
   const [projectionHorizon, setProjectionHorizon] = useState(10);
   const [chartView, setChartView] = useState('1. Vermögensstruktur & NAV (Netto-Eigenkapital)');
 
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
-
   const [backendStatus, setBackendStatus] = useState('sleeping');
 
   useEffect(() => {
@@ -403,7 +401,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* MAIN NAVIGATION TABS */}
+      {/* MAIN NAV TABS */}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${navItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
         {navItems.map((item) => {
           const isActive = navChoice === item;
@@ -697,43 +695,57 @@ export default function Home() {
             {/* RECHTE SPALTE: DASHBOARD & RESULTATE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* HORIZONT SELECTOR & ACTIONS */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ width: '260px' }}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROJEKTIONSHORIZONT:</label>
-                  <select
-                    value={projectionHorizon}
-                    onChange={(e) => setProjectionHorizon(Number(e.target.value))}
-                    style={{ ...inputTextStyle, background: '#FAF8F5', fontWeight: 'bold' }}
-                  >
-                    <option value={5}>5 Jahre</option>
-                    <option value={10}>10 Jahre (Standard)</option>
-                    <option value={15}>15 Jahre</option>
-                    <option value={20}>20 Jahre</option>
-                    <option value={30}>30 Jahre</option>
-                  </select>
+              {/* TOP HEADER & TOOLBAR (OBJEKTNAME LINKS, HORIZONT & SPEICHERN RECHTS) */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem' }}>
+                <div>
+                  <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
+                    {formData.obj_name || 'TEST Wohnung'}
+                  </h1>
+                  <div style={{ fontSize: '0.85rem', color: '#718096', fontWeight: '500' }}>
+                    Kaufpreis: {formatEuroInt(formData.kaufpreis)} € | EK: {formatEuroInt(formData.ek_euro)} € ({formatPct(formData.kaufpreis > 0 ? (formData.ek_euro / formData.kaufpreis) * 100 : 0)} %)
+                  </div>
                 </div>
 
-                {result && result.summary && (
-                  <button
-                    type="button"
-                    onClick={handleSaveToDatabase}
-                    disabled={saving}
-                    style={{
-                      padding: '10px 20px',
-                      background: '#13381A',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '800',
-                      fontSize: '0.9rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 10px rgba(19,56,26,0.2)'
-                    }}
-                  >
-                    {saving ? 'Speichere...' : 'In Datenbank speichern'}
-                  </button>
-                )}
+                {/* PROJEKTIONSHORIZONT UND SPEICHER-BUTTON RECHTS BÜNDIG */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Projektionshorizont:</label>
+                    <select
+                      value={projectionHorizon}
+                      onChange={(e) => setProjectionHorizon(Number(e.target.value))}
+                      style={{ ...inputTextStyle, background: '#FAF8F5', fontWeight: 'bold', padding: '6px 12px' }}
+                    >
+                      <option value={5}>5 Jahre</option>
+                      <option value={10}>10 Jahre (Standard)</option>
+                      <option value={15}>15 Jahre</option>
+                      <option value={20}>20 Jahre</option>
+                      <option value={30}>30 Jahre</option>
+                    </select>
+                  </div>
+
+                  {result && result.summary && (
+                    <button
+                      type="button"
+                      onClick={handleSaveToDatabase}
+                      disabled={saving}
+                      style={{
+                        padding: '10px 18px',
+                        background: '#13381A',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: '800',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 10px rgba(19,56,26,0.2)',
+                        height: '36px',
+                        alignSelf: 'flex-end'
+                      }}
+                    >
+                      {saving ? 'Speichere...' : 'In Datenbank speichern'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {saveSuccess && (
@@ -754,16 +766,6 @@ export default function Home() {
                   <strong>⚠️ Fehler bei der Berechnung:</strong> {calcError}
                 </div>
               )}
-
-              {/* TITEL DES OBJEKTS */}
-              <div>
-                <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
-                  {formData.obj_name || 'TEST Wohnung'}
-                </h1>
-                <div style={{ fontSize: '0.85rem', color: '#718096', fontWeight: '500' }}>
-                  Kaufpreis: {formatEuroInt(formData.kaufpreis)} € | EK: {formatEuroInt(formData.ek_euro)} € ({formatPct(formData.kaufpreis > 0 ? (formData.ek_euro / formData.kaufpreis) * 100 : 0)} %)
-                </div>
-              </div>
 
               {/* DIE 4 DYNAMISCHEN METRIC CARDS */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
@@ -787,7 +789,7 @@ export default function Home() {
                 />
               </div>
 
-              {/* ELEGANTES TAB-MENÜ (OHNE SHOCK-ROT) */}
+              {/* TAB-MENÜ EXECUTIVE VS LIQUIDITÄT */}
               <div style={{ borderBottom: '2px solid #E2D9CE', display: 'flex', gap: '2rem' }}>
                 <button
                   type="button"
@@ -837,7 +839,7 @@ export default function Home() {
                       <select 
                         value={chartView} 
                         onChange={(e) => setChartView(e.target.value)} 
-                        style={{ ...inputTextStyle, background: '#FAF8F5' }}
+                        style={{ ...inputTextStyle, background: '#FAF8F5', fontWeight: '600' }}
                       >
                         <option value="1. Vermögensstruktur & NAV (Netto-Eigenkapital)">1. Vermögensstruktur & NAV (Netto-Eigenkapital)</option>
                         <option value="2. Cashflow & Mieteinnahmen">2. Cashflow & Mieteinnahmen</option>
@@ -963,7 +965,7 @@ export default function Home() {
                                   <td style={{ padding: '8px 10px', fontWeight: 'bold', color: '#13381A' }}>{formatEuroInt(row['Tilgung'])} €</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt((row['Zinsen'] || 0) + (row['Tilgung'] || 0))} €</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['AfA'])} €</td>
-                                  <td style={{ padding: '8px 10px', fontWeight: 'bold', color: taxVal < 0 ? '#38A169' : '#9B2C2C' }}>
+                                  <td style={{ padding: '8px 10px', fontWeight: 'bold', color: taxVal < 0 ? '#38A169' : (taxVal > 0 ? '#9B2C2C' : 'inherit') }}>
                                     {taxVal < 0 ? `+${formatEuroInt(Math.abs(taxVal))} € (Erstattung)` : `${formatEuroInt(taxVal)} €`}
                                   </td>
                                 </>
@@ -1024,7 +1026,7 @@ export default function Home() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <strong>Dynamische Tilgung:</strong> Bei einem Annuitätendarlehen bleibt die Gesamtrate konstant. Mit sinkender Restschuld sinkt der Zinsanteil, wodurch die Tilgung von Jahr zu Jahr automatisch ansteigt.<br />
-                        <strong>Steuer / Erstattung:</strong> Negative Beträge (+) stellen eine Steuererstattung durch Verrechnung der Verluste aus Vermietung mit deiner Einkommensteuer dar.
+                        <strong>Steuer / Erstattung:</strong> Positive Grüne Beträge (+) stellen eine Steuererstattung durch Verrechnung der Verluste aus Vermietung mit deiner Einkommensteuer dar.
                       </div>
                       <div>
                         <strong>Reinertrag (NOI):</strong> Mietertrag nach Abzug von Verwaltung, Instandhaltung und Leerstand (vor Zinsen/Steuer).<br />
@@ -1120,7 +1122,7 @@ export default function Home() {
   );
 }
 
-// --- SVG DONUT CHART ---
+// --- DONUT CHART KOMPONENTE ---
 function DonutChart({ totalInvestment, equity, kfw, hb }) {
   const safeTotal = totalInvestment || 1;
   const eqPct = (equity / safeTotal) * 100;
@@ -1173,83 +1175,179 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
   );
 }
 
-// --- SVG PROJEKTIONS-CHART ---
+// --- SVG PROJEKTIONS-CHART MIT SKALIERTEN ACHSEN UND ANPASSBARER ANSICHT ---
 function ProjectionChart({ projection, kaufpreis, view }) {
   if (!projection || projection.length === 0) {
-    return <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
+    return <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
   }
 
-  const maxVal = Math.max(...projection.map(r => r['Immobilienwert'] || kaufpreis || 100000)) * 1.1;
+  const isNavView = view.includes('Vermögensstruktur');
+
+  // Max-Wert-Ermittlung für dyn. Y-Achsenskalierung
+  let maxVal = 100000;
+  if (isNavView) {
+    maxVal = Math.max(...projection.map(r => r['Immobilienwert'] || kaufpreis || 100000)) * 1.1;
+  } else {
+    maxVal = Math.max(...projection.map(r => r['Mieteinnahmen IST'] || 10000)) * 1.25;
+  }
+
+  const yTicks = [maxVal, maxVal * 0.75, maxVal * 0.5, maxVal * 0.25, 0];
 
   return (
-    <div style={{ width: '100%', height: '240px', position: 'relative', marginTop: '10px' }}>
-      <svg width="100%" height="100%" viewBox="0 0 500 200" preserveAspectRatio="none">
-        <line x1="0" y1="50" x2="500" y2="50" stroke="#E2D9CE" strokeDasharray="3 3" />
-        <line x1="0" y1="100" x2="500" y2="100" stroke="#E2D9CE" strokeDasharray="3 3" />
-        <line x1="0" y1="150" x2="500" y2="150" stroke="#E2D9CE" strokeDasharray="3 3" />
-
-        {projection.map((r, i) => {
-          const x = (i / projection.length) * 480 + 10;
-          const nav = (r['Immobilienwert'] || 0) - (r['Restschuld'] || 0);
-          const barHeight = (nav / maxVal) * 160;
-          const y = 180 - barHeight;
-
-          return (
-            <rect
-              key={i}
-              x={x}
-              y={y}
-              width={400 / projection.length}
-              height={barHeight}
-              fill="#A37841"
-              opacity="0.85"
-              rx="2"
-            />
-          );
-        })}
-
-        <polyline
-          fill="none"
-          stroke="#13381A"
-          strokeWidth="3"
-          points={projection.map((r, i) => {
-            const x = (i / projection.length) * 480 + 20;
-            const y = 180 - ((r['Immobilienwert'] || 0) / maxVal) * 160;
-            return `${x},${y}`;
-          }).join(' ')}
-        />
-
-        <polyline
-          fill="none"
-          stroke="#9B2C2C"
-          strokeWidth="3"
-          points={projection.map((r, i) => {
-            const x = (i / projection.length) * 480 + 20;
-            const y = 180 - ((r['Restschuld'] || 0) / maxVal) * 160;
-            return `${x},${y}`;
-          }).join(' ')}
-        />
-      </svg>
-
-      <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', marginTop: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ width: '12px', height: '3px', background: '#13381A' }}></span>
-          <span>Objektwert</span>
+    <div style={{ width: '100%', height: '260px', position: 'relative', marginTop: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr', height: '210px' }}>
+        
+        {/* Y-ACHSEN BESCHRIFTUNG */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
+          {yTicks.map((val, idx) => (
+            <span key={idx}>{formatEuroInt(val)} €</span>
+          ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ width: '12px', height: '3px', background: '#9B2C2C' }}></span>
-          <span>Restschuld</span>
+
+        {/* SVG GRAFIK FÜR BEIDE ANSICHTEN */}
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <svg width="100%" height="100%" viewBox="0 0 500 200" preserveAspectRatio="none">
+            
+            {/* Horizontal Gridlines */}
+            {[0, 50, 100, 150, 200].map((y, idx) => (
+              <line key={idx} x1="0" y1={y} x2="500" y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
+            ))}
+
+            {isNavView ? (
+              <>
+                {/* NAV BALKEN */}
+                {projection.map((r, i) => {
+                  const x = (i / projection.length) * 480 + 5;
+                  const nav = (r['Immobilienwert'] || 0) - (r['Restschuld'] || 0);
+                  const barHeight = (nav / maxVal) * 200;
+                  const y = 200 - barHeight;
+
+                  return (
+                    <rect
+                      key={i}
+                      x={x}
+                      y={y}
+                      width={380 / projection.length}
+                      height={Math.max(0, barHeight)}
+                      fill="#A37841"
+                      opacity="0.85"
+                      rx="2"
+                    />
+                  );
+                })}
+
+                {/* OBJEKTWERT LINIE (Grün) */}
+                <polyline
+                  fill="none"
+                  stroke="#13381A"
+                  strokeWidth="3"
+                  points={projection.map((r, i) => {
+                    const x = (i / projection.length) * 480 + 15;
+                    const y = 200 - ((r['Immobilienwert'] || 0) / maxVal) * 200;
+                    return `${x},${y}`;
+                  }).join(' ')}
+                />
+
+                {/* RESTSCHULD LINIE (Burgund) */}
+                <polyline
+                  fill="none"
+                  stroke="#9B2C2C"
+                  strokeWidth="3"
+                  points={projection.map((r, i) => {
+                    const x = (i / projection.length) * 480 + 15;
+                    const y = 200 - ((r['Restschuld'] || 0) / maxVal) * 200;
+                    return `${x},${y}`;
+                  }).join(' ')}
+                />
+              </>
+            ) : (
+              <>
+                {/* CASHFLOW BALKEN (Grün für positiv, Burgund für negativ) */}
+                {projection.map((r, i) => {
+                  const x = (i / projection.length) * 480 + 5;
+                  const cfYear = (r['Cashflow Netto'] || 0);
+                  const absCf = Math.abs(cfYear);
+                  const barHeight = (absCf / maxVal) * 200;
+                  const y = cfYear >= 0 ? 200 - barHeight : 200;
+
+                  return (
+                    <rect
+                      key={i}
+                      x={x}
+                      y={y}
+                      width={380 / projection.length}
+                      height={Math.max(2, barHeight)}
+                      fill={cfYear >= 0 ? '#13381A' : '#9B2C2C'}
+                      opacity="0.85"
+                      rx="2"
+                    />
+                  );
+                })}
+
+                {/* KALTMIETE LINIE (Gold) */}
+                <polyline
+                  fill="none"
+                  stroke="#A37841"
+                  strokeWidth="3"
+                  points={projection.map((r, i) => {
+                    const x = (i / projection.length) * 480 + 15;
+                    const y = 200 - ((r['Mieteinnahmen IST'] || 0) / maxVal) * 200;
+                    return `${x},${y}`;
+                  }).join(' ')}
+                />
+              </>
+            )}
+
+          </svg>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ width: '10px', height: '10px', background: '#A37841', borderRadius: '2px' }}></span>
-          <span>Netto-EK (NAV)</span>
-        </div>
+      </div>
+
+      {/* X-ACHSEN BESCHRIFTUNG (Jahre J1, J2, J3...) */}
+      <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(${projection.length}, 1fr)`, fontSize: '0.68rem', color: '#718096', textAlign: 'center', marginTop: '4px' }}>
+        <span></span>
+        {projection.map((r, i) => (
+          <span key={i}>J{r['Jahr'] || i + 1}</span>
+        ))}
+      </div>
+
+      {/* LEGENDEDETAILS */}
+      <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', marginTop: '10px' }}>
+        {isNavView ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '14px', height: '3px', background: '#13381A' }}></span>
+              <span>Objektwert</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '14px', height: '3px', background: '#9B2C2C' }}></span>
+              <span>Restschuld</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '10px', height: '10px', background: '#A37841', borderRadius: '2px' }}></span>
+              <span>Netto-EK (NAV)</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '14px', height: '3px', background: '#A37841' }}></span>
+              <span>Kaltmiete (brutto)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '10px', height: '10px', background: '#13381A', borderRadius: '2px' }}></span>
+              <span>Cashflow Netto (+)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '10px', height: '10px', background: '#9B2C2C', borderRadius: '2px' }}></span>
+              <span>Cashflow Netto (-)</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-// METRIC CARD KOMPONENTE
 function MetricCard({ title, value, highlight = false, isNegative = false }) {
   return (
     <div style={{ 
@@ -1263,14 +1361,13 @@ function MetricCard({ title, value, highlight = false, isNegative = false }) {
       <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#555759', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
         {title}
       </div>
-      <div style={{ fontSize: '1.5rem', fontWeight: '900', color: isNegative ? '#9B2C2C' : (highlight ? '#A37841' : '#13381A'), letterSpacing: '-0.5px' }}>
+      <div style={{ fontSize: '1.5rem', fontWeight: '900', color: isNegative ? '#9B2C2C' : (highlight ? '#A37841' : '#13381A'), letterSpacing: '-0.5px', fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </div>
     </div>
   );
 }
 
-// STEPPER INPUT KOMPONENTE
 function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null, onFocus = null }) {
   const getFormattedValue = (v) => {
     if (isYear) return String(Math.round(v || 0));

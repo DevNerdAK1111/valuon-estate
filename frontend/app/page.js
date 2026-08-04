@@ -27,7 +27,6 @@ const grunderwerbsteuerSätze = {
 };
 
 export default function Home() {
-  // NAVIGATION CONTROL: LANDING PAGE VS APP
   const [showApp, setShowApp] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   
@@ -404,7 +403,7 @@ export default function Home() {
     return (
       <div style={{ minHeight: '100vh', background: '#0D1F12', color: '#F7F4EC', fontFamily: 'sans-serif', overflowX: 'hidden', position: 'relative' }}>
         
-        {/* HINTERGRUND GLOW-EFFEKTE (FUTURISTISCHER TOUCH) */}
+        {/* HINTERGRUND GLOW-EFFEKTE */}
         <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(163,120,65,0.2) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: '30%', right: '-5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(19,56,26,0.4) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
 
@@ -428,17 +427,17 @@ export default function Home() {
         {/* HERO SECTION */}
         <header style={{ padding: '4rem 4rem 2rem 4rem', textAlign: 'center', maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'inline-block', background: 'rgba(163,120,65,0.15)', border: '1px solid #A37841', padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', color: '#A37841', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '1.5rem' }}>
-            Immobilien-Investment Suite der nächsten Generation
+            Kalkulieren statt spekulieren
           </div>
           <h1 style={{ fontSize: '3.6rem', fontWeight: '900', lineHeight: '1.15', letterSpacing: '-1.5px', marginBottom: '1.5rem' }}>
-            Präzise Cashflow- & Renditeanalysen für seriöse Immobilieninvestoren.
+            Entdecke, welche Immobilie sich wirklich rechnet.
           </h1>
           <p style={{ fontSize: '1.2rem', color: '#A0AEC0', maxWidth: '750px', margin: '0 auto 3rem auto', lineHeight: '1.6' }}>
-            Keine geschönten Zahlen, sondern echte Annuitätendynamik, exakte Steuerschild-Berechnung und professionelle Portfolio-Verwaltung.
+            Tauche ein in die Welt der Immobilieninvestments. Berechne Cashflows, Zinseszinsen, Steuereffekte und langfristige Vermögenswerte spielerisch und präzise.
           </p>
         </header>
 
-        {/* FUTURISTISCHES KACHEL-GRID (REALISTISCHE IMMOBILIEN) */}
+        {/* FUTURISTISCHES KACHEL-GRID (SERIÖSE IMMOBILIEN OHNE AUTOS) */}
         <section style={{ padding: '1rem 4rem 4rem 4rem', maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
             
@@ -451,15 +450,14 @@ export default function Home() {
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
                 <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(19,56,26,0.85)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  MFH Bestands-Portfolio
+                  Bestands-Mehrfamilienhaus
                 </div>
               </div>
               <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Mehrfamilienhaus Leipzig</h3>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>6 Wohneinheiten · Voll vermietet · 540 m² Wohnfläche</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem' }}>
-                  <span>Kaufpreis: <strong>890.000 €</strong></span>
-                  <span style={{ color: '#38A169', fontWeight: 'bold' }}>IRR: 8,40 %</span>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Mehrparteienhäuser analysieren</h3>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Kalkuliere Mieteinnahmen, Instandhaltungsrücklagen und Abschreibungen über Jahrzehnte.</p>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem', color: '#A37841', fontWeight: 'bold' }}>
+                  → Cashflow & Zinsbindung prüfen
                 </div>
               </div>
             </div>
@@ -468,42 +466,40 @@ export default function Home() {
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
               <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
                 <img 
-                  src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80" 
+                  src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=800&q=80" 
                   alt="Eigentumswohnung" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
                 <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(163,120,65,0.85)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  ETW Kapitalanlage
+                  Eigentumswohnung (ETW)
                 </div>
               </div>
               <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Moderne 3-Zimmer ETW</h3>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Niedersachsen / Weyhe · Bj. 1996 · 85 m²</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem' }}>
-                  <span>Kaufpreis: <strong>170.000 €</strong></span>
-                  <span style={{ color: '#38A169', fontWeight: 'bold' }}>Rendite: 6,00 %</span>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Klassische Kapitalanlage</h3>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Simuliere Hausgeld-Aufteilungen, Leerstandsquoten und den perfekten Eigenkapital-Hebel.</p>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem', color: '#A37841', fontWeight: 'bold' }}>
+                  → Rendite & Steuereffekte berechnen
                 </div>
               </div>
             </div>
 
-            {/* KACHEL 3: REIHENHAUS / WOHNANLAGE */}
+            {/* KACHEL 3: ARCHITEKTUR / WOHNGEBÄUDE */}
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
               <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
                 <img 
-                  src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80" 
-                  alt="Wohnquartier" 
+                  src="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80" 
+                  alt="Wohngebäude" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
                 <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(19,56,26,0.85)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  Reihenendhaus
+                  Sanierung & AfA
                 </div>
               </div>
               <div style={{ padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Reihenhaus Hannover</h3>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Solide Bauweise · Bj. 2008 · 128 m² Wohnfläche</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem' }}>
-                  <span>Kaufpreis: <strong>340.000 €</strong></span>
-                  <span style={{ color: '#38A169', fontWeight: 'bold' }}>IRR: 7,15 %</span>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Sanierung & Abschreibung</h3>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Beachte degressive Abschreibungen, KfW-Fördermittel und steuerliche Verlustverrechnungen.</p>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem', color: '#A37841', fontWeight: 'bold' }}>
+                  → Steuerschild optimal nutzen
                 </div>
               </div>
             </div>
@@ -511,11 +507,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* AUTHENTIFIZIERUNGS / LOGIN BEREICH (KACHEL FORM) */}
+        {/* AUTHENTIFIZIERUNGS / LOGIN BEREICH */}
         <section id="auth-section" style={{ padding: '2rem 4rem 4rem 4rem', maxWidth: '520px', margin: '0 auto' }}>
           <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(226,217,206,0.2)', borderRadius: '20px', padding: '2.5rem', backdropFilter: 'blur(15px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
             
-            {/* AUTH SWITCHER TABS */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '12px', marginBottom: '1.8rem' }}>
               <button
                 type="button"
@@ -552,10 +547,10 @@ export default function Home() {
             </div>
 
             <h2 style={{ fontSize: '1.5rem', fontWeight: '800', textAlign: 'center', marginBottom: '0.5rem' }}>
-              {authMode === 'login' ? 'Willkommen zurück' : 'Kostenloses Konto erstellen'}
+              {authMode === 'login' ? 'Willkommen zurück' : 'Konto erstellen'}
             </h2>
             <p style={{ textAlign: 'center', color: '#A0AEC0', fontSize: '0.85rem', marginBottom: '1.8rem' }}>
-              {authMode === 'login' ? 'Greifen Sie auf Ihre gespeicherten Immobilien zu' : 'Starten Sie Ihre professionellen Objektanalysen'}
+              {authMode === 'login' ? 'Greife auf deine gespeicherten Objekte zu' : 'Starte direkt mit deinen eigenen Immobilienkalkulationen'}
             </p>
 
             <form onSubmit={(e) => { e.preventDefault(); setShowApp(true); setAuthenticated(true); }}>
@@ -578,7 +573,7 @@ export default function Home() {
                 </div>
 
                 <button type="submit" style={{ marginTop: '0.5rem', padding: '14px', background: authMode === 'login' ? '#13381A' : '#A37841', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }}>
-                  {authMode === 'login' ? 'Anmelden & Dashboard öffnen' : 'Jetzt kostenlos registrieren'}
+                  {authMode === 'login' ? 'Anmelden & Rechner starten' : 'Konto anlegen & loslegen'}
                 </button>
               </div>
             </form>
@@ -589,7 +584,7 @@ export default function Home() {
         {/* DEVELOPER SCHNELLZUGANG FOOTER BUTTON */}
         <footer style={{ padding: '3rem 2rem', textAlign: 'center', borderTop: '1px solid rgba(226,217,206,0.1)', background: 'rgba(0,0,0,0.4)' }}>
           <div style={{ fontSize: '0.85rem', color: '#718096', marginBottom: '1rem' }}>
-            Entwicklermodus aktiv · Valuon Estate Suite v2.4
+            Valuon Estate Investment Suite v2.4
           </div>
           
           <button
@@ -598,7 +593,6 @@ export default function Home() {
               padding: '12px 28px',
               background: 'transparent',
               color: '#A37841',
-              border: '2px stroke #A37841',
               border: '2px dashed #A37841',
               borderRadius: '30px',
               fontWeight: '800',
@@ -1114,7 +1108,7 @@ export default function Home() {
                     Liquiditätsverlauf, steuerliche Abschreibung & Kapitalentwicklung
                   </h3>
                   <p style={{ margin: '0 0 1.2rem 0', fontSize: '0.85rem', color: '#718096' }}>
-                    Wählen Sie einen Themenbereich, um alle Kennzahlen übersichtlich zu betrachten.
+                    Wähle einen Themenbereich, um alle Kennzahlen übersichtlich zu betrachten.
                   </p>
 
                   <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.2rem', borderBottom: '1px solid #E2D9CE', paddingBottom: '8px' }}>

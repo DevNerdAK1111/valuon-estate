@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
-// Formatierungs-Helfer
+// Formatierungs-Helfer mit strengen Tabellenziffern
 const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 const formatEuroInt = (val) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.round(val || 0));
 const formatPct = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
@@ -32,16 +32,14 @@ export default function Home() {
   const [userEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Analyse');
 
-  // Sub-Tab State für Analyse
-  const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard'); // 'Executive Dashboard' | 'Liquiditätsverlauf & Tilgung'
-  const [tableTheme, setTableTheme] = useState('Mieten & Cashflow'); // 'Mieten & Cashflow' | 'Kapitaldienst & Steuern' | 'Vermögen & Bilanz'
-  const [projectionHorizon, setProjectionHorizon] = useState(10); // 5, 10, 15, 20, 30 Jahre
+  const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
+  const [tableTheme, setTableTheme] = useState('Mieten & Cashflow');
+  const [projectionHorizon, setProjectionHorizon] = useState(10);
   const [chartView, setChartView] = useState('1. Vermögensstruktur & NAV (Netto-Eigenkapital)');
 
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
 
-  // BACKEND-STATUS STATE
   const [backendStatus, setBackendStatus] = useState('sleeping');
 
   useEffect(() => {
@@ -60,7 +58,6 @@ export default function Home() {
       .catch(() => setBackendStatus('sleeping'));
   };
 
-  // Formular-State
   const [formData, setFormData] = useState({
     obj_name: 'TEST Wohnung',
     objektart: 'Eigentumswohnung',
@@ -369,12 +366,10 @@ export default function Home() {
     }
   };
 
-  // Hilfsvariablen für Berechnungen & KPIs im Dashboard
   const firstYearCashflow = result?.projection?.[0]?.['Cashflow Netto'] || 0;
   const monthlyCashflow = firstYearCashflow / 12;
   const bruttoMietrendite = formData.kaufpreis > 0 ? ((formData.kaltmiete_monat * 12) / formData.kaufpreis) * 100 : 0;
-  
-  // Gesamtgewinn im gewählten Horizont (Cashflows + NAV-Zuwachs)
+
   const slicedProjection = result?.projection ? result.projection.slice(0, projectionHorizon) : [];
   const cumulatedCashflowHorizon = slicedProjection.reduce((acc, curr) => acc + (curr['Cashflow Netto'] || 0), 0);
   const endYearObj = slicedProjection[slicedProjection.length - 1];
@@ -394,21 +389,21 @@ export default function Home() {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 14px', borderRadius: '20px', border: '1px solid #E2D9CE', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+          <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 14px', borderRadius: '20px', border: '1px solid #E2D9CE' }}>
             {backendStatus === 'ready' && <span style={{ color: '#38A169', fontWeight: 'bold' }}>🟢 Backend Bereit</span>}
             {backendStatus === 'waking' && <span style={{ color: '#D69E2E', fontWeight: 'bold' }}>🟡 Backend wird aufgeweckt...</span>}
-            {backendStatus === 'sleeping' && <span style={{ color: '#E53E3E', fontWeight: 'bold' }}>🔴 Backend schläft</span>}
+            {backendStatus === 'sleeping' && <span style={{ color: '#9B2C2C', fontWeight: 'bold' }}>🔴 Backend schläft</span>}
           </div>
           <div style={{ fontSize: '0.85rem', color: '#555759' }}>
             <span>Konto: <strong>{userEmail}</strong></span>
           </div>
-          <button style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}>
+          <button style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', color: '#13381A' }}>
             Abmelden
           </button>
         </div>
       </div>
 
-      {/* HAUPT-NAVIGATION (Pill Tabs) */}
+      {/* MAIN NAVIGATION TABS */}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${navItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
         {navItems.map((item) => {
           const isActive = navChoice === item;
@@ -442,7 +437,7 @@ export default function Home() {
             
             {/* LINKE SPALTE: PARAMETRISIERUNG */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#13381A' }}>Parametrisierung</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>Parametrisierung</div>
 
               {/* 1. OBJEKTDATEN */}
               <Expander title="1. Objektdaten (Exposé)" defaultOpen={true}>
@@ -500,7 +495,7 @@ export default function Home() {
 
                   <SubExpander title="Hausgeld-Aufteilung">
                     <div style={infoBoxStyle}>
-                      💡 <strong>Standard 75 / 25 % Verteilung:</strong> In der Praxis entfallen ca. 75 % des Hausgeldes auf den Mieter (umlegbar) und ca. 25 % auf Instandhaltungsrücklage und Verwaltung (nicht umlegbar).
+                      💡 <strong>Standard 75 / 25 % Verteilung:</strong> 75% umlegbar, 25% nicht umlegbar.
                     </div>
                     <StepperInput label="Nicht umlegbares Hausgeld (€/Monat)" value={formData.hausgeld_nicht_umlegbar} onChange={handleHausgeldNichtUmlegbarChange} step={5} isCurrency={true} />
                   </SubExpander>
@@ -534,7 +529,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div style={{ background: '#F4EFE6', padding: '12px', borderRadius: '8px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                  <div style={{ background: '#FAF8F5', padding: '12px', borderRadius: '8px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '0.9rem' }}>
                     <span>Summe Kaufnebenkosten:</span>
                     <span>{formatEuroInt(summe_nk)} €</span>
                   </div>
@@ -575,7 +570,7 @@ export default function Home() {
                       <StepperInput label="KfW Zinssatz (%)" value={formData.kfw_zins} onChange={(v) => updateField('kfw_zins', v)} step={0.1} isPercent={true} />
                       <StepperInput label="KfW Tilgung (%)" value={formData.kfw_tilg} onChange={(v) => updateField('kfw_tilg', v)} step={0.1} isPercent={true} />
                       <StepperInput label="KfW Tilgungsfreie Jahre" value={formData.kfw_grace_years} onChange={(v) => updateField('kfw_grace_years', v)} step={1} isInteger={true} />
-                      <StepperInput label="KfW Tilgungszuschuss / Grant (€)" value={formData.kfw_grant} onChange={(v) => updateField('kfw_grant', v)} step={1000} isCurrency={true} />
+                      <StepperInput label="KfW Tilgungszuschuss (€)" value={formData.kfw_grant} onChange={(v) => updateField('kfw_grant', v)} step={1000} isCurrency={true} />
                     </div>
                   </SubExpander>
 
@@ -584,7 +579,7 @@ export default function Home() {
                   <div>
                     <StepperInput label="Eingesetztes Eigenkapital (€)" value={formData.ek_euro} onChange={(v) => updateField('ek_euro', v)} step={1000} isCurrency={true} />
                     <div style={infoBoxStyle}>
-                      💡 <strong>EK-Empfehlung:</strong> Wir empfehlen mindestens die Kaufnebenkosten in Höhe von <strong>{formatEuroInt(summe_nk)} €</strong> als Eigenkapital einzubringen, um eine solide 100%-Finanzierung der Bank zu erhalten.
+                      💡 <strong>EK-Empfehlung:</strong> Wir empfehlen mind. Kaufnebenkosten (<strong>{formatEuroInt(summe_nk)} €</strong>) einzubringen.
                     </div>
                   </div>
                 </div>
@@ -608,7 +603,7 @@ export default function Home() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
                       <span style={{ color: '#4A5568' }}>Leerstandsquote (%)</span>
-                      <span style={{ color: '#E53E3E', fontWeight: 'bold' }}>{formatPct(formData.vac_rate_pct)} %</span>
+                      <span style={{ color: '#9B2C2C', fontWeight: 'bold' }}>{formatPct(formData.vac_rate_pct)} %</span>
                     </div>
                     <input
                       type="range"
@@ -617,7 +612,7 @@ export default function Home() {
                       step="0.5"
                       value={formData.vac_rate_pct}
                       onChange={(e) => updateField('vac_rate_pct', parseFloat(e.target.value))}
-                      style={{ width: '100%', accentColor: '#E53E3E', cursor: 'pointer' }}
+                      style={{ width: '100%', accentColor: '#13381A', cursor: 'pointer' }}
                     />
                   </div>
 
@@ -625,21 +620,21 @@ export default function Home() {
 
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#13381A' }}>Flexible Sonderinvestitionen (Capex)</div>
-                    <div style={{ fontSize: '0.75rem', color: '#718096', margin: '4px 0 10px 0' }}>Füge zielgerichtete Instandhaltungen oder Modernisierungen für spezifische Jahre hinzu.</div>
+                    <div style={{ fontSize: '0.75rem', color: '#718096', margin: '4px 0 10px 0' }}>Sonder-Instandhaltungen für spezifische Jahre.</div>
                     
                     {capexList.map((item, idx) => (
                       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', marginBottom: '8px', alignItems: 'flex-end' }}>
                         <StepperInput label={`Jahr #${idx + 1}`} value={item.year} onChange={(v) => handleCapexChange(idx, 'year', v)} step={1} isInteger={true} />
                         <StepperInput label={`Betrag (€) #${idx + 1}`} value={item.amount} onChange={(v) => handleCapexChange(idx, 'amount', v)} step={500} isCurrency={true} />
                         {capexList.length > 1 && (
-                          <button type="button" onClick={() => removeCapexRow(idx)} style={{ background: '#FED7D7', color: '#9B2C2C', border: 'none', borderRadius: '6px', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                          <button type="button" onClick={() => removeCapexRow(idx)} style={{ background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '6px', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                             🗑️
                           </button>
                         )}
                       </div>
                     ))}
 
-                    <button type="button" onClick={addCapexRow} style={{ marginTop: '6px', padding: '8px 12px', background: '#E2E8F0', color: '#2D3748', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+                    <button type="button" onClick={addCapexRow} style={{ marginTop: '6px', padding: '8px 12px', background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
                       ＋ Weitere Sonderinvestition hinzufügen
                     </button>
                   </div>
@@ -652,7 +647,7 @@ export default function Home() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
                       <span style={{ color: '#4A5568' }}>Grenzsteuersatz (%)</span>
-                      <span style={{ color: '#E53E3E', fontWeight: 'bold' }}>{formatPct(formData.tax_rate_pct)} %</span>
+                      <span style={{ color: '#13381A', fontWeight: 'bold' }}>{formatPct(formData.tax_rate_pct)} %</span>
                     </div>
                     <input
                       type="range"
@@ -661,7 +656,7 @@ export default function Home() {
                       step="1"
                       value={formData.tax_rate_pct}
                       onChange={(e) => updateField('tax_rate_pct', parseFloat(e.target.value))}
-                      style={{ width: '100%', accentColor: '#E53E3E', cursor: 'pointer' }}
+                      style={{ width: '100%', accentColor: '#13381A', cursor: 'pointer' }}
                     />
                   </div>
 
@@ -678,15 +673,6 @@ export default function Home() {
 
                   <StepperInput label="AfA %" value={formData.afa_lin} onChange={(v) => updateField('afa_lin', v)} step={0.1} isPercent={true} />
 
-                  {formData.afa_model === 'Kombination: Degressiv + Sonder-AfA' && (
-                    <div>
-                      <StepperInput label="Sonder-AfA (§ 7b EStG) (%)" value={5.0} onChange={() => {}} disabled={true} isPercent={true} />
-                      <div style={infoBoxStyle}>
-                        ℹ️ <strong>Sonder-AfA Hinweis:</strong> Die 5,00 % Sonder-AfA gelten gesetzlich ausschließlich im Jahr der Anschaffung/Herstellung sowie in den 3 folgenden Jahren (insgesamt 4 Jahre).
-                      </div>
-                    </div>
-                  )}
-
                   <StepperInput label="Mietsteigerung p.a. (%)" value={formData.miet_inc} onChange={(v) => updateField('miet_inc', v)} step={0.1} isPercent={true} />
                   <StepperInput label="Wertsteigerung p.a. (%)" value={formData.val_inc} onChange={(v) => updateField('val_inc', v)} step={0.1} isPercent={true} />
 
@@ -698,24 +684,23 @@ export default function Home() {
                     onChange={(v) => updateField('exit_cost', v)} 
                     step={0.1} 
                     isPercent={true} 
-                    tooltip="Typischerweise liegen die Verkaufsnebenkosten bei ca. 1,0 % bis 3,0 % des Verkaufspreises." 
                   />
                 </div>
               </Expander>
 
-              <button type="submit" disabled={loading} style={{ padding: '16px', background: '#13381A', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1.05rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 14px rgba(19,56,26,0.25)', transition: 'all 0.2s' }}>
+              <button type="submit" disabled={loading} style={{ padding: '16px', background: '#13381A', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1.05rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 14px rgba(19,56,26,0.25)' }}>
                 {loading ? 'Berechne Investment...' : '🚀 Investition analysieren'}
               </button>
 
             </div>
 
-            {/* RECHTE SPALTE: DAS VOLLSTÄNDIGE INSTITUTIONAL DASHBOARD */}
+            {/* RECHTE SPALTE: DASHBOARD & RESULTATE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* PROJEKTIONSHORIZONT SELECTOR & DATING HEADER */}
+              {/* HORIZONT SELECTOR & ACTIONS */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ width: '280px' }}>
-                  <label style={{ ...labelStyle, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Projektionshorizont:</label>
+                <div style={{ width: '260px' }}>
+                  <label style={{ ...labelStyle, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROJEKTIONSHORIZONT:</label>
                   <select
                     value={projectionHorizon}
                     onChange={(e) => setProjectionHorizon(Number(e.target.value))}
@@ -755,7 +740,7 @@ export default function Home() {
                 <div style={{
                   padding: '12px',
                   background: saveSuccess.startsWith('✅') ? '#E6FFFA' : '#FFF5F5',
-                  color: saveSuccess.startsWith('✅') ? '#234E52' : '#C53030',
+                  color: saveSuccess.startsWith('✅') ? '#234E52' : '#9B2C2C',
                   borderRadius: '8px',
                   fontSize: '0.85rem',
                   border: `1px solid ${saveSuccess.startsWith('✅') ? '#B2F5EA' : '#FEB2B2'}`
@@ -765,12 +750,12 @@ export default function Home() {
               )}
 
               {calcError && (
-                <div style={{ padding: '14px 18px', background: '#FFF5F5', color: '#C53030', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #FEB2B2' }}>
+                <div style={{ padding: '14px 18px', background: '#FFF5F5', color: '#9B2C2C', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #FEB2B2' }}>
                   <strong>⚠️ Fehler bei der Berechnung:</strong> {calcError}
                 </div>
               )}
 
-              {/* DASHBOARD KOPFZEILE */}
+              {/* TITEL DES OBJEKTS */}
               <div>
                 <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
                   {formData.obj_name || 'TEST Wohnung'}
@@ -780,7 +765,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* DIE 4 PROMINENTEN KPI METRIC CARDS */}
+              {/* DIE 4 DYNAMISCHEN METRIC CARDS */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
                 <MetricCard 
                   title="CASHFLOW NETTO" 
@@ -802,8 +787,8 @@ export default function Home() {
                 />
               </div>
 
-              {/* EXECUTIVE SUB-TABS (EXAKT WIE IM ORIGINAL DASHBOARD) */}
-              <div style={{ borderBottom: '1px solid #E2D9CE', display: 'flex', gap: '2rem', marginTop: '0.5rem' }}>
+              {/* ELEGANTES TAB-MENÜ (OHNE SHOCK-ROT) */}
+              <div style={{ borderBottom: '2px solid #E2D9CE', display: 'flex', gap: '2rem' }}>
                 <button
                   type="button"
                   onClick={() => setActiveDashboardTab('Executive Dashboard')}
@@ -812,9 +797,9 @@ export default function Home() {
                     border: 'none',
                     paddingBottom: '10px',
                     fontSize: '0.95rem',
-                    fontWeight: '700',
-                    color: activeDashboardTab === 'Executive Dashboard' ? '#E53E3E' : '#718096',
-                    borderBottom: activeDashboardTab === 'Executive Dashboard' ? '3px solid #E53E3E' : 'none',
+                    fontWeight: '800',
+                    color: activeDashboardTab === 'Executive Dashboard' ? '#13381A' : '#718096',
+                    borderBottom: activeDashboardTab === 'Executive Dashboard' ? '3px solid #13381A' : 'none',
                     cursor: 'pointer'
                   }}
                 >
@@ -828,9 +813,9 @@ export default function Home() {
                     border: 'none',
                     paddingBottom: '10px',
                     fontSize: '0.95rem',
-                    fontWeight: '700',
-                    color: activeDashboardTab === 'Liquiditätsverlauf & Tilgung' ? '#E53E3E' : '#718096',
-                    borderBottom: activeDashboardTab === 'Liquiditätsverlauf & Tilgung' ? '3px solid #E53E3E' : 'none',
+                    fontWeight: '800',
+                    color: activeDashboardTab === 'Liquiditätsverlauf & Tilgung' ? '#13381A' : '#718096',
+                    borderBottom: activeDashboardTab === 'Liquiditätsverlauf & Tilgung' ? '3px solid #13381A' : 'none',
                     cursor: 'pointer'
                   }}
                 >
@@ -838,14 +823,11 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* INHALT DER SUB-TABS */}
-              
-              {/* TAB 1: EXECUTIVE DASHBOARD (CHARTS) */}
+              {/* TAB 1: EXECUTIVE DASHBOARD */}
               {activeDashboardTab === 'Executive Dashboard' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginTop: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
                   
-                  {/* LINKES CHART: PROJEKTION & WERTENTWICKLUNG */}
-                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
                       Projektion & Wertentwicklung
                     </h3>
@@ -862,12 +844,10 @@ export default function Home() {
                       </select>
                     </div>
 
-                    {/* INTERAKTIVER SVG PROJEKTIONS-CHART */}
                     <ProjectionChart projection={slicedProjection} kaufpreis={formData.kaufpreis} view={chartView} />
                   </div>
 
-                  {/* RECHTES CHART: KAPITALSTRUKTUR (DONUT) */}
-                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
                       Kapitalstruktur (Initial)
                     </h3>
@@ -883,7 +863,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* TAB 2: LIQUIDITÄTSVERLAUF, ABSCHREIBUNGEN & TABELLE */}
+              {/* TAB 2: LIQUIDITÄTSVERLAUF & TILGUNG */}
               {activeDashboardTab === 'Liquiditätsverlauf & Tilgung' && (
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
                   <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '800', color: '#13381A' }}>
@@ -893,7 +873,6 @@ export default function Home() {
                     Wählen Sie einen Themenbereich, um alle Kennzahlen übersichtlich zu betrachten.
                   </p>
 
-                  {/* THEMENBEREICH THEME SELECTOR */}
                   <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.2rem', borderBottom: '1px solid #E2D9CE', paddingBottom: '8px' }}>
                     {['Mieten & Cashflow', 'Kapitaldienst & Steuern', 'Vermögen & Bilanz'].map((theme) => (
                       <button
@@ -904,10 +883,11 @@ export default function Home() {
                           background: 'none',
                           border: 'none',
                           fontSize: '0.85rem',
-                          fontWeight: '700',
-                          color: tableTheme === theme ? '#E53E3E' : '#718096',
+                          fontWeight: '800',
+                          color: tableTheme === theme ? '#A37841' : '#718096',
                           cursor: 'pointer',
-                          textDecoration: tableTheme === theme ? 'underline' : 'none'
+                          borderBottom: tableTheme === theme ? '2px solid #A37841' : 'none',
+                          paddingBottom: '4px'
                         }}
                       >
                         {theme}
@@ -915,9 +895,8 @@ export default function Home() {
                     ))}
                   </div>
 
-                  {/* VOLLSTÄNDIGE MULTI-THEMEN TABELLE */}
                   <div style={{ overflowX: 'auto', maxHeight: '500px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'right' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                       <thead>
                         <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE', color: '#4A5568' }}>
                           <th style={{ padding: '10px', textAlign: 'left' }}>Jahr</th>
@@ -935,10 +914,10 @@ export default function Home() {
                           {tableTheme === 'Kapitaldienst & Steuern' && (
                             <>
                               <th style={{ padding: '10px' }}>Zinsen</th>
-                              <th style={{ padding: '10px' }}>Tilgung</th>
+                              <th style={{ padding: '10px' }}>Tilgung (dynamisch)</th>
                               <th style={{ padding: '10px' }}>Kapitaldienst</th>
                               <th style={{ padding: '10px' }}>AfA</th>
-                              <th style={{ padding: '10px' }}>Steuer</th>
+                              <th style={{ padding: '10px' }}>Steuer / Erstattung</th>
                             </>
                           )}
 
@@ -960,6 +939,7 @@ export default function Home() {
                           const cfVorSteuer = (row['Cashflow Netto'] || 0) + (row['Steuer'] || 0);
                           const nav = (row['Immobilienwert'] || 0) - (row['Restschuld'] || 0);
                           const ltv = row['Immobilienwert'] > 0 ? ((row['Restschuld'] || 0) / row['Immobilienwert']) * 100 : 0;
+                          const taxVal = row['Steuer'] || 0;
 
                           return (
                             <tr key={idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
@@ -970,8 +950,8 @@ export default function Home() {
                                   <td style={{ padding: '8px 10px' }}>{formatPct(mietrendite)} %</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Mieteinnahmen IST'])} €</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(noi)} €</td>
-                                  <td style={{ padding: '8px 10px', color: cfVorSteuer < 0 ? '#E53E3E' : 'inherit' }}>{formatEuroInt(cfVorSteuer)} €</td>
-                                  <td style={{ padding: '8px 10px', fontWeight: 'bold', color: row['Cashflow Netto'] < 0 ? '#E53E3E' : '#13381A' }}>
+                                  <td style={{ padding: '8px 10px', color: cfVorSteuer < 0 ? '#9B2C2C' : 'inherit' }}>{formatEuroInt(cfVorSteuer)} €</td>
+                                  <td style={{ padding: '8px 10px', fontWeight: 'bold', color: row['Cashflow Netto'] < 0 ? '#9B2C2C' : '#13381A' }}>
                                     {formatEuroInt(row['Cashflow Netto'])} €
                                   </td>
                                 </>
@@ -980,10 +960,12 @@ export default function Home() {
                               {tableTheme === 'Kapitaldienst & Steuern' && (
                                 <>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Zinsen'])} €</td>
-                                  <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Tilgung'])} €</td>
+                                  <td style={{ padding: '8px 10px', fontWeight: 'bold', color: '#13381A' }}>{formatEuroInt(row['Tilgung'])} €</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt((row['Zinsen'] || 0) + (row['Tilgung'] || 0))} €</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['AfA'])} €</td>
-                                  <td style={{ padding: '8px 10px', color: row['Steuer'] > 0 ? '#E53E3E' : '#38A169' }}>{formatEuroInt(row['Steuer'])} €</td>
+                                  <td style={{ padding: '8px 10px', fontWeight: 'bold', color: taxVal < 0 ? '#38A169' : '#9B2C2C' }}>
+                                    {taxVal < 0 ? `+${formatEuroInt(Math.abs(taxVal))} € (Erstattung)` : `${formatEuroInt(taxVal)} €`}
+                                  </td>
                                 </>
                               )}
 
@@ -1010,7 +992,7 @@ export default function Home() {
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Mieteinnahmen IST'] || 0), 0))} €</td>
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + ((curr['Effektive Miete'] || curr['Mieteinnahmen IST'] || 0) - (curr['Bewirtschaftungskosten'] || 0)), 0))} €</td>
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + ((curr['Cashflow Netto'] || 0) + (curr['Steuer'] || 0)), 0))} €</td>
-                              <td style={{ padding: '10px', color: cumulatedCashflowHorizon < 0 ? '#E53E3E' : '#13381A' }}>{formatEuroInt(cumulatedCashflowHorizon)} €</td>
+                              <td style={{ padding: '10px', color: cumulatedCashflowHorizon < 0 ? '#9B2C2C' : '#13381A' }}>{formatEuroInt(cumulatedCashflowHorizon)} €</td>
                             </>
                           )}
 
@@ -1037,17 +1019,16 @@ export default function Home() {
                     </table>
                   </div>
 
-                  {/* GLOSSAR / INFOBOX AM ENDE */}
                   <div style={{ marginTop: '1.5rem', background: '#FAF8F5', padding: '12px 16px', borderRadius: '8px', border: '1px solid #E2D9CE', fontSize: '0.78rem', color: '#555759', lineHeight: '1.5' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#13381A' }}>Erläuterung der Kennzahlen & Fachbegriffe</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#13381A' }}>Erläuterung der Kennzahlen & Steuereffekte</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
-                        <strong>Reinertrag (NOI):</strong> Mietertrag nach Abzug aller Bewirtschaftungskosten und Leerstände, vor Zinsen und Steuern.<br />
-                        <strong>Exit-Kosten:</strong> Geschätzte Nebenkosten beim Verkauf der Immobilie (z.B. Makler, Marketing, Notar/Löschung).
+                        <strong>Dynamische Tilgung:</strong> Bei einem Annuitätendarlehen bleibt die Gesamtrate konstant. Mit sinkender Restschuld sinkt der Zinsanteil, wodurch die Tilgung von Jahr zu Jahr automatisch ansteigt.<br />
+                        <strong>Steuer / Erstattung:</strong> Negative Beträge (+) stellen eine Steuererstattung durch Verrechnung der Verluste aus Vermietung mit deiner Einkommensteuer dar.
                       </div>
                       <div>
-                        <strong>Cashflow (vor/nach St.):</strong> Liquiditätsüberschuss auf dem Konto vor bzw. nach Berücksichtigung der persönlichen Einkommensteuer.<br />
-                        <strong>Netto-EK (nach Exit):</strong> Tatsächlicher Netto-Erlös nach vollständiger Schuldenablösung und Abzug der Verkaufsnebenkosten.
+                        <strong>Reinertrag (NOI):</strong> Mietertrag nach Abzug von Verwaltung, Instandhaltung und Leerstand (vor Zinsen/Steuer).<br />
+                        <strong>Netto-EK (NAV):</strong> Dein kumulierter Netto-Vermögenswert im Objekt (Immobilienwert abzüglich Restschuld).
                       </div>
                     </div>
                   </div>
@@ -1066,7 +1047,7 @@ export default function Home() {
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 style={{ margin: 0, color: '#13381A' }}>Objekt Datenbank & Pipeline</h2>
-            <button onClick={fetchDatabaseProperties} style={{ padding: '8px 14px', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+            <button onClick={fetchDatabaseProperties} style={{ padding: '8px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
               🔄 Aktualisieren
             </button>
           </div>
@@ -1075,7 +1056,7 @@ export default function Home() {
             <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Lade Objekte aus Supabase...</div>
           ) : dbProperties.length === 0 ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
-              Noch keine Objekte in der Datenbank gespeichert. Führe eine Analyse durch und klicke auf "In Datenbank speichern".
+              Noch keine Objekte in der Datenbank gespeichert.
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -1106,7 +1087,7 @@ export default function Home() {
                         <button onClick={() => loadPropertyFromDb(item)} style={{ padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
                           📂 In Analyse laden
                         </button>
-                        <button onClick={() => deletePropertyFromDb(item.id)} style={{ padding: '6px 10px', background: '#FED7D7', color: '#9B2C2C', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        <button onClick={() => deletePropertyFromDb(item.id)} style={{ padding: '6px 10px', background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
                           🗑️ Löschen
                         </button>
                       </td>
@@ -1139,7 +1120,7 @@ export default function Home() {
   );
 }
 
-// --- SVG DONUT CHART KOMPONENTE ---
+// --- SVG DONUT CHART ---
 function DonutChart({ totalInvestment, equity, kfw, hb }) {
   const safeTotal = totalInvestment || 1;
   const eqPct = (equity / safeTotal) * 100;
@@ -1150,24 +1131,18 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '260px' }}>
       <svg width="180" height="180" viewBox="0 0 42 42">
         <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E2D9CE" strokeWidth="5" />
-        
-        {/* Hausbank Segment (Dunkelgrün) */}
         <circle
           cx="21" cy="21" r="15.915"
           fill="transparent" stroke="#13381A" strokeWidth="5"
           strokeDasharray={`${hbPct} ${100 - hbPct}`}
           strokeDashoffset="25"
         />
-
-        {/* Eigenkapital Segment (Dunkelgrau/Gold) */}
         <circle
           cx="21" cy="21" r="15.915"
           fill="transparent" stroke="#2D3748" strokeWidth="5"
           strokeDasharray={`${eqPct} ${100 - eqPct}`}
           strokeDashoffset={`${25 - hbPct}`}
         />
-
-        {/* KfW Segment (Braun/Gold) */}
         {kfwPct > 0 && (
           <circle
             cx="21" cy="21" r="15.915"
@@ -1178,7 +1153,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
         )}
       </svg>
 
-      {/* LEGENDE */}
       <div style={{ marginTop: '1.2rem', display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <span style={{ width: '10px', height: '10px', background: '#13381A', borderRadius: '2px' }}></span>
@@ -1199,7 +1173,7 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
   );
 }
 
-// --- SVG PROJEKTIONS-CHART KOMPONENTE ---
+// --- SVG PROJEKTIONS-CHART ---
 function ProjectionChart({ projection, kaufpreis, view }) {
   if (!projection || projection.length === 0) {
     return <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
@@ -1210,13 +1184,10 @@ function ProjectionChart({ projection, kaufpreis, view }) {
   return (
     <div style={{ width: '100%', height: '240px', position: 'relative', marginTop: '10px' }}>
       <svg width="100%" height="100%" viewBox="0 0 500 200" preserveAspectRatio="none">
-        
-        {/* Hilfslinien */}
         <line x1="0" y1="50" x2="500" y2="50" stroke="#E2D9CE" strokeDasharray="3 3" />
         <line x1="0" y1="100" x2="500" y2="100" stroke="#E2D9CE" strokeDasharray="3 3" />
         <line x1="0" y1="150" x2="500" y2="150" stroke="#E2D9CE" strokeDasharray="3 3" />
 
-        {/* Balken für Netto-Eigenkapital (NAV) */}
         {projection.map((r, i) => {
           const x = (i / projection.length) * 480 + 10;
           const nav = (r['Immobilienwert'] || 0) - (r['Restschuld'] || 0);
@@ -1237,7 +1208,6 @@ function ProjectionChart({ projection, kaufpreis, view }) {
           );
         })}
 
-        {/* Linien für Objektwert (Dunkelgrün) & Restschuld (Rot/Braun) */}
         <polyline
           fill="none"
           stroke="#13381A"
@@ -1251,7 +1221,7 @@ function ProjectionChart({ projection, kaufpreis, view }) {
 
         <polyline
           fill="none"
-          stroke="#C53030"
+          stroke="#9B2C2C"
           strokeWidth="3"
           points={projection.map((r, i) => {
             const x = (i / projection.length) * 480 + 20;
@@ -1259,17 +1229,15 @@ function ProjectionChart({ projection, kaufpreis, view }) {
             return `${x},${y}`;
           }).join(' ')}
         />
-
       </svg>
 
-      {/* CHART LEGENDE */}
       <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', marginTop: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '12px', height: '3px', background: '#13381A' }}></span>
           <span>Objektwert</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ width: '12px', height: '3px', background: '#C53030' }}></span>
+          <span style={{ width: '12px', height: '3px', background: '#9B2C2C' }}></span>
           <span>Restschuld</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1281,21 +1249,21 @@ function ProjectionChart({ projection, kaufpreis, view }) {
   );
 }
 
-// KPI METRIC CARD KOMPONENTE
+// METRIC CARD KOMPONENTE
 function MetricCard({ title, value, highlight = false, isNegative = false }) {
   return (
     <div style={{ 
-      background: highlight ? '#F4EFE6' : 'white', 
+      background: highlight ? '#FAF8F5' : 'white', 
       padding: '1.2rem', 
       borderRadius: '10px', 
       border: '1px solid #E2D9CE',
-      borderLeft: isNegative ? '4px solid #E53E3E' : (highlight ? '4px solid #A37841' : '1px solid #E2D9CE'),
-      boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+      borderLeft: isNegative ? '4px solid #9B2C2C' : (highlight ? '4px solid #A37841' : '1px solid #E2D9CE'),
+      boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
     }}>
       <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#555759', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
         {title}
       </div>
-      <div style={{ fontSize: '1.5rem', fontWeight: '900', color: isNegative ? '#E53E3E' : (highlight ? '#A37841' : '#13381A'), letterSpacing: '-0.5px' }}>
+      <div style={{ fontSize: '1.5rem', fontWeight: '900', color: isNegative ? '#9B2C2C' : (highlight ? '#A37841' : '#13381A'), letterSpacing: '-0.5px' }}>
         {value}
       </div>
     </div>
@@ -1342,7 +1310,7 @@ function StepperInput({ label, value, onChange, step = 1, isYear = false, isInte
             const parsed = parseFloat(raw);
             if (!isNaN(parsed)) onChange(parsed);
           }}
-          style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', fontWeight: '500', color: disabled ? '#A0AEC0' : '#2D3748' }}
+          style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', fontWeight: '500', color: disabled ? '#A0AEC0' : '#2D3748', fontVariantNumeric: 'tabular-nums' }}
         />
         {!disabled && (
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -1379,8 +1347,8 @@ function SubExpander({ title, children }) {
 
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568' };
 const inputTextStyle = { width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box' };
-const badgeStyle = { marginTop: '4px', background: '#F4EFE6', padding: '6px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', color: '#13381A', textAlign: 'center', border: '1px solid #E2D9CE' };
+const badgeStyle = { marginTop: '4px', background: '#FAF8F5', padding: '6px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', color: '#13381A', textAlign: 'center', border: '1px solid #E2D9CE', fontVariantNumeric: 'tabular-nums' };
 const infoBoxStyle = { marginTop: '6px', marginBottom: '8px', background: '#EBF8FF', color: '#2B6CB0', border: '1px solid #BEE3F8', padding: '8px 10px', borderRadius: '6px', fontSize: '0.78rem', lineHeight: '1.35' };
 const hrStyle = { border: 'none', borderTop: '1px solid #E2D9CE', margin: '6px 0' };
-const stepBtnStyle = { border: 'none', background: '#E2E8F0', color: '#2D3748', width: '22px', height: '22px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const stepBtnStyle = { border: 'none', background: '#FAF8F5', color: '#13381A', width: '22px', height: '22px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: '1px solid #E2D9CE', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const tooltipStyle = { cursor: 'pointer', fontSize: '0.75rem', color: '#718096', border: '1px solid #CBD5E0', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };

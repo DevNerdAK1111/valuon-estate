@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
@@ -33,7 +33,6 @@ export default function Home() {
   const [userEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Analyse');
 
-  // Tracking-Flags für manuelle Anpassungen
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
 
@@ -59,7 +58,7 @@ export default function Home() {
 
     // Hausgeld & Bewirtschaftung
     hausgeld: 250.0,
-    hausgeld_nicht_umlegbar: 62.50, // 25% Standard
+    hausgeld_nicht_umlegbar: 62.50,
     sanierung: 0.0,
     inst_sqm: 12.0,
     mgt_monat: 30.0,
@@ -94,7 +93,7 @@ export default function Home() {
 
     // Steuern & Makro
     tax_rate_pct: 42.0,
-    afa_model: '1_Linear_Standard',
+    afa_model: 'Linear Standard',
     afa_lin: 2.0,
     miet_inc: 1.0,
     cost_inc: 2.0,
@@ -110,7 +109,7 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // --- LOGIK FÜR BI-DIREKTIONALE KALTMIETEN ---
+  // Bi-direktionale Kaltmieten
   const handleQmChange = (newQm) => {
     const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
     let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
@@ -155,11 +154,11 @@ export default function Home() {
     setFormData({ ...formData, target_sqm: val, target_monat: monatVal });
   };
 
-  // --- LOGIK FÜR HAUSGELD ---
+  // Hausgeld
   const handleHausgeldChange = (val) => {
     let updated = { ...formData, hausgeld: val };
     if (!isHausgeldCustomized) {
-      updated.hausgeld_nicht_umlegbar = val * 0.25; // 25% Standardregel
+      updated.hausgeld_nicht_umlegbar = val * 0.25;
     }
     setFormData(updated);
   };
@@ -169,7 +168,7 @@ export default function Home() {
     setFormData({ ...formData, hausgeld_nicht_umlegbar: val });
   };
 
-  // --- LOGIK FÜR CAPEX ---
+  // Capex
   const handleCapexChange = (index, field, value) => {
     const updated = [...capexList];
     updated[index][field] = value;
@@ -187,7 +186,7 @@ export default function Home() {
     }
   };
 
-  // Standard-Feldaktualisierung
+  // Standard-Feldaktualisierung inkl. AfA-Automatik
   const updateField = (field, value) => {
     let updated = { ...formData, [field]: value };
 
@@ -199,6 +198,15 @@ export default function Home() {
       if (value === 'Mehrfamilienhaus') updated.inst_sqm = 15.0;
       else if (value === 'Eigentumswohnung') updated.inst_sqm = 12.0;
       else if (value === 'Einfamilienhaus') updated.inst_sqm = 10.0;
+    }
+
+    // Automatische AfA-Anpassungen
+    if (field === 'afa_model') {
+      if (value === 'Linear Standard') updated.afa_lin = 2.0;
+      else if (value === 'Linear Neubau') updated.afa_lin = 3.0;
+      else if (value === 'Degressiv') updated.afa_lin = 5.0;
+      else if (value === 'Kombination: Degressiv + Sonder-AfA') updated.afa_lin = 5.0; // Degressiver Basis-Teil
+      else if (value === 'Denkmalgeschützt') updated.afa_lin = 9.0;
     }
 
     setFormData(updated);
@@ -338,7 +346,7 @@ export default function Home() {
 
                   <hr style={hrStyle} />
 
-                  {/* Kaltmiete IST (Gesamt & €/m² synchron) */}
+                  {/* Kaltmiete IST */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <StepperInput label="Gesamtkaltmiete (€/Monat)" value={formData.kaltmiete_monat} onChange={handleIstMonatChange} step={50} isCurrency={true} />
                     <StepperInput label="Kaltmiete (€/m²)" value={formData.ist_sqm} onChange={handleIstSqmChange} step={0.5} />
@@ -348,7 +356,6 @@ export default function Home() {
 
                   <StepperInput label="Hausgeld gesamt (€/Monat)" value={formData.hausgeld} onChange={handleHausgeldChange} step={10} isCurrency={true} />
 
-                  {/* Ausklappbare Hausgeld-Aufteilung */}
                   <SubExpander title="Hausgeld-Aufteilung">
                     <div style={infoBoxStyle}>
                       💡 <strong>Standard 75 / 25 % Verteilung:</strong> In der Praxis entfallen ca. 75 % des Hausgeldes auf den Mieter (umlegbar) und ca. 25 % auf Instandhaltungsrücklage und Verwaltung (nicht umlegbar).
@@ -407,7 +414,6 @@ export default function Home() {
                   <StepperInput label="Jährliche Sondertilgung (€)" value={formData.sondertilg} onChange={(v) => updateField('sondertilg', v)} step={500} isCurrency={true} tooltip="Freiwillige jährliche Sondertilgung" />
                   <StepperInput label="Tilgungsfreie Jahre" value={formData.grace_years} onChange={(v) => updateField('grace_years', v)} step={1} isInteger={true} />
 
-                  {/* Ausklappbare Anschlussfinanzierung */}
                   <SubExpander title="Anschlussfinanzierung & Zinsbindung (Optional)">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
                       <StepperInput label="Zinsbindung (Jahre)" value={formData.zinsbindung} onChange={(v) => updateField('zinsbindung', v)} step={1} isInteger={true} />
@@ -423,7 +429,6 @@ export default function Home() {
                     </div>
                   </SubExpander>
 
-                  {/* Ausklappbares KfW-Darlehen */}
                   <SubExpander title="KfW-Darlehen (Optional)">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
                       <StepperInput label="KfW Darlehensbetrag (€)" value={formData.kfw_amt} onChange={(v) => updateField('kfw_amt', v)} step={5000} isCurrency={true} />
@@ -450,7 +455,6 @@ export default function Home() {
               <Expander title="3. Zielmiete & Bewirtschaftung">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   
-                  {/* Zielkaltmiete (Gesamt & €/m² synchron) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <StepperInput label="Zielkaltmiete (€/Monat)" value={formData.target_monat} onChange={handleTargetMonatChange} step={50} isCurrency={true} />
                     <StepperInput label="Zielkaltmiete (€/m²)" value={formData.target_sqm} onChange={handleTargetSqmChange} step={0.5} />
@@ -463,7 +467,6 @@ export default function Home() {
                   <StepperInput label="Instandhaltung (€/m²/Jahr)" value={formData.inst_sqm} onChange={(v) => updateField('inst_sqm', v)} step={1} />
                   <StepperInput label="Verwaltung (€/Monat)" value={formData.mgt_monat} onChange={(v) => updateField('mgt_monat', v)} step={5} isCurrency={true} />
 
-                  {/* Roter Slider für Leerstandsquote */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
                       <span style={{ color: '#4A5568' }}>Leerstandsquote (%)</span>
@@ -482,7 +485,6 @@ export default function Home() {
 
                   <hr style={hrStyle} />
 
-                  {/* Beschreibbare & Dynamische Capex-Liste */}
                   <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#13381A' }}>Flexible Sonderinvestitionen (Capex)</div>
                     <div style={{ fontSize: '0.75rem', color: '#718096', margin: '4px 0 10px 0' }}>Füge zielgerichtete Instandhaltungen oder Modernisierungen für spezifische Jahre hinzu.</div>
@@ -511,7 +513,6 @@ export default function Home() {
               <Expander title="4. Steuern, Makro & Exit">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   
-                  {/* Roter Slider für Grenzsteuersatz */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
                       <span style={{ color: '#4A5568' }}>Grenzsteuersatz (%)</span>
@@ -528,24 +529,43 @@ export default function Home() {
                     />
                   </div>
 
+                  {/* Bereinigte AfA-Auswahl ohne Aufzählungszeichen */}
                   <div>
                     <label style={labelStyle}>AfA-Modell</label>
                     <select value={formData.afa_model} onChange={(e) => updateField('afa_model', e.target.value)} style={inputTextStyle}>
-                      <option value="1_Linear_Standard">1. Linear Standard (2% / 2,5% / 3%)</option>
-                      <option value="2_Degressiv_5pct">2. Degressiv (5% p.a. nach § 7 Abs. 5a EStG)</option>
-                      <option value="3_Sonder_AfA">3. Sonder-AfA (§ 7b EStG - 5% p.a. additiv)</option>
-                      <option value="4_Kombi_Degressiv_Sonder">4. Kombination: Degressiv + Sonder-AfA</option>
-                      <option value="5_Denkmal">5. Denkmalgeschützt / Sanierung (§ 7h/7i EStG)</option>
+                      <option value="Linear Standard">Linear Standard</option>
+                      <option value="Linear Neubau">Linear Neubau (3%)</option>
+                      <option value="Degressiv">Degressiv (5% p.a. nach § 7 Abs. 5a EStG)</option>
+                      <option value="Kombination: Degressiv + Sonder-AfA">Kombination: Degressiv + Sonder-AfA</option>
+                      <option value="Denkmalgeschützt">Denkmalgeschützt / Sanierung (§ 7h/7i EStG)</option>
                     </select>
                   </div>
 
                   <StepperInput label="AfA linear (%)" value={formData.afa_lin} onChange={(v) => updateField('afa_lin', v)} step={0.1} isPercent={true} />
+
+                  {/* Dynamisches schreibgeschütztes Feld für Sonder-AfA bei Kombination */}
+                  {formData.afa_model === 'Kombination: Degressiv + Sonder-AfA' && (
+                    <div>
+                      <StepperInput label="Sonder-AfA (§ 7b EStG) (%)" value={5.0} onChange={() => {}} disabled={true} isPercent={true} />
+                      <div style={infoBoxStyle}>
+                        ℹ️ <strong>Sonder-AfA Hinweis:</strong> Die 5,00 % Sonder-AfA gelten gesetzlich ausschließlich im Jahr der Anschaffung/Herstellung sowie in den 3 folgenden Jahren (insgesamt 4 Jahre). Danach entfällt dieser Sonderteil automatisch im Rechner.
+                      </div>
+                    </div>
+                  )}
+
                   <StepperInput label="Mietsteigerung p.a. (%)" value={formData.miet_inc} onChange={(v) => updateField('miet_inc', v)} step={0.1} isPercent={true} />
                   <StepperInput label="Wertsteigerung p.a. (%)" value={formData.val_inc} onChange={(v) => updateField('val_inc', v)} step={0.1} isPercent={true} />
 
                   <hr style={hrStyle} />
 
-                  <StepperInput label="Verkaufsnebenkosten / Exit (%)" value={formData.exit_cost} onChange={(v) => updateField('exit_cost', v)} step={0.1} isPercent={true} tooltip="Geschätzte Kosten beim Verkauf" />
+                  <StepperInput 
+                    label="Verkaufsnebenkosten / Exit (%)" 
+                    value={formData.exit_cost} 
+                    onChange={(v) => updateField('exit_cost', v)} 
+                    step={0.1} 
+                    isPercent={true} 
+                    tooltip="Typischerweise liegen die Verkaufsnebenkosten bei ca. 1,0 % bis 3,0 % des Verkaufspreises (z. B. für Maklerprovision, Marketing, Grundbuch oder Notar/Vertragskosten)." 
+                  />
 
                 </div>
               </Expander>
@@ -608,7 +628,7 @@ export default function Home() {
   );
 }
 
-// Custom Stepper-Komponente für Jahreszahlen, Ganzzahlen, Währungen und Prozente
+// Custom Stepper-Komponente
 function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null }) {
   
   const getFormattedValue = (v) => {

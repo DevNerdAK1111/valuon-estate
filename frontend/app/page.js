@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+// ACHTUNG: Ersetze diese URL bei Bedarf exakt mit deiner echten Render-Backend-URL
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
 // Formatierungs-Helfer
@@ -108,6 +109,8 @@ export default function Home() {
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [calcError, setCalcError] = useState(null);
+
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(null);
 
@@ -115,7 +118,6 @@ export default function Home() {
   const [dbProperties, setDbProperties] = useState([]);
   const [loadingDb, setLoadingDb] = useState(false);
 
-  // Lade Datenbank-Objekte, sobald auf den Reiter "Objekt Datenbank" gewechselt wird
   useEffect(() => {
     if (navChoice === 'Objekt Datenbank') {
       fetchDatabaseProperties();
@@ -151,8 +153,8 @@ export default function Home() {
         bundesland: formData.bundesland,
         kaufpreis: formData.kaufpreis,
         qm: formData.qm,
-        irr: result.summary.irr,
-        cashflow_y1: result.projection && result.projection[0] ? result.projection[0]['Cashflow Netto'] : 0,
+        irr: result?.summary?.irr || 0,
+        cashflow_y1: result?.projection?.[0]?.['Cashflow Netto'] || 0,
         form_data: formData,
         capex_list: capexList,
         created_at: new Date().toISOString()
@@ -176,17 +178,16 @@ export default function Home() {
     }
   };
 
-  // Gespeichertes Objekt aus Datenbank in die Maske laden
   const loadPropertyFromDb = (item) => {
     if (item.form_data) {
       setFormData(item.form_data);
       if (item.capex_list) setCapexList(item.capex_list);
       setNavChoice('Analyse');
       setResult(null);
+      setCalcError(null);
     }
   };
 
-  // Gespeichertes Objekt aus Datenbank löschen
   const deletePropertyFromDb = async (id) => {
     if (!confirm('Möchtest du dieses Objekt wirklich aus der Datenbank löschen?')) return;
     try {
@@ -197,7 +198,7 @@ export default function Home() {
     }
   };
 
-  // --- LOGIK FÜR BI-DIREKTIONALE KALTMIETEN ---
+  // Logik für Kaltmieten
   const handleQmChange = (newQm) => {
     const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
     let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
@@ -242,7 +243,7 @@ export default function Home() {
     setFormData({ ...formData, target_sqm: val, target_monat: monatVal });
   };
 
-  // --- LOGIK FÜR HAUSGELD ---
+  // Hausgeld
   const handleHausgeldChange = (val) => {
     let updated = { ...formData, hausgeld: val };
     if (!isHausgeldCustomized) {
@@ -256,7 +257,7 @@ export default function Home() {
     setFormData({ ...formData, hausgeld_nicht_umlegbar: val });
   };
 
-  // --- LOGIK FÜR CAPEX ---
+  // Capex
   const handleCapexChange = (index, field, value) => {
     const updated = [...capexList];
     updated[index][field] = value;
@@ -274,7 +275,6 @@ export default function Home() {
     }
   };
 
-  // Standard-Feldaktualisierung
   const updateField = (field, value) => {
     let updated = { ...formData, [field]: value };
 
@@ -305,10 +305,13 @@ export default function Home() {
   const makler_euro = (formData.kaufpreis * formData.makler_p) / 100;
   const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
 
+  // SICHERE BERECHNUNGS-FUNKTION (FEHLER-ABFANGEN)
   const handleCalculate = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setCalcError(null);
     setSaveSuccess(null);
+
     try {
       const payload = {
         ...formData,
@@ -336,10 +339,21 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Server meldet Status ${res.status}`);
+      }
+
       const data = await res.json();
+      
+      if (!data || !data.summary) {
+        throw new Error('Das Backend hat keine vollständige Auswertung geliefert.');
+      }
+
       setResult(data);
     } catch (err) {
-      alert('Fehler bei der Verbindung zum Backend.');
+      setCalcError(err.message || 'Verbindung zum Backend fehlgeschlagen.');
     } finally {
       setLoading(false);
     }
@@ -629,7 +643,6 @@ export default function Home() {
                     </select>
                   </div>
 
-                  {/* Saubere AfA-Beschriftung ohne "linear" */}
                   <StepperInput label="AfA %" value={formData.afa_lin} onChange={(v) => updateField('afa_lin', v)} step={0.1} isPercent={true} />
 
                   {formData.afa_model === 'Kombination: Degressiv + Sonder-AfA' && (
@@ -659,18 +672,17 @@ export default function Home() {
               </Expander>
 
               <button type="submit" disabled={loading} style={{ padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                {loading ? 'Berechne...' : '🚀 Investition analysieren'}
+                {loading ? 'Berechne (Backend startet)...' : '🚀 Investition analysieren'}
               </button>
 
             </div>
 
-            {/* RECHTE SPALTE: ERGEBNISSE & DATENBANK-SPEICHERUNG */}
+            {/* RECHTE SPALTE: ERGEBNISSE & SICHERE ANZEIGE */}
             <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', height: 'fit-content' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2D9CE', paddingBottom: '10px' }}>
                 <h3 style={{ margin: 0, color: '#13381A' }}>Investment-Auswertung & Cashflows</h3>
                 
-                {/* BUTTON: IN DATENBANK SPEICHERN */}
-                {result && (
+                {result && result.summary && (
                   <button
                     type="button"
                     onClick={handleSaveToDatabase}
@@ -698,17 +710,28 @@ export default function Home() {
                 </div>
               )}
 
-              {!result ? (
-                <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
-                  Klicke links auf "Investition analysieren".
+              {calcError && (
+                <div style={{ marginBottom: '1.5rem', padding: '12px 16px', background: '#FFF5F5', color: '#C53030', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #FEB2B2', lineHeight: '1.4' }}>
+                  <strong>⚠️ Fehler bei der Berechnung:</strong><br />
+                  {calcError}<br />
+                  <span style={{ fontSize: '0.8rem', color: '#742A2A', marginTop: '4px', display: 'block' }}>
+                    Tipp: Wenn der Server im Ruhezustand war (Cold Start), versuche es in 30 Sekunden noch einmal.
+                  </span>
+                </div>
+              )}
+
+              {!result || !result.summary ? (
+                <div style={{ height: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
+                  <p style={{ margin: 0, fontWeight: '500' }}>Klicke links auf "Investition analysieren".</p>
+                  {loading && <p style={{ fontSize: '0.85rem', color: '#A37841', marginTop: '8px' }}>⏳ Server wird kontaktiert / aufgeweckt...</p>}
                 </div>
               ) : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <MetricCard title="Gesamtinvestment" value={`${formatEuroInt(result.summary.total_investment)} €`} />
-                    <MetricCard title="Eigenkapitalbedarf" value={`${formatEuroInt(result.summary.equity_absolute)} €`} />
-                    <MetricCard title="IRR (Rendite)" value={`${formatPct(result.summary.irr * 100)} %`} highlight={true} />
-                    <MetricCard title="AfA-Basis" value={`${formatEuroInt(result.summary.afa_base)} €`} />
+                    <MetricCard title="Gesamtinvestment" value={`${formatEuroInt(result.summary?.total_investment)} €`} />
+                    <MetricCard title="Eigenkapitalbedarf" value={`${formatEuroInt(result.summary?.equity_absolute)} €`} />
+                    <MetricCard title="IRR (Rendite)" value={`${formatPct((result.summary?.irr || 0) * 100)} %`} highlight={true} />
+                    <MetricCard title="AfA-Basis" value={`${formatEuroInt(result.summary?.afa_base)} €`} />
                   </div>
 
                   <h4 style={{ margin: '0 0 10px 0' }}>Projektionsverlauf (Jahre)</h4>
@@ -723,7 +746,7 @@ export default function Home() {
                         </tr>
                       </thead>
                       <tbody>
-                        {result.projection && result.projection.map((row, idx) => (
+                        {Array.isArray(result.projection) && result.projection.map((row, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ padding: '8px' }}>{row['Jahr'] || idx + 1}</td>
                             <td style={{ padding: '8px' }}>{formatEuroInt(row['Mieteinnahmen IST'])} €</td>

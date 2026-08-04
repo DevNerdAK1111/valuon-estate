@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
@@ -8,7 +8,7 @@ const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigi
 const formatEuroInt = (val) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.round(val || 0));
 const formatPct = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 
-// Grunderwerbsteuer-Tabelle
+// Grunderwerbsteuer-Tabelle nach Bundesland
 const grunderwerbsteuerSätze = {
   'Baden-Württemberg': 5.0,
   'Bayern': 3.5,
@@ -108,8 +108,96 @@ export default function Home() {
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(null);
 
-  // Bi-direktionale Kaltmieten
+  // Datenbank-State
+  const [dbProperties, setDbProperties] = useState([]);
+  const [loadingDb, setLoadingDb] = useState(false);
+
+  // Lade Datenbank-Objekte, sobald auf den Reiter "Objekt Datenbank" gewechselt wird
+  useEffect(() => {
+    if (navChoice === 'Objekt Datenbank') {
+      fetchDatabaseProperties();
+    }
+  }, [navChoice]);
+
+  const fetchDatabaseProperties = async () => {
+    setLoadingDb(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/properties`);
+      if (res.ok) {
+        const data = await res.json();
+        setDbProperties(data.properties || data || []);
+      }
+    } catch (err) {
+      console.error('Fehler beim Laden der Datenbank:', err);
+    } finally {
+      setLoadingDb(false);
+    }
+  };
+
+  // Objekt in Datenbank speichern
+  const handleSaveToDatabase = async () => {
+    if (!result) return;
+    setSaving(true);
+    setSaveSuccess(null);
+
+    try {
+      const payload = {
+        name: formData.obj_name,
+        objektart: formData.objektart,
+        stadt: formData.stadt,
+        bundesland: formData.bundesland,
+        kaufpreis: formData.kaufpreis,
+        qm: formData.qm,
+        irr: result.summary.irr,
+        cashflow_y1: result.projection && result.projection[0] ? result.projection[0]['Cashflow Netto'] : 0,
+        form_data: formData,
+        capex_list: capexList,
+        created_at: new Date().toISOString()
+      };
+
+      const res = await fetch(`${BACKEND_URL}/api/properties`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setSaveSuccess('✅ Objekt erfolgreich in der Datenbank gespeichert!');
+      } else {
+        setSaveSuccess('❌ Fehler beim Speichern in der Datenbank.');
+      }
+    } catch (err) {
+      setSaveSuccess('❌ Verbindung zum Datenbank-Backend fehlgeschlagen.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Gespeichertes Objekt aus Datenbank in die Maske laden
+  const loadPropertyFromDb = (item) => {
+    if (item.form_data) {
+      setFormData(item.form_data);
+      if (item.capex_list) setCapexList(item.capex_list);
+      setNavChoice('Analyse');
+      setResult(null);
+    }
+  };
+
+  // Gespeichertes Objekt aus Datenbank löschen
+  const deletePropertyFromDb = async (id) => {
+    if (!confirm('Möchtest du dieses Objekt wirklich aus der Datenbank löschen?')) return;
+    try {
+      await fetch(`${BACKEND_URL}/api/properties/${id}`, { method: 'DELETE' });
+      fetchDatabaseProperties();
+    } catch (err) {
+      alert('Fehler beim Löschen des Objekts.');
+    }
+  };
+
+  // --- LOGIK FÜR BI-DIREKTIONALE KALTMIETEN ---
   const handleQmChange = (newQm) => {
     const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
     let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
@@ -154,7 +242,7 @@ export default function Home() {
     setFormData({ ...formData, target_sqm: val, target_monat: monatVal });
   };
 
-  // Hausgeld
+  // --- LOGIK FÜR HAUSGELD ---
   const handleHausgeldChange = (val) => {
     let updated = { ...formData, hausgeld: val };
     if (!isHausgeldCustomized) {
@@ -168,7 +256,7 @@ export default function Home() {
     setFormData({ ...formData, hausgeld_nicht_umlegbar: val });
   };
 
-  // Capex
+  // --- LOGIK FÜR CAPEX ---
   const handleCapexChange = (index, field, value) => {
     const updated = [...capexList];
     updated[index][field] = value;
@@ -186,7 +274,7 @@ export default function Home() {
     }
   };
 
-  // Standard-Feldaktualisierung inkl. AfA-Automatik
+  // Standard-Feldaktualisierung
   const updateField = (field, value) => {
     let updated = { ...formData, [field]: value };
 
@@ -200,12 +288,11 @@ export default function Home() {
       else if (value === 'Einfamilienhaus') updated.inst_sqm = 10.0;
     }
 
-    // Automatische AfA-Anpassungen
     if (field === 'afa_model') {
       if (value === 'Linear Standard') updated.afa_lin = 2.0;
       else if (value === 'Linear Neubau') updated.afa_lin = 3.0;
       else if (value === 'Degressiv') updated.afa_lin = 5.0;
-      else if (value === 'Kombination: Degressiv + Sonder-AfA') updated.afa_lin = 5.0; // Degressiver Basis-Teil
+      else if (value === 'Kombination: Degressiv + Sonder-AfA') updated.afa_lin = 5.0;
       else if (value === 'Denkmalgeschützt') updated.afa_lin = 9.0;
     }
 
@@ -221,6 +308,7 @@ export default function Home() {
   const handleCalculate = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setSaveSuccess(null);
     try {
       const payload = {
         ...formData,
@@ -292,6 +380,7 @@ export default function Home() {
         ))}
       </div>
 
+      {/* MODUL 1: ANALYSE */}
       {navChoice === 'Analyse' && (
         <form onSubmit={handleCalculate}>
           <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '2rem' }}>
@@ -529,7 +618,6 @@ export default function Home() {
                     />
                   </div>
 
-                  {/* Bereinigte AfA-Auswahl ohne Aufzählungszeichen */}
                   <div>
                     <label style={labelStyle}>AfA-Modell</label>
                     <select value={formData.afa_model} onChange={(e) => updateField('afa_model', e.target.value)} style={inputTextStyle}>
@@ -541,9 +629,9 @@ export default function Home() {
                     </select>
                   </div>
 
-                  <StepperInput label="AfA linear (%)" value={formData.afa_lin} onChange={(v) => updateField('afa_lin', v)} step={0.1} isPercent={true} />
+                  {/* Saubere AfA-Beschriftung ohne "linear" */}
+                  <StepperInput label="AfA %" value={formData.afa_lin} onChange={(v) => updateField('afa_lin', v)} step={0.1} isPercent={true} />
 
-                  {/* Dynamisches schreibgeschütztes Feld für Sonder-AfA bei Kombination */}
                   {formData.afa_model === 'Kombination: Degressiv + Sonder-AfA' && (
                     <div>
                       <StepperInput label="Sonder-AfA (§ 7b EStG) (%)" value={5.0} onChange={() => {}} disabled={true} isPercent={true} />
@@ -576,9 +664,39 @@ export default function Home() {
 
             </div>
 
-            {/* RECHTE SPALTE: ERGEBNISSE & TAFELN */}
+            {/* RECHTE SPALTE: ERGEBNISSE & DATENBANK-SPEICHERUNG */}
             <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', height: 'fit-content' }}>
-              <h3 style={{ margin: '0 0 1.5rem 0', color: '#13381A' }}>Investment-Auswertung & Cashflows</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2D9CE', paddingBottom: '10px' }}>
+                <h3 style={{ margin: 0, color: '#13381A' }}>Investment-Auswertung & Cashflows</h3>
+                
+                {/* BUTTON: IN DATENBANK SPEICHERN */}
+                {result && (
+                  <button
+                    type="button"
+                    onClick={handleSaveToDatabase}
+                    disabled={saving}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#A37841',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    {saving ? 'Speichere...' : '💾 In Datenbank speichern'}
+                  </button>
+                )}
+              </div>
+
+              {saveSuccess && (
+                <div style={{ marginBottom: '1rem', padding: '10px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid #B2F5EA' }}>
+                  {saveSuccess}
+                </div>
+              )}
 
               {!result ? (
                 <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
@@ -624,13 +742,86 @@ export default function Home() {
         </form>
       )}
 
+      {/* MODUL 2: OBJEKT DATENBANK */}
+      {navChoice === 'Objekt Datenbank' && (
+        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 style={{ margin: 0, color: '#13381A' }}>Objekt Datenbank & Pipeline</h2>
+            <button onClick={fetchDatabaseProperties} style={{ padding: '8px 14px', background: '#E2E8F0', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              🔄 Aktualisieren
+            </button>
+          </div>
+
+          {loadingDb ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Lade Objekte aus Supabase...</div>
+          ) : dbProperties.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
+              Noch keine Objekte in der Datenbank gespeichert. Führe eine Analyse durch und klicke auf "In Datenbank speichern".
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE' }}>
+                    <th style={{ padding: '12px' }}>Objektname</th>
+                    <th style={{ padding: '12px' }}>Typ</th>
+                    <th style={{ padding: '12px' }}>Ort</th>
+                    <th style={{ padding: '12px' }}>Kaufpreis</th>
+                    <th style={{ padding: '12px' }}>Wohnfläche</th>
+                    <th style={{ padding: '12px' }}>IRR Rendite</th>
+                    <th style={{ padding: '12px' }}>Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dbProperties.map((item, idx) => (
+                    <tr key={item.id || idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#13381A' }}>{item.name || item.form_data?.obj_name}</td>
+                      <td style={{ padding: '12px' }}>{item.objektart || item.form_data?.objektart}</td>
+                      <td style={{ padding: '12px' }}>{item.stadt || item.form_data?.stadt}</td>
+                      <td style={{ padding: '12px' }}>{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>
+                      <td style={{ padding: '12px' }}>{item.qm || item.form_data?.qm} m²</td>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#A37841' }}>
+                        {item.irr ? formatPct(item.irr * 100) + ' %' : '–'}
+                      </td>
+                      <td style={{ padding: '12px', display: 'flex', gap: '8px' }}>
+                        <button onClick={() => loadPropertyFromDb(item)} style={{ padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          📂 In Analyse laden
+                        </button>
+                        <button onClick={() => deletePropertyFromDb(item.id)} style={{ padding: '6px 10px', background: '#FED7D7', color: '#9B2C2C', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          🗑️ Löschen
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODUL 3: IMMOBILIENWISSEN */}
+      {navChoice === 'Immobilienwissen' && (
+        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+          <h2>Immobilienwissen & KI-Assistent</h2>
+          <p style={{ color: '#555759' }}>Fachartikel, Kennzahlen und interaktiver KI-Support.</p>
+        </div>
+      )}
+
+      {/* MODUL 4: EINSTELLUNGEN */}
+      {navChoice === 'Einstellungen' && (
+        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+          <h2>Einstellungen & Anlagestrategien</h2>
+          <p style={{ color: '#555759' }}>Konfiguration deiner Parameter-Standards und Profile.</p>
+        </div>
+      )}
+
     </main>
   );
 }
 
 // Custom Stepper-Komponente
 function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null }) {
-  
   const getFormattedValue = (v) => {
     if (isYear) return String(Math.round(v || 0));
     if (isInteger) return formatEuroInt(v);

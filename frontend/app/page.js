@@ -5,6 +5,7 @@ const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
 // Hilfsfunktionen für deutsches Zahlenformat
 const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
+const formatEuroInteger = (val) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(val || 0);
 const formatPct = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 
 // Grunderwerbsteuer-Tabelle nach Bundesland
@@ -28,10 +29,11 @@ const grunderwerbsteuerSätze = {
 };
 
 export default function Home() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  const [authenticated, setAuthenticated] = useState(true);
+  const [userEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Analyse');
 
+  // Formular-State exakt nach deinen Screenshots
   const [formData, setFormData] = useState({
     obj_name: 'TEST Wohnung',
     objektart: 'Eigentumswohnung',
@@ -78,24 +80,23 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Automatische Abhängigkeiten bei Änderungen
-  const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    let updatedData = { ...formData, [name]: type === 'number' ? parseFloat(value) || 0 : value };
+  // Dynamische Abhängigkeiten (Bundesland, Objektart etc.)
+  const updateField = (field, value) => {
+    let updated = { ...formData, [field]: value };
 
-    if (name === 'bundesland' && grunderwerbsteuerSätze[value] !== undefined) {
-      updatedData.grwt_p = grunderwerbsteuerSätze[value];
+    // Bundesland-Änderung passt Grunderwerbsteuer an
+    if (field === 'bundesland' && grunderwerbsteuerSätze[value] !== undefined) {
+      updated.grwt_p = grunderwerbsteuerSätze[value];
     }
 
-    if (name === 'objektart') {
-      if (value === 'Mehrfamilienhaus') {
-        updatedData.inst_sqm = 15.0;
-      } else if (value === 'Eigentumswohnung') {
-        updatedData.inst_sqm = 12.0;
-      }
+    // Objektart-Änderung passt Instandhaltungsansatz an
+    if (field === 'objektart') {
+      if (value === 'Mehrfamilienhaus') updated.inst_sqm = 15.0;
+      else if (value === 'Eigentumswohnung') updated.inst_sqm = 12.0;
+      else if (value === 'Einfamilienhaus') updated.inst_sqm = 10.0;
     }
 
-    setFormData(updatedData);
+    setFormData(updated);
   };
 
   const handleCalculate = async (e) => {
@@ -120,25 +121,24 @@ export default function Home() {
       const data = await res.json();
       setResult(data);
     } catch (err) {
-      alert('Fehler bei der Verbindung zum Backend');
+      alert('Fehler bei der Verbindung zum Backend auf Render.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Nebenkosten-Berechnungen für die Vorschau-Kästchen
+  const grwt_euro = (formData.kaufpreis * formData.grwt_p) / 100;
+  const notar_euro = (formData.kaufpreis * formData.notar_p) / 100;
+  const makler_euro = (formData.kaufpreis * formData.makler_p) / 100;
+  const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
+
   if (!authenticated) {
     return (
-      <main style={{ minHeight: '100vh', background: '#13381A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-        <div style={{ background: '#F7F4EC', padding: '3rem', borderRadius: '12px', width: '100%', maxWidth: '480px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '2px', color: '#A37841', marginBottom: '8px' }}>Institutional Grade Suite</div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#13381A', margin: '0 0 10px 0' }}>Valuon Estate</h1>
-          <button 
-            onClick={() => { setAuthenticated(true); setUserEmail('developer@valuon-estate.de'); }}
-            style={{ width: '100%', padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', marginTop: '1rem' }}
-          >
-            Suite entsperren
-          </button>
-        </div>
+      <main style={{ minHeight: '100vh', background: '#13381A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button onClick={() => setAuthenticated(true)} style={{ padding: '12px 24px', background: '#A37841', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+          Suite Entsperren
+        </button>
       </main>
     );
   }
@@ -146,20 +146,15 @@ export default function Home() {
   const navItems = ['Objekt Datenbank', 'Analyse', 'Immobilienwissen', 'Einstellungen'];
 
   return (
-    <main style={{ minHeight: '100vh', padding: '2.5rem 4rem', background: '#F7F4EC', color: '#13381A' }}>
+    <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
       
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
         <div>
-          <div style={{ fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.8px', color: '#13381A', lineHeight: '1.1' }}>Valuon Estate</div>
-          <div style={{ fontSize: '0.85rem', color: '#A37841', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '2px' }}>Institutional Grade Investment Suite</div>
+          <div style={{ fontSize: '2rem', fontWeight: '800', color: '#13381A' }}>Valuon Estate</div>
+          <div style={{ fontSize: '0.8rem', color: '#A37841', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Institutional Grade Investment Suite</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <span style={{ fontSize: '0.85rem', color: '#555759' }}>{userEmail}</span>
-          <button onClick={() => setAuthenticated(false)} style={{ padding: '8px 16px', background: '#D9534F', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
-            Abmelden
-          </button>
-        </div>
+        <div style={{ fontSize: '0.85rem', color: '#555759' }}>Konto: <strong>{userEmail}</strong></div>
       </div>
 
       {/* Navigation */}
@@ -175,7 +170,6 @@ export default function Home() {
               border: '1px solid #E2D9CE',
               borderRadius: '8px',
               fontWeight: '600',
-              fontSize: '0.95rem',
               cursor: 'pointer'
             }}
           >
@@ -184,323 +178,270 @@ export default function Home() {
         ))}
       </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', marginBottom: '2rem' }} />
-
       {navChoice === 'Analyse' && (
         <form onSubmit={handleCalculate}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '2.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
             
-            {/* LINKE SPALTE: PARAMETRISIERUNG */}
+            {/* LINKE SPALTE: PARAMETRISIERUNG (EXAKT WIE AUF DEINEN SCREENSHOTS) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem', color: '#13381A' }}>Parametrisierung</div>
+              <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#13381A' }}>Parametrisierung</div>
 
-              {/* SEKTION 1 */}
-              <Expander defaultOpen={true} title="1. Objektdaten (Exposé)">
-                <div style={groupStyle}>
+              {/* SCREENSHOT 1: OBJEKTDATEN */}
+              <Expander title="1. Objektdaten (Exposé)" defaultOpen={true}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  
                   <div>
                     <label style={labelStyle}>Objektbezeichnung</label>
-                    <input type="text" name="obj_name" value={formData.obj_name} onChange={handleChange} style={inputStyle} />
-                  </div>
-                  
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
-                    <div>
-                      <label style={labelStyle}>Objektart / Typ</label>
-                      <select name="objektart" value={formData.objektart} onChange={handleChange} style={inputStyle}>
-                        <option value="Eigentumswohnung">Eigentumswohnung</option>
-                        <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
-                        <option value="Einfamilienhaus">Einfamilienhaus</option>
-                        <option value="Doppelhaushälfte">Doppelhaushälfte</option>
-                        <option value="Reihenhaus">Reihenhaus</option>
-                        <option value="Gewerbeimmobilie">Gewerbeimmobilie</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Bundesland (Steuertarif automatisch)</label>
-                      <select name="bundesland" value={formData.bundesland} onChange={handleChange} style={inputStyle}>
-                        {Object.keys(grunderwerbsteuerSätze).map((land) => (
-                          <option key={land} value={land}>{land} ({formatPct(grunderwerbsteuerSätze[land])} %)</option>
-                        ))}
-                      </select>
-                    </div>
+                    <input type="text" value={formData.obj_name} onChange={(e) => updateField('obj_name', e.target.value)} style={inputTextStyle} />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={labelStyle}>Objektart / Typ</label>
+                    <select value={formData.objektart} onChange={(e) => updateField('objektart', e.target.value)} style={inputTextStyle}>
+                      <option value="Eigentumswohnung">Eigentumswohnung</option>
+                      <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
+                      <option value="Einfamilienhaus">Einfamilienhaus</option>
+                      <option value="Doppelhaushälfte">Doppelhaushälfte</option>
+                      <option value="Reihenhaus">Reihenhaus</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Bundesland</label>
+                    <select value={formData.bundesland} onChange={(e) => updateField('bundesland', e.target.value)} style={inputTextStyle}>
+                      {Object.keys(grunderwerbsteuerSätze).map((land) => (
+                        <option key={land} value={land}>{land}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
                       <label style={labelStyle}>Stadt</label>
-                      <input type="text" name="stadt" value={formData.stadt} onChange={handleChange} style={inputStyle} />
+                      <input type="text" value={formData.stadt} onChange={(e) => updateField('stadt', e.target.value)} style={inputTextStyle} />
                     </div>
                     <div>
                       <label style={labelStyle}>Stadtteil</label>
-                      <input type="text" name="stadtteil" value={formData.stadtteil} onChange={handleChange} style={inputStyle} />
+                      <input type="text" value={formData.stadtteil} onChange={(e) => updateField('stadtteil', e.target.value)} style={inputTextStyle} />
                     </div>
                   </div>
 
-                  <div>
-                    <label style={labelStyle}>Kaufpreis (€) *</label>
-                    <input type="number" name="kaufpreis" value={formData.kaufpreis} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Wohnfläche (m²) *</label>
-                    <input type="number" name="qm" value={formData.qm} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Baujahr</label>
-                    <input type="number" name="baujahr" value={formData.baujahr} onChange={handleChange} style={inputStyle} />
-                  </div>
+                  <StepperInput label="Kaufpreis (€) *" value={formData.kaufpreis} onChange={(v) => updateField('kaufpreis', v)} step={5000} />
+                  <StepperInput label="Wohnfläche (m²) *" value={formData.qm} onChange={(v) => updateField('qm', v)} step={1} />
+                  <StepperInput label="Baujahr" value={formData.baujahr} onChange={(v) => updateField('baujahr', v)} step={1} />
 
                   <hr style={hrStyle} />
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Gesamtkaltmiete (€/Monat)</label>
-                      <input type="number" name="kaltmiete_monat" value={formData.kaltmiete_monat} onChange={handleChange} style={inputStyle} />
-                    </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <StepperInput label="Gesamtkaltmiete (€/Monat)" value={formData.kaltmiete_monat} onChange={(v) => updateField('kaltmiete_monat', v)} step={50} />
                     <div>
                       <label style={labelStyle}>Kaltmiete (€/m²)</label>
-                      <input type="text" value={`${formatEuro(formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 0)} €`} disabled style={{ ...inputStyle, background: '#eee' }} />
+                      <div style={readOnlyBoxStyle}>{formatEuro(formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 0)}</div>
                     </div>
                   </div>
 
                   <hr style={hrStyle} />
 
-                  <div>
-                    <label style={labelStyle}>Hausgeld gesamt (€/Monat)</label>
-                    <input type="number" name="hausgeld" value={formData.hausgeld} onChange={handleChange} style={inputStyle} />
-                  </div>
+                  <StepperInput label="Hausgeld gesamt (€/Monat)" value={formData.hausgeld} onChange={(v) => updateField('hausgeld', v)} step={10} />
 
-                  <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                    <summary style={{ fontWeight: '600', color: '#13381A' }}>Hausgeld-Aufteilung</summary>
-                    <div style={{ marginTop: '10px', color: '#555759' }}>Details zur nicht umlegbaren Hausgeldkomponente.</div>
-                  </details>
+                  <SubExpander title="Hausgeld-Aufteilung">
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>Details zu umlegbaren und nicht-umlegbaren Teilen.</div>
+                  </SubExpander>
 
-                  <div>
-                    <label style={labelStyle}>Sanierungsaufwand (€)</label>
-                    <input type="number" name="sanierung" value={formData.sanierung} onChange={handleChange} style={inputStyle} />
-                  </div>
+                  <StepperInput label="Sanierungsaufwand (€)" value={formData.sanierung} onChange={(v) => updateField('sanierung', v)} step={1000} />
+
                 </div>
               </Expander>
 
-              {/* SEKTION 2 */}
+              {/* SCREENSHOT 2: FINANZIERUNG & NEBENKOSTEN */}
               <Expander title="2. Finanzierung & Nebenkosten">
-                <div style={groupStyle}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
-                      <label style={labelStyle}>1. Grunderwerbsteuer (%)</label>
-                      <input type="number" step="0.1" name="grwt_p" value={formData.grwt_p} onChange={handleChange} style={inputStyle} />
-                      <div style={badgeStyle}>{formatEuro((formData.kaufpreis * formData.grwt_p) / 100)} €</div>
+                      <StepperInput label="1. Grunderwerbsteuer (%)" value={formData.grwt_p} onChange={(v) => updateField('grwt_p', v)} step={0.1} />
+                      <div style={badgeStyle}>{formatEuroInteger(grwt_euro)} €</div>
                     </div>
                     <div>
-                      <label style={labelStyle}>2. Notar & Grundbuch (%)</label>
-                      <input type="number" step="0.1" name="notar_p" value={formData.notar_p} onChange={handleChange} style={inputStyle} />
-                      <div style={badgeStyle}>{formatEuro((formData.kaufpreis * formData.notar_p) / 100)} €</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>3. Maklerprovision (%)</label>
-                      <input type="number" step="0.01" name="makler_p" value={formData.makler_p} onChange={handleChange} style={inputStyle} />
-                      <div style={badgeStyle}>{formatEuro((formData.kaufpreis * formData.makler_p) / 100)} €</div>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>4. Sonst. NK (€)</label>
-                      <input type="number" name="sonst_nk" value={formData.sonst_nk} onChange={handleChange} style={inputStyle} />
-                      <div style={badgeStyle}>{formatEuro(formData.sonst_nk)} €</div>
+                      <StepperInput label="2. Notar & Grundbuch (%)" value={formData.notar_p} onChange={(v) => updateField('notar_p', v)} step={0.1} />
+                      <div style={badgeStyle}>{formatEuroInteger(notar_euro)} €</div>
                     </div>
                   </div>
 
-                  <div style={{ background: '#F4EFE6', padding: '10px 14px', borderRadius: '6px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', fontWeight: '700', fontSize: '0.9rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <StepperInput label="3. Maklerprovision (%)" value={formData.makler_p} onChange={(v) => updateField('makler_p', v)} step={0.01} />
+                      <div style={badgeStyle}>{formatEuroInteger(makler_euro)} €</div>
+                    </div>
+                    <div>
+                      <StepperInput label="4. Sonst. NK (€)" value={formData.sonst_nk} onChange={(v) => updateField('sonst_nk', v)} step={100} />
+                      <div style={badgeStyle}>{formatEuroInteger(formData.sonst_nk)} €</div>
+                    </div>
+                  </div>
+
+                  {/* Die gelbe Vorschau-Box aus deinem Screenshot */}
+                  <div style={{ background: '#F4EFE6', padding: '12px', borderRadius: '8px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '0.9rem' }}>
                     <span>Summe Kaufnebenkosten:</span>
-                    <span>{formatEuro(((formData.kaufpreis * (formData.grwt_p + formData.notar_p + formData.makler_p)) / 100) + Number(formData.sonst_nk))} €</span>
+                    <span>{formatEuroInteger(summe_nk)} €</span>
                   </div>
 
                   <hr style={hrStyle} />
 
                   <div>
                     <label style={labelStyle}>Darlehensart</label>
-                    <select name="loan_type" value={formData.loan_type} onChange={handleChange} style={inputStyle}>
+                    <select value={formData.loan_type} onChange={(e) => updateField('loan_type', e.target.value)} style={inputTextStyle}>
                       <option value="Annuitätendarlehen">Annuitätendarlehen</option>
                       <option value="Endfälliges Darlehen">Endfälliges Darlehen</option>
                     </select>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Hausbank Zins (%)</label>
-                      <input type="number" step="0.1" name="hb_zins" value={formData.hb_zins} onChange={handleChange} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Hausbank Tilgung (%)</label>
-                      <input type="number" step="0.1" name="hb_tilg" value={formData.hb_tilg} onChange={handleChange} style={inputStyle} />
-                    </div>
-                  </div>
+                  <StepperInput label="Hausbank Zins (%)" value={formData.hb_zins} onChange={(v) => updateField('hb_zins', v)} step={0.1} />
+                  <StepperInput label="Hausbank Tilgung (%)" value={formData.hb_tilg} onChange={(v) => updateField('hb_tilg', v)} step={0.1} />
+                  <StepperInput label="Jährliche Sondertilgung (€)" value={formData.sondertilg} onChange={(v) => updateField('sondertilg', v)} step={500} tooltip="Freiwillige jährliche Sondertilgung" />
+                  <StepperInput label="Tilgungsfreie Jahre" value={formData.grace_years} onChange={(v) => updateField('grace_years', v)} step={1} />
 
-                  <div>
-                    <label style={labelStyle}>Jährliche Sondertilgungsrate (€)</label>
-                    <input type="number" name="sondertilg" value={formData.sondertilg} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Tilgungsfreie Jahre</label>
-                    <input type="number" name="grace_years" value={formData.grace_years} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                    <summary style={{ fontWeight: '600', color: '#13381A' }}>Anschlussfinanzierung & Zinsbindung (Optional)</summary>
-                  </details>
-
-                  <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                    <summary style={{ fontWeight: '600', color: '#13381A' }}>KfW-Darlehen (Optional)</summary>
-                  </details>
+                  <SubExpander title="Anschlussfinanzierung & Zinsbindung (Optional)" />
+                  <SubExpander title="KfW-Darlehen (Optional)" />
 
                   <hr style={hrStyle} />
 
-                  <div>
-                    <label style={labelStyle}>Eingesetztes Eigenkapital (€)</label>
-                    <input type="number" name="ek_euro" value={formData.ek_euro} onChange={handleChange} style={inputStyle} />
-                  </div>
+                  <StepperInput label="Eingesetztes Eigenkapital (€)" value={formData.ek_euro} onChange={(v) => updateField('ek_euro', v)} step={1000} />
+
                 </div>
               </Expander>
 
-              {/* SEKTION 3 */}
+              {/* SCREENSHOT 3: ZIELMIETE & BEWIRTSCHAFTUNG */}
               <Expander title="3. Zielmiete & Bewirtschaftung">
-                <div style={groupStyle}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Zielkaltmiete (€/Monat)</label>
-                      <input type="number" value={formData.kaltmiete_monat} onChange={handleChange} style={inputStyle} />
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <StepperInput label="Zielkaltmiete (€/Monat)" value={formData.kaltmiete_monat} onChange={(v) => updateField('kaltmiete_monat', v)} step={50} />
                     <div>
                       <label style={labelStyle}>Zielkaltmiete (€/m²)</label>
-                      <input type="text" value={`${formatEuro(formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 0)} €`} disabled style={{ ...inputStyle, background: '#eee' }} />
+                      <div style={readOnlyBoxStyle}>{formatEuro(formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 0)}</div>
                     </div>
                   </div>
 
+                  <StepperInput label="Anpassung in Jahr" value={formData.adj_year} onChange={(v) => updateField('adj_year', v)} step={1} />
+
+                  <hr style={hrStyle} />
+
+                  <StepperInput label="Instandhaltung (€/m²/Jahr)" value={formData.inst_sqm} onChange={(v) => updateField('inst_sqm', v)} step={1} />
+                  <StepperInput label="Verwaltung (€/Monat)" value={formData.mgt_monat} onChange={(v) => updateField('mgt_monat', v)} step={5} />
+
+                  {/* Roter Slider für Leerstandsquote */}
                   <div>
-                    <label style={labelStyle}>Anpassung in Jahr</label>
-                    <input type="number" name="adj_year" value={formData.adj_year} onChange={handleChange} style={inputStyle} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
+                      <span style={{ color: '#4A5568' }}>Leerstandsquote (%)</span>
+                      <span style={{ color: '#E53E3E', fontWeight: 'bold' }}>{formatPct(formData.vac_rate_pct)} %</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="0.5"
+                      value={formData.vac_rate_pct}
+                      onChange={(e) => updateField('vac_rate_pct', parseFloat(e.target.value))}
+                      style={{ width: '100%', accentColor: '#E53E3E', cursor: 'pointer' }}
+                    />
                   </div>
 
                   <hr style={hrStyle} />
 
                   <div>
-                    <label style={labelStyle}>Instandhaltung (€/m²/Jahr)</label>
-                    <input type="number" name="inst_sqm" value={formData.inst_sqm} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Verwaltung (€/Monat)</label>
-                    <input type="number" name="mgt_monat" value={formData.mgt_monat} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Leerstandsquote (%) - {formatPct(formData.vac_rate_pct)} %</label>
-                    <input type="range" min="0" max="10" step="0.5" name="vac_rate_pct" value={formData.vac_rate_pct} onChange={handleChange} style={{ width: '100%', accentColor: '#13381A' }} />
-                  </div>
-
-                  <hr style={hrStyle} />
-
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '0.9rem', marginBottom: '4px' }}>Flexible Sonderinvestitionen (Capex)</div>
-                    <div style={{ fontSize: '0.8rem', color: '#555759', marginBottom: '10px' }}>Füge zielgerichtete Instandhaltungen oder Modernisierungen für spezifische Jahre hinzu.</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
-                        <label style={labelStyle}>Jahr #1</label>
-                        <input type="number" value="3" readOnly style={{ ...inputStyle, background: '#eee' }} />
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Betrag (€) #1</label>
-                        <input type="number" value="0" readOnly style={{ ...inputStyle, background: '#eee' }} />
-                      </div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#13381A' }}>Flexible Sonderinvestitionen (Capex)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#718096', margin: '4px 0 8px 0' }}>Füge zielgerichtete Instandhaltungen oder Modernisierungen für spezifische Jahre hinzu.</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <StepperInput label="Jahr #1" value={3} onChange={() => {}} disabled={true} />
+                      <StepperInput label="Betrag (€) #1" value={0} onChange={() => {}} disabled={true} />
                     </div>
                   </div>
+
                 </div>
               </Expander>
 
-              {/* SEKTION 4 */}
+              {/* SCREENSHOT 4: STEUERN, MAKRO & EXIT */}
               <Expander title="4. Steuern, Makro & Exit">
-                <div style={groupStyle}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  
+                  {/* Roter Slider für Grenzsteuersatz */}
                   <div>
-                    <label style={labelStyle}>Grenzsteuersatz (%) - {formatPct(formData.tax_rate_pct)} %</label>
-                    <input type="range" min="0" max="50" step="1" name="tax_rate_pct" value={formData.tax_rate_pct} onChange={handleChange} style={{ width: '100%', accentColor: '#13381A' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
+                      <span style={{ color: '#4A5568' }}>Grenzsteuersatz (%)</span>
+                      <span style={{ color: '#E53E3E', fontWeight: 'bold' }}>{formatPct(formData.tax_rate_pct)} %</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      step="1"
+                      value={formData.tax_rate_pct}
+                      onChange={(e) => updateField('tax_rate_pct', parseFloat(e.target.value))}
+                      style={{ width: '100%', accentColor: '#E53E3E', cursor: 'pointer' }}
+                    />
                   </div>
 
                   <div>
                     <label style={labelStyle}>AfA-Modell</label>
-                    <select name="afa_model" value={formData.afa_model} onChange={handleChange} style={inputStyle}>
-                      <option value="Linear Standard">Linear Standard (2%)</option>
+                    <select value={formData.afa_model} onChange={(e) => updateField('afa_model', e.target.value)} style={inputTextStyle}>
+                      <option value="Linear Standard">Linear Standard</option>
                       <option value="Linear Neubau">Linear Neubau (3%)</option>
-                      <option value="Denkmalgeschützt">Denkmalgeschützt / Sanierungsgebiet</option>
+                      <option value="Denkmalgeschützt">Denkmalgeschützt</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label style={labelStyle}>AfA linear (%)</label>
-                    <input type="number" step="0.1" name="afa_lin" value={formData.afa_lin} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Mietsteigerung p.a. (%)</label>
-                    <input type="number" step="0.1" name="miet_inc" value={formData.miet_inc} onChange={handleChange} style={inputStyle} />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Wertsteigerung p.a. (%)</label>
-                    <input type="number" step="0.1" name="val_inc" value={formData.val_inc} onChange={handleChange} style={inputStyle} />
-                  </div>
+                  <StepperInput label="AfA linear (%)" value={formData.afa_lin} onChange={(v) => updateField('afa_lin', v)} step={0.1} />
+                  <StepperInput label="Mietsteigerung p.a. (%)" value={formData.miet_inc} onChange={(v) => updateField('miet_inc', v)} step={0.1} />
+                  <StepperInput label="Wertsteigerung p.a. (%)" value={formData.val_inc} onChange={(v) => updateField('val_inc', v)} step={0.1} />
 
                   <hr style={hrStyle} />
 
-                  <div>
-                    <label style={labelStyle}>Verkaufsnebenkosten / Exit (%)</label>
-                    <input type="number" step="0.1" name="exit_cost" value={formData.exit_cost} onChange={handleChange} style={inputStyle} />
-                  </div>
+                  <StepperInput label="Verkaufsnebenkosten / Exit (%)" value={formData.exit_cost} onChange={(v) => updateField('exit_cost', v)} step={0.1} tooltip="Geschätzte Kosten beim Verkauf" />
+
                 </div>
               </Expander>
 
-              <button type="submit" disabled={loading} style={{ marginTop: '1rem', padding: '16px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.05rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(19,56,26,0.2)' }}>
-                {loading ? 'Berechne Analyse...' : '🚀 Investition analysieren'}
+              <button type="submit" disabled={loading} style={{ padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                {loading ? 'Berechne...' : '🚀 Investition analysieren'}
               </button>
+
             </div>
 
-            {/* RECHTE SPALTE: AUSWERTUNG */}
-            <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', height: 'fit-content' }}>
-              <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', fontWeight: '700', borderBottom: '1px solid #E2D9CE', paddingBottom: '10px' }}>Investment-Auswertung & Cashflows</h3>
+            {/* RECHTE SPALTE: ERGEBNISSE & TAFELN */}
+            <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', height: 'fit-content' }}>
+              <h3 style={{ margin: '0 0 1.5rem 0', color: '#13381A' }}>Investment-Auswertung & Cashflows</h3>
 
               {!result ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
-                  <p style={{ margin: 0, fontWeight: '500' }}>Bereit für die Auswertung.</p>
-                  <p style={{ fontSize: '0.85rem', margin: '5px 0 0 0' }}>Klicke links auf "Investition analysieren".</p>
+                <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
+                  Klicke links auf "Investition analysieren".
                 </div>
               ) : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <MetricCard title="Gesamtinvestment" value={`${formatEuro(result.summary.total_investment)} €`} />
-                    <MetricCard title="Eigenkapitalbedarf" value={`${formatEuro(result.summary.equity_absolute)} €`} />
+                    <MetricCard title="Gesamtinvestment" value={`${formatEuroInteger(result.summary.total_investment)} €`} />
+                    <MetricCard title="Eigenkapitalbedarf" value={`${formatEuroInteger(result.summary.equity_absolute)} €`} />
                     <MetricCard title="IRR (Rendite)" value={`${formatPct(result.summary.irr * 100)} %`} highlight={true} />
-                    <MetricCard title="AfA-Basis" value={`${formatEuro(result.summary.afa_base)} €`} />
+                    <MetricCard title="AfA-Basis" value={`${formatEuroInteger(result.summary.afa_base)} €`} />
                   </div>
 
-                  <h4 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '10px' }}>Projektionsverlauf (Jahre)</h4>
-                  <div style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                  <h4 style={{ margin: '0 0 10px 0' }}>Projektionsverlauf (Jahre)</h4>
+                  <div style={{ maxHeight: '450px', overflowY: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                       <thead>
-                        <tr style={{ background: '#FAF8F5', borderBottom: '1px solid #E2D9CE', position: 'sticky', top: 0 }}>
-                          <th style={{ padding: '10px' }}>Jahr</th>
-                          <th style={{ padding: '10px' }}>Miete IST</th>
-                          <th style={{ padding: '10px' }}>Cashflow Netto</th>
-                          <th style={{ padding: '10px' }}>Restschuld</th>
+                        <tr style={{ background: '#FAF8F5', borderBottom: '1px solid #E2D9CE' }}>
+                          <th style={{ padding: '8px' }}>Jahr</th>
+                          <th style={{ padding: '8px' }}>Miete IST</th>
+                          <th style={{ padding: '8px' }}>Cashflow Netto</th>
+                          <th style={{ padding: '8px' }}>Restschuld</th>
                         </tr>
                       </thead>
                       <tbody>
                         {result.projection && result.projection.map((row, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={{ padding: '8px 10px' }}>{row['Jahr'] || idx + 1}</td>
-                            <td style={{ padding: '8px 10px' }}>{formatEuro(row['Mieteinnahmen IST'])} €</td>
-                            <td style={{ padding: '8px 10px' }}>{formatEuro(row['Cashflow Netto'])} €</td>
-                            <td style={{ padding: '8px 10px' }}>{formatEuro(row['Restschuld'])} €</td>
+                            <td style={{ padding: '8px' }}>{row['Jahr'] || idx + 1}</td>
+                            <td style={{ padding: '8px' }}>{formatEuroInteger(row['Mieteinnahmen IST'])} €</td>
+                            <td style={{ padding: '8px' }}>{formatEuroInteger(row['Cashflow Netto'])} €</td>
+                            <td style={{ padding: '8px' }}>{formatEuroInteger(row['Restschuld'])} €</td>
                           </tr>
                         ))}
                       </tbody>
@@ -514,53 +455,87 @@ export default function Home() {
         </form>
       )}
 
-      {navChoice === 'Objekt Datenbank' && (
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <h2>Objekt Datenbank & Pipeline</h2>
-          <p style={{ color: '#555759' }}>Übersicht aller gespeicherten Immobilienobjekte.</p>
-        </div>
-      )}
-
-      {navChoice === 'Immobilienwissen' && (
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <h2>Immobilienwissen & KI-Assistent</h2>
-        </div>
-      )}
-
-      {navChoice === 'Einstellungen' && (
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <h2>Einstellungen & Anlagestrategien</h2>
-        </div>
-      )}
-
     </main>
+  );
+}
+
+// Custom Stepper-Komponente für die Minus/Plus-Eingabefelder wie in Streamlit
+function StepperInput({ label, value, onChange, step = 1, disabled = false, tooltip = null }) {
+  const handleDecrement = () => {
+    if (disabled) return;
+    const next = Math.max(0, Number((value - step).toFixed(2)));
+    onChange(next);
+  };
+
+  const handleIncrement = () => {
+    if (disabled) return;
+    const next = Number((value + step).toFixed(2));
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+        <label style={labelStyle}>{label}</label>
+        {tooltip && <span title={tooltip} style={tooltipStyle}>?</span>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', background: disabled ? '#EDF2F7' : 'white', border: '1px solid #CBD5E0', borderRadius: '8px', padding: '4px 8px' }}>
+        <input
+          type="text"
+          disabled={disabled}
+          value={formatEuro(value)}
+          onChange={(e) => {
+            const parsed = parseFloat(e.target.value.replace(/\./g, '').replace(',', '.'));
+            if (!isNaN(parsed)) onChange(parsed);
+          }}
+          style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', fontWeight: '500', color: disabled ? '#A0AEC0' : '#2D3748' }}
+        />
+        {!disabled && (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <button type="button" onClick={handleDecrement} style={stepBtnStyle}>–</button>
+            <button type="button" onClick={handleIncrement} style={stepBtnStyle}>+</button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 function Expander({ title, children, defaultOpen = false }) {
   return (
-    <details open={defaultOpen} style={{ background: 'white', borderRadius: '10px', border: '1px solid #E2D9CE', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-      <summary style={{ padding: '14px 18px', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', background: '#FAF8F5', color: '#13381A', outline: 'none', userSelect: 'none' }}>
+    <details open={defaultOpen} style={{ background: 'white', borderRadius: '8px', border: '1px solid #E2D9CE', overflow: 'hidden' }}>
+      <summary style={{ padding: '12px 16px', fontWeight: 'bold', fontSize: '0.95rem', cursor: 'pointer', background: '#FAF8F5', color: '#13381A' }}>
         {title}
       </summary>
-      <div style={{ padding: '18px', borderTop: '1px solid #E2D9CE' }}>
+      <div style={{ padding: '16px', borderTop: '1px solid #E2D9CE' }}>
         {children}
       </div>
     </details>
   );
 }
 
+function SubExpander({ title, children }) {
+  return (
+    <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
+      <summary style={{ fontWeight: '600', color: '#13381A' }}>{title}</summary>
+      {children && <div style={{ marginTop: '8px' }}>{children}</div>}
+    </details>
+  );
+}
+
 function MetricCard({ title, value, highlight = false }) {
   return (
-    <div style={{ background: highlight ? '#F4EFE6' : '#FAF8F5', padding: '1.25rem', borderRadius: '8px', border: '1px solid #E2D9CE' }}>
-      <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', color: '#555759', marginBottom: '6px' }}>{title}</div>
-      <div style={{ fontSize: '1.4rem', fontWeight: '800', color: highlight ? '#A37841' : '#13381A' }}>{value}</div>
+    <div style={{ background: highlight ? '#F4EFE6' : '#FAF8F5', padding: '1rem', borderRadius: '8px', border: '1px solid #E2D9CE' }}>
+      <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#555759' }}>{title}</div>
+      <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: highlight ? '#A37841' : '#13381A' }}>{value}</div>
     </div>
   );
 }
 
-const groupStyle = { display: 'flex', flexDirection: 'column', gap: '1rem' };
-const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px', color: '#555759' };
-const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CCC', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', background: 'white' };
-const hrStyle = { border: 'none', borderTop: '1px solid #E2D9CE', margin: '5px 0' };
-const badgeStyle = { marginTop: '4px', background: '#F4EFE6', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', color: '#13381A', textAlign: 'center', border: '1px solid #E2D9CE' };
+const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568' };
+const inputTextStyle = { width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box' };
+const readOnlyBoxStyle = { padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', background: '#EDF2F7', color: '#4A5568' };
+const badgeStyle = { marginTop: '4px', background: '#F4EFE6', padding: '6px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', color: '#13381A', textAlign: 'center', border: '1px solid #E2D9CE' };
+const hrStyle = { border: 'none', borderTop: '1px solid #E2D9CE', margin: '6px 0' };
+const stepBtnStyle = { border: 'none', background: '#E2E8F0', color: '#2D3748', width: '22px', height: '22px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const tooltipStyle = { cursor: 'pointer', fontSize: '0.75rem', color: '#718096', border: '1px solid #CBD5E0', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };

@@ -8,7 +8,7 @@ from supabase import create_client, Client
 
 app = FastAPI(title="Valuon Estate Backend API")
 
-# --- CORS MIDDLEWARE (Erlaubt Frontend-Anfragen) ---
+# --- CORS MIDDLEWARE ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,7 +47,7 @@ def calculate_irr(cashflows: List[float]) -> float:
             val -= t * cf / ((1.0 + rate) ** (t + 1))
         return val
 
-    rate = 0.05  # Startwert 5%
+    rate = 0.05
     for _ in range(100):
         f_val = npv(rate, cashflows)
         if abs(f_val) < 1e-6:
@@ -160,29 +160,24 @@ class PropertyDatabasePayload(BaseModel):
 
 @app.get("/")
 async def root():
-    """Warmup-Route zur Vermeidung von Cold-Starts."""
     return {"status": "ok", "message": "Valuon Estate Backend ist erreichbar."}
 
 
 @app.post("/api/calculate")
 async def calculate_investment(payload: CalculatePayload):
     try:
-        # Kaufnebenkosten berechnen
         grwt_euro = payload.kaufpreis * payload.grwt_proz
         notar_euro = payload.kaufpreis * payload.notar_proz
         makler_euro = payload.kaufpreis * payload.makler_proz
         summe_nk = grwt_euro + notar_euro + makler_euro + (payload.sonst_nk or 0.0)
 
-        # Gesamtinvestment & AfA Basis (80% Gebäudeanteil Standard)
         total_investment = payload.kaufpreis + summe_nk + (payload.sanierung or 0.0)
         afa_base = (payload.kaufpreis + summe_nk) * 0.80 + (payload.sanierung or 0.0)
 
-        # Darlehensberechnung
         kfw_loan = payload.kfw_amt or 0.0
         hb_loan = max(0.0, total_investment - (payload.ek_euro or 0.0) - (payload.kfw_grant or 0.0) - kfw_loan)
         equity_absolute = payload.ek_euro or 0.0
 
-        # Capex Map aufbauen (Jahr -> Betrag)
         capex_map: Dict[int, float] = {}
         if payload.capex_list:
             for item in payload.capex_list:
@@ -190,10 +185,13 @@ async def calculate_investment(payload: CalculatePayload):
                 amt = item.get_amount()
                 capex_map[yr] = capex_map.get(yr, 0.0) + amt
 
-        # Projektionsvariablen
         hb_rest = hb_loan
         kfw_rest = kfw_loan
         afa_book_value = afa_base
+
+        # KORREKTE ANNUITÄTEN-RATE (Zins + Tilgung im ersten Jahr)
+        initial_hb_annuity_rate = hb_loan * ((payload.hb_zins or 0.04) + (payload.hb_tilg or 0.02))
+        initial_kfw_annuity_rate = kfw_loan * ((payload.kfw_zins or 0.021) + (payload.kfw_tilg or 0.03))
 
         projection = []
         cashflows_for_irr = [-equity_absolute]
@@ -212,7 +210,7 @@ async def calculate_investment(payload: CalculatePayload):
             vac_loss = annual_rent_base * (payload.vac_rate or 0.02)
             effective_rent = annual_rent_base - vac_loss
 
-            # 2. Bewirtschaftungskosten & Capex
+            # 2. Bewirtschaftungskosten
             cost_growth = (1.0 + payload.cost_inc) ** (year - 1)
             mgt_cost = (payload.mgt_monat or 30.0) * 12.0 * cost_growth
             inst_cost = (payload.inst_sqm or 12.0) * payload.qm * cost_growth
@@ -221,27 +219,31 @@ async def calculate_investment(payload: CalculatePayload):
             total_non_rec_costs = mgt_cost + inst_cost + non_recoverable_hausgeld
             capex_current = capex_map.get(year, 0.0)
 
-            # 3. Darlehensdienst (Hausbank)
+            # 3. Darlehensdienst Hausbank (Dynamic Annuity Logic)
             hb_zins_rate = payload.hb_zins if year <= payload.zinsbindung else payload.folge_zins
             hb_interest = hb_rest * hb_zins_rate
 
-            if year <= payload.grace_years:
+            if year <= payload.grace_years or hb_rest <= 0:
                 hb_principal = 0.0
             else:
                 if payload.loan_type == "Endfälliges Darlehen":
                     hb_principal = 0.0
                 else:
-                    hb_principal = min(hb_rest, (hb_loan * payload.hb_tilg) + (payload.sondertilg or 0.0))
+                    # Dynamischer Tilgungsanteil: Tilgung = Rate - Zinsen
+                    current_rate = initial_hb_annuity_rate if year <= payload.zinsbindung else (hb_loan * (hb_zins_rate + (payload.folge_tilg or 0.02)))
+                    calculated_principal = max(0.0, current_rate - hb_interest) + (payload.sondertilg or 0.0)
+                    hb_principal = min(hb_rest, calculated_principal)
 
             hb_debt_service = hb_interest + hb_principal
             hb_rest = max(0.0, hb_rest - hb_principal)
 
-            # 4. Darlehensdienst (KfW)
+            # 4. Darlehensdienst KfW (Dynamic Annuity Logic)
             kfw_interest = kfw_rest * payload.kfw_zins
-            if year <= payload.kfw_grace_years or kfw_loan == 0:
+            if year <= payload.kfw_grace_years or kfw_rest <= 0:
                 kfw_principal = 0.0
             else:
-                kfw_principal = min(kfw_rest, kfw_loan * payload.kfw_tilg)
+                calculated_kfw_principal = max(0.0, initial_kfw_annuity_rate - kfw_interest)
+                kfw_principal = min(kfw_rest, calculated_kfw_principal)
 
             kfw_debt_service = kfw_interest + kfw_principal
             kfw_rest = max(0.0, kfw_rest - kfw_principal)
@@ -261,7 +263,6 @@ async def calculate_investment(payload: CalculatePayload):
             elif afa_model == "Degressiv":
                 afa_amount = afa_book_value * 0.05
             elif afa_model == "Kombination: Degressiv + Sonder-AfA":
-                # Degressiv (5%) + Sonder-AfA § 7b (5% - streng limitiert auf Jahre 1-4)
                 degressiv_part = afa_book_value * 0.05
                 sonder_part = (afa_base * 0.05) if year <= 4 else 0.0
                 afa_amount = degressiv_part + sonder_part
@@ -276,16 +277,15 @@ async def calculate_investment(payload: CalculatePayload):
             afa_amount = min(afa_amount, afa_book_value)
             afa_book_value = max(0.0, afa_book_value - afa_amount)
 
-            # 6. Steuern & Cashflow
+            # 6. Steuerberechnung mit Steuerschild (Negative Steuer = Steuererstattung)
             taxable_income = effective_rent - total_non_rec_costs - total_interest - afa_amount
-            tax_amount = max(0.0, taxable_income * (payload.tax_rate or 0.42))
+            tax_amount = taxable_income * (payload.tax_rate or 0.42)
 
+            # Netto-Cashflow (Negative Steuer wirkt als Erstattung ertragssteigernd)
             net_cashflow = effective_rent - total_non_rec_costs - capex_current - total_debt_service - tax_amount
 
-            # Wertsteigerung der Immobilie
             property_value *= (1.0 + payload.val_inc)
 
-            # Cashflow für IRR speichern (Jahr 30 inkl. Exit-Verkauf)
             if year == 30:
                 net_exit_proceeds = property_value * (1.0 - payload.exit_cost) - total_remaining_debt
                 cashflows_for_irr.append(net_cashflow + net_exit_proceeds)
@@ -307,7 +307,6 @@ async def calculate_investment(payload: CalculatePayload):
                 "Immobilienwert": round(property_value, 2)
             })
 
-        # IRR Rendite berechnen
         irr_val = calculate_irr(cashflows_for_irr)
 
         return {
@@ -328,15 +327,10 @@ async def calculate_investment(payload: CalculatePayload):
         raise HTTPException(status_code=422, detail=f"Berechnungsfehler: {str(e)}")
 
 
-# --- SUPABASE DATENBANK ROUTEN ---
-
 @app.post("/api/properties")
 async def save_property(payload: PropertyDatabasePayload):
     if not supabase:
-        raise HTTPException(
-            status_code=500,
-            detail="Supabase ist im Backend nicht konfiguriert. Bitte SUPABASE_URL und SUPABASE_KEY in den Render Environment Variables hinterlegen."
-        )
+        raise HTTPException(status_code=500, detail="Supabase ist im Backend nicht konfiguriert.")
 
     try:
         data = {
@@ -354,7 +348,6 @@ async def save_property(payload: PropertyDatabasePayload):
             "form_data": payload.form_data,
             "capex_list": payload.capex_list
         }
-
         res = supabase.table("properties").insert(data).execute()
         return {"status": "success", "data": res.data}
     except Exception as e:
@@ -365,7 +358,6 @@ async def save_property(payload: PropertyDatabasePayload):
 async def get_properties():
     if not supabase:
         return {"properties": []}
-
     try:
         res = supabase.table("properties").select("*").order("id", desc=True).execute()
         return {"properties": res.data or []}
@@ -377,7 +369,6 @@ async def get_properties():
 async def delete_property(property_id: int):
     if not supabase:
         raise HTTPException(status_code=500, detail="Supabase nicht konfiguriert.")
-
     try:
         res = supabase.table("properties").delete().eq("id", property_id).execute()
         return {"status": "deleted", "data": res.data}

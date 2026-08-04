@@ -8,7 +8,6 @@ from supabase import create_client, Client
 
 app = FastAPI(title="Valuon Estate Backend API")
 
-# --- CORS MIDDLEWARE ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,7 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- SUPABASE CLIENT INITIALISIERUNG ---
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
@@ -29,9 +27,7 @@ if SUPABASE_URL and SUPABASE_KEY:
         print(f"Supabase Init Warnung: {e}")
 
 
-# --- PURE PYTHON IRR RECHNER ---
 def calculate_irr(cashflows: List[float]) -> float:
-    """Berechnet den internen Zinsfuß (IRR) mittels Newton-Raphson Verfahren."""
     if not cashflows or len(cashflows) < 2:
         return 0.0
 
@@ -63,7 +59,6 @@ def calculate_irr(cashflows: List[float]) -> float:
     return rate if not math.isnan(rate) else 0.0
 
 
-# --- PYDANTIC MODELLE ---
 class CapexItem(BaseModel):
     year: Optional[int] = None
     jahr: Optional[int] = None
@@ -156,8 +151,6 @@ class PropertyDatabasePayload(BaseModel):
     created_at: Optional[str] = None
 
 
-# --- ROUTEN ---
-
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Valuon Estate Backend ist erreichbar."}
@@ -166,9 +159,9 @@ async def root():
 @app.post("/api/calculate")
 async def calculate_investment(payload: CalculatePayload):
     try:
-        grwt_euro = payload.kaufpreis * payload.grwt_proz
-        notar_euro = payload.kaufpreis * payload.notar_proz
-        makler_euro = payload.kaufpreis * payload.makler_proz
+        grwt_euro = payload.kaufpreis * (payload.grwt_proz or (payload.grwt_p / 100.0 if payload.grwt_p else 0.05))
+        notar_euro = payload.kaufpreis * (payload.notar_proz or (payload.notar_p / 100.0 if payload.notar_p else 0.02))
+        makler_euro = payload.kaufpreis * (payload.makler_proz or (payload.makler_p / 100.0 if payload.makler_p else 0.0357))
         summe_nk = grwt_euro + notar_euro + makler_euro + (payload.sonst_nk or 0.0)
 
         total_investment = payload.kaufpreis + summe_nk + (payload.sanierung or 0.0)
@@ -189,29 +182,31 @@ async def calculate_investment(payload: CalculatePayload):
         kfw_rest = kfw_loan
         afa_book_value = afa_base
 
-        # KORREKTE ANNUITÄTEN-RATE (Zins + Tilgung im ersten Jahr)
-        initial_hb_annuity_rate = hb_loan * ((payload.hb_zins or 0.04) + (payload.hb_tilg or 0.02))
-        initial_kfw_annuity_rate = kfw_loan * ((payload.kfw_zins or 0.021) + (payload.kfw_tilg or 0.03))
+        hb_zins_initial = payload.hb_zins if payload.hb_zins is not None else 0.04
+        hb_tilg_initial = payload.hb_tilg if payload.hb_tilg is not None else 0.02
+
+        # KONSTANTE ANNUITÄTEN-RATE FÜR ANNUITÄTENDARLEHEN
+        hb_annuity_constant = hb_loan * (hb_zins_initial + hb_tilg_initial)
+        kfw_annuity_constant = kfw_loan * ((payload.kfw_zins or 0.021) + (payload.kfw_tilg or 0.03))
 
         projection = []
         cashflows_for_irr = [-equity_absolute]
 
         property_value = payload.kaufpreis
+        tax_rate = payload.tax_rate if payload.tax_rate is not None else ((payload.tax_rate_pct or 42.0) / 100.0)
 
         for year in range(1, 31):
-            # 1. Mieteinnahmen
             if year < (payload.adj_year or 1):
                 annual_rent_base = payload.kaltmiete_monat * 12.0
             else:
                 target_base = (payload.target_monat or payload.kaltmiete_monat) * 12.0
-                growth_factor = (1.0 + payload.miet_inc) ** (year - (payload.adj_year or 1))
+                growth_factor = (1.0 + (payload.miet_inc or 0.01)) ** (year - (payload.adj_year or 1))
                 annual_rent_base = target_base * growth_factor
 
             vac_loss = annual_rent_base * (payload.vac_rate or 0.02)
             effective_rent = annual_rent_base - vac_loss
 
-            # 2. Bewirtschaftungskosten
-            cost_growth = (1.0 + payload.cost_inc) ** (year - 1)
+            cost_growth = (1.0 + (payload.cost_inc or 0.02)) ** (year - 1)
             mgt_cost = (payload.mgt_monat or 30.0) * 12.0 * cost_growth
             inst_cost = (payload.inst_sqm or 12.0) * payload.qm * cost_growth
             non_recoverable_hausgeld = (payload.hausgeld_nicht_umlegbar or 0.0) * 12.0 * cost_growth
@@ -219,40 +214,40 @@ async def calculate_investment(payload: CalculatePayload):
             total_non_rec_costs = mgt_cost + inst_cost + non_recoverable_hausgeld
             capex_current = capex_map.get(year, 0.0)
 
-            # 3. Darlehensdienst Hausbank (Dynamic Annuity Logic)
-            hb_zins_rate = payload.hb_zins if year <= payload.zinsbindung else payload.folge_zins
+            # ECHTE ANNUITÄTENLOGIK HAUSBANK
+            hb_zins_rate = hb_zins_initial if year <= (payload.zinsbindung or 10) else (payload.folge_zins or 0.038)
             hb_interest = hb_rest * hb_zins_rate
 
-            if year <= payload.grace_years or hb_rest <= 0:
+            if year <= (payload.grace_years or 0) or hb_rest <= 0:
                 hb_principal = 0.0
             else:
                 if payload.loan_type == "Endfälliges Darlehen":
                     hb_principal = 0.0
                 else:
-                    # Dynamischer Tilgungsanteil: Tilgung = Rate - Zinsen
-                    current_rate = initial_hb_annuity_rate if year <= payload.zinsbindung else (hb_loan * (hb_zins_rate + (payload.folge_tilg or 0.02)))
-                    calculated_principal = max(0.0, current_rate - hb_interest) + (payload.sondertilg or 0.0)
+                    target_annuity = hb_annuity_constant if year <= (payload.zinsbindung or 10) else (hb_loan * (hb_zins_rate + (payload.folge_tilg or 0.02)))
+                    calculated_principal = max(0.0, target_annuity - hb_interest) + (payload.sondertilg or 0.0)
                     hb_principal = min(hb_rest, calculated_principal)
 
             hb_debt_service = hb_interest + hb_principal
             hb_rest = max(0.0, hb_rest - hb_principal)
 
-            # 4. Darlehensdienst KfW (Dynamic Annuity Logic)
-            kfw_interest = kfw_rest * payload.kfw_zins
-            if year <= payload.kfw_grace_years or kfw_rest <= 0:
+            # ECHTE ANNUITÄTENLOGIK KFW
+            kfw_interest = kfw_rest * (payload.kfw_zins or 0.021)
+            if year <= (payload.kfw_grace_years or 0) or kfw_rest <= 0:
                 kfw_principal = 0.0
             else:
-                calculated_kfw_principal = max(0.0, initial_kfw_annuity_rate - kfw_interest)
+                calculated_kfw_principal = max(0.0, kfw_annuity_constant - kfw_interest)
                 kfw_principal = min(kfw_rest, calculated_kfw_principal)
 
             kfw_debt_service = kfw_interest + kfw_principal
             kfw_rest = max(0.0, kfw_rest - kfw_principal)
 
             total_interest = hb_interest + kfw_interest
+            total_principal = hb_principal + kfw_principal
             total_debt_service = hb_debt_service + kfw_debt_service
             total_remaining_debt = hb_rest + kfw_rest
 
-            # 5. AfA Berechnung
+            # AfA BERECHNUNG
             afa_model = payload.afa_model or "Linear Standard"
             afa_amount = 0.0
 
@@ -277,17 +272,16 @@ async def calculate_investment(payload: CalculatePayload):
             afa_amount = min(afa_amount, afa_book_value)
             afa_book_value = max(0.0, afa_book_value - afa_amount)
 
-            # 6. Steuerberechnung mit Steuerschild (Negative Steuer = Steuererstattung)
+            # STEUER & STEUERSCHILD (Erstattung bei Verlusten)
             taxable_income = effective_rent - total_non_rec_costs - total_interest - afa_amount
-            tax_amount = taxable_income * (payload.tax_rate or 0.42)
+            tax_amount = taxable_income * tax_rate
 
-            # Netto-Cashflow (Negative Steuer wirkt als Erstattung ertragssteigernd)
             net_cashflow = effective_rent - total_non_rec_costs - capex_current - total_debt_service - tax_amount
 
-            property_value *= (1.0 + payload.val_inc)
+            property_value *= (1.0 + (payload.val_inc or 0.01))
 
             if year == 30:
-                net_exit_proceeds = property_value * (1.0 - payload.exit_cost) - total_remaining_debt
+                net_exit_proceeds = property_value * (1.0 - (payload.exit_cost or 0.0)) - total_remaining_debt
                 cashflows_for_irr.append(net_cashflow + net_exit_proceeds)
             else:
                 cashflows_for_irr.append(net_cashflow)
@@ -299,7 +293,7 @@ async def calculate_investment(payload: CalculatePayload):
                 "Bewirtschaftungskosten": round(total_non_rec_costs, 2),
                 "Capex": round(capex_current, 2),
                 "Zinsen": round(total_interest, 2),
-                "Tilgung": round(hb_principal + kfw_principal, 2),
+                "Tilgung": round(total_principal, 2),
                 "AfA": round(afa_amount, 2),
                 "Steuer": round(tax_amount, 2),
                 "Cashflow Netto": round(net_cashflow, 2),

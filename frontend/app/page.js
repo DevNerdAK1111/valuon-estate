@@ -6,7 +6,7 @@ export default function Home() {
 
   useEffect(() => {
     // Hier wird dein Render-Backend abgefragt (ersetze die URL später durch deine echte Render-URL)
-    fetch('https://DEIN-RENDER-BACKEND.onrender.com/')
+    fetch('https://valuon-estate-backend.onrender.com/')
       .then(res => res.json())
       .then(data => setBackendStatus(data.status))
       .catch(err => setBackendStatus('Verbindung zum Backend fehlgeschlagen (CORS oder URL prüfen)'));

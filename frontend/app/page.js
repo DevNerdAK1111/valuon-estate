@@ -1,10 +1,15 @@
 'use client';
 import { useState } from 'react';
 
-// ⚠️ ERSETZE HIER DEINE ECHTE RENDER-URL (ohne Schrägstrich am Ende)
-const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
+const BACKEND_URL = 'https://valuon-estate-backend.onrender.com'; // Hier deine echte Render-URL eintragen
 
 export default function Home() {
+  // Session State (analog zu deinem Streamlit Session State)
+  const [authenticated, setAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [navChoice, setNavChoice] = useState('Objekt Datenbank');
+  
+  // Analysedaten / Formular State
   const [formData, setFormData] = useState({
     kaufpreis: 250000,
     qm: 75,
@@ -13,149 +18,185 @@ export default function Home() {
     hb_tilg: 2.0,
     ek_euro: 50000,
   });
-
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: parseFloat(e.target.value) || 0 });
+  // Login-Handler
+  const handleLogin = (email) => {
+    setAuthenticated(true);
+    setUserEmail(email);
   };
 
+  const handleLogout = () => {
+    setAuthenticated(false);
+    setUserEmail('');
+  };
+
+  // Berechnungs-Handler
   const handleCalculate = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch(`${BACKEND_URL}/api/calculate`, {
+      const res = await fetch(`${BACKEND_URL}/api/calculate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
-      if (!response.ok) {
-        throw new Error('Fehler bei der Berechnung im Backend');
-      }
-
-      const data = await response.json();
+      const data = await res.json();
       setResult(data);
     } catch (err) {
-      setError(err.message || 'Verbindung zum Backend fehlgeschlagen');
+      alert('Fehler bei der Verbindung zum Backend');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <main style={{ minHeight: '100vh', padding: '3rem 4rem', background: '#F7F4EC', color: '#13381A' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1.5rem', marginBottom: '2.5rem' }}>
-        <div>
-          <div style={{ fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '2px', color: '#A37841', marginBottom: '4px' }}>
-            Institutional Grade Suite
-          </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', margin: 0 }}>
-            Valuon Estate
-          </h1>
-        </div>
-        <div style={{ fontSize: '0.85rem', color: '#555759', fontWeight: '500' }}>
-          Next.js Enterprise Frontend
-        </div>
-      </div>
-
-      {/* Grid Layout (Volle Breite, kein Quetschen!) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '3rem' }}>
-        
-        {/* Eingabemaske */}
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-          <h3 style={{ margin: '0 v 0 1.5rem 0', fontSize: '1.25rem', fontWeight: '700' }}>Objektdaten & Finanzierung</h3>
+  // --- 1. AUTH GATE (ANMELDUNG) ---
+  if (!authenticated) {
+    return (
+      <main style={{ minHeight: '100vh', background: '#13381A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ background: '#F7F4EC', padding: '3rem', borderRadius: '12px', width: '100%', maxWidth: '480px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '2px', color: '#A37841', marginBottom: '8px' }}>Institutional Grade Suite</div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#13381A', margin: '0 0 10px 0' }}>Valuon Estate</h1>
+          <p style={{ color: '#555759', marginBottom: '2rem', fontSize: '0.95rem' }}>Die hochentwickelte Analyse- und Bewertungsumgebung.</p>
           
-          <form onSubmit={handleCalculate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#555759' }}>Kaufpreis (€)</label>
-              <input type="number" name="kaufpreis" value={formData.kaufpreis} onChange={handleChange} style={inputStyle} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#555759' }}>Wohnfläche (qm)</label>
-                <input type="number" name="qm" value={formData.qm} onChange={handleChange} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#555759' }}>Ist-Miete (€/qm)</label>
-                <input type="number" step="0.1" name="ist_sqm" value={formData.ist_sqm} onChange={handleChange} style={inputStyle} />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#555759' }}>Soll-Zins (%)</label>
-                <input type="number" step="0.1" name="hb_zins" value={formData.hb_zins} onChange={handleChange} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#555759' }}>Tilgung (%)</label>
-                <input type="number" step="0.1" name="hb_tilg" value={formData.hb_tilg} onChange={handleChange} style={inputStyle} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '6px', color: '#555759' }}>Eigenkapital (€)</label>
-              <input type="number" name="ek_euro" value={formData.ek_euro} onChange={handleChange} style={inputStyle} />
-            </div>
-
-            <button type="submit" disabled={loading} style={{ marginTop: '1rem', padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }}>
-              {loading ? 'Berechne in der Cloud...' : 'Investition analysieren'}
-            </button>
-          </form>
-
-          {error && <div style={{ marginTop: '1rem', padding: '10px', background: '#FDE8E8', color: '#9B1C1C', borderRadius: '6px', fontSize: '0.85rem' }}>{error}</div>}
+          <button 
+            onClick={() => handleLogin('developer@valuon-estate.de')}
+            style={{ width: '100%', padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', marginBottom: '1rem' }}
+          >
+            Als Entwickler einloggen (Permanenter Modus)
+          </button>
         </div>
+      </main>
+    );
+  }
 
-        {/* Ergebnisanzeige */}
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-          <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', fontWeight: '700' }}>Investment-Ergebnisse</h3>
+  // --- 2. HAUPT-APP MIT VOLLER BREITE & NAVIGATION ---
+  const navItems = ['Objekt Datenbank', 'Analyse', 'Immobilienwissen', 'Einstellungen'];
 
-          {!result ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
-              <p style={{ margin: 0, fontWeight: '500' }}>Noch keine Berechnung durchgeführt.</p>
-              <p style={{ fontSize: '0.85rem', margin: '5px 0 0 0' }}>Klicke links auf "Investition analysieren".</p>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                <MetricCard title="Gesamtinvestment" value={`${result.summary.total_investment.toLocaleString('de-DE', { maximumFractionDigits: 0 })} €`} />
-                <MetricCard title="Eigenkapitalbedarf" value={`${result.summary.equity_absolute.toLocaleString('de-DE', { maximumFractionDigits: 0 })} €`} />
-                <MetricCard title="IRR (Rendite)" value={`${(result.summary.irr * 100).toFixed(2)} %`} highlight={true} />
-                <MetricCard title="AfA-Basis" value={`${result.summary.afa_base.toLocaleString('de-DE', { maximumFractionDigits: 0 })} €`} />
-              </div>
-
-              <h4 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '10px' }}>Projektionsverlauf (Vorschau Jahr 1)</h4>
-              {result.projection && result.projection.length > 0 && (
-                <div style={{ background: '#FAF8F5', padding: '15px', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #E2D9CE' }}>
-                  <div><strong>Mieteinnahmen (Jahr 1):</strong> {result.projection[0]['Mieteinnahmen IST']?.toLocaleString('de-DE', { maximumFractionDigits: 0 })} €</div>
-                  <div><strong>Cashflow Netto (Jahr 1):</strong> {result.projection[0]['Cashflow Netto']?.toLocaleString('de-DE', { maximumFractionDigits: 0 })} €</div>
-                  <div><strong>Restschuld (Ende Jahr 1):</strong> {result.projection[0]['Restschuld']?.toLocaleString('de-DE', { maximumFractionDigits: 0 })} €</div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-      </div>
-    </main>
-  );
-}
-
-// Hilfskomponente für Kennzahlen-Karten
-function MetricCard({ title, value, highlight = false }) {
   return (
-    <div style={{ background: highlight ? '#F4EFE6' : '#FAF8F5', padding: '1.25rem', borderRadius: '8px', border: '1px solid #E2D9CE' }}>
-      <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', color: '#555759', marginBottom: '6px' }}>{title}</div>
-      <div style={{ fontSize: '1.5rem', fontWeight: '800', color: highlight ? '#A37841' : '#13381A' }}>{value}</div>
-    </div>
+    <main style={{ minHeight: '100vh', padding: '2.5rem 4rem', background: '#F7F4EC', color: '#13381A' }}>
+      
+      {/* Header & Konto */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
+        <div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '800', letterSpacing: '-0.8px', color: '#13381A', lineHeight: '1.1' }}>Valuon Estate</div>
+          <div style={{ fontSize: '0.85rem', color: '#A37841', fontWeight: '600', texttransform: 'uppercase', letterSpacing: '1px', marginTop: '2px' }}>Investment Suite</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <span style={{ fontSize: '0.85rem', color: '#555759' }}>Konto: {userEmail}</span>
+          <button onClick={handleLogout} style={{ padding: '8px 16px', background: '#D9534F', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
+            Abmelden
+          </button>
+        </div>
+      </div>
+
+      {/* Top Navigation Bar (Tabs) */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${navItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
+        {navItems.map((item) => {
+          const isActive = navChoice === item;
+          return (
+            <button
+              key={item}
+              onClick={() => setNavChoice(item)}
+              style={{
+                padding: '12px',
+                background: isActive ? '#13381A' : 'white',
+                color: isActive ? 'white' : '#13381A',
+                border: '1px solid #E2D9CE',
+                borderRadius: '8px',
+                fontWeight: '600',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.02)'
+              }}
+            >
+              {item}
+            </button>
+          );
+        })}
+      </div>
+
+      <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', marginBottom: '2rem' }} />
+
+      {/* --- MODUL-ROUTING --- */}
+      
+      {/* ANSICHT 1: OBJEKT DATENBANK (Pipeline) */}
+      {navChoice === 'Objekt Datenbank' && (
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>Objekt Datenbank & Pipeline</h2>
+          <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+            <p style={{ color: '#555759' }}>Hier werden deine gespeicherten Immobilien aus Supabase übersichtlich in einer Tabelle angezeigt.</p>
+            {/* Supabase-Datenanbindung folgt im nächsten Schritt */}
+          </div>
+        </div>
+      )}
+
+      {/* ANSICHT 2: ANALYSE (Die Berechnungsmaske) */}
+      {navChoice === 'Analyse' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2.5rem' }}>
+          <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.2rem', fontWeight: '700' }}>Objekt-Parameter</h3>
+            <form onSubmit={handleCalculate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px', color: '#555759' }}>Kaufpreis (€)</label>
+                <input type="number" value={formData.kaufpreis} onChange={(e) => setFormData({...formData, kaufpreis: parseFloat(e.target.value)})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px', color: '#555759' }}>Wohnfläche (qm)</label>
+                <input type="number" value={formData.qm} onChange={(e) => setFormData({...formData, qm: parseFloat(e.target.value)})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px', color: '#555759' }}>Ist-Miete (€/qm)</label>
+                <input type="number" step="0.1" value={formData.ist_sqm} onChange={(e) => setFormData({...formData, ist_sqm: parseFloat(e.target.value)})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '4px', color: '#555759' }}>Eigenkapital (€)</label>
+                <input type="number" value={formData.ek_euro} onChange={(e) => setFormData({...formData, ek_euro: parseFloat(e.target.value)})} style={inputStyle} />
+              </div>
+              <button type="submit" disabled={loading} style={{ marginTop: '1rem', padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
+                {loading ? 'Berechne...' : 'Berechnung starten'}
+              </button>
+            </form>
+          </div>
+
+          <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.2rem', fontWeight: '700' }}>Ergebnisse & Kennzahlen</h3>
+            {!result ? (
+              <p style={{ color: '#888' }}>Bitte starte eine Analyse über das Formular.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                <div style={{ background: '#FAF8F5', padding: '15px', borderRadius: '8px', border: '1px solid #E2D9CE' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#555759', fontWeight: '600' }}>IRR (Rendite)</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#A37841' }}>{(result.summary.irr * 100).toFixed(2)} %</div>
+                </div>
+                <div style={{ background: '#FAF8F5', padding: '15px', borderRadius: '8px', border: '1px solid #E2D9CE' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#555759', fontWeight: '600' }}>Gesamtinvestment</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#13381A' }}>{result.summary.total_investment.toLocaleString('de-DE', {maximumFractionDigits:0})} €</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ANSICHT 3: IMMOBILIENWISSEN */}
+      {navChoice === 'Immobilienwissen' && (
+        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>Immobilienwissen & KI-Assistent</h2>
+          <p style={{ color: '#555759' }}>Hier findest du deine Fachartikel, Kennzahlen-Erklärungen und den integrierten KI-Assistenten.</p>
+        </div>
+      )}
+
+      {/* ANSICHT 4: EINSTELLUNGEN */}
+      {navChoice === 'Einstellungen' && (
+        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>Einstellungen & Strategien</h2>
+          <p style={{ color: '#555759' }}>Verwalte hier deine Anlage-Strategien (Konservativ, Aggressiv etc.) und API-Schlüssel.</p>
+        </div>
+      )}
+
+    </main>
   );
 }
 

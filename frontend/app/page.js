@@ -8,51 +8,48 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState('');
   const [navChoice, setNavChoice] = useState('Analyse');
 
+  // Alle Parameter exakt nach deinen Screenshots
   const [formData, setFormData] = useState({
-    obj_name: 'Muster-Immobilie',
+    obj_name: 'TEST Wohnung',
     objektart: 'Eigentumswohnung',
     bundesland: 'Niedersachsen',
-    kaufpreis: 250000.0,
-    qm: 75.0,
-    baujahr: 1995,
+    stadt: 'Weyhe',
+    stadtteil: 'Sudweyhe',
+    kaufpreis: 170000.0,
+    qm: 85.0,
+    baujahr: 1996,
+    kaltmiete_monat: 850.0,
+    hausgeld: 250.0,
     sanierung: 0.0,
-    grund_anteil: 0.20,
+    
+    // Nebenkosten
     grwt_p: 5.0,
     notar_p: 2.0,
     makler_p: 3.57,
     sonst_nk: 0.0,
-    disagio_p: 0.0,
-    ek_euro: 50000.0,
-    ek_quote: 0.20,
+
+    // Finanzierung
     loan_type: 'Annuitätendarlehen',
-    hb_zins: 3.8,
+    hb_zins: 4.0,
     hb_tilg: 2.0,
-    grace_years: 0,
-    kfw_amt: 0.0,
-    kfw_zins: 2.1,
-    kfw_tilg: 3.0,
-    kfw_grace_years: 0,
-    kfw_grant: 0.0,
     sondertilg: 0.0,
-    ist_sqm: 11.5,
-    target_sqm: 13.0,
-    adj_year: 3,
-    park: 0.0,
-    vac_rate_pct: 2.0,
-    hausgeld: 250.0,
-    hausgeld_nicht_umlegbar: 80.0,
+    grace_years: 0,
+    ek_euro: 17969.0,
+
+    // Miete & Bewirtschaftung
+    target_sqm: 10.0,
+    adj_year: 1,
     inst_sqm: 12.0,
     mgt_monat: 30.0,
-    capex_j3: 0.0,
-    capex_j6: 0.0,
+    vac_rate_pct: 2.0,
+
+    // Steuern & Makro
     tax_rate_pct: 42.0,
-    afa_model: '1_Linear_Standard',
+    afa_model: 'Linear Standard',
     afa_lin: 2.0,
-    miet_inc: 1.5,
-    cost_inc: 2.0,
-    val_inc: 1.5,
-    wacc: 6.0,
-    exit_cost: 2.0
+    miet_inc: 1.0,
+    val_inc: 1.0,
+    exit_cost: 0.0
   });
 
   const [result, setResult] = useState(null);
@@ -72,10 +69,10 @@ export default function Home() {
     try {
       const payload = {
         ...formData,
+        ist_sqm: formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 10.0,
         grwt_proz: formData.grwt_p / 100,
         notar_proz: formData.notar_p / 100,
         makler_proz: formData.makler_p / 100,
-        disagio_proz: formData.disagio_p / 100,
         vac_rate: formData.vac_rate_pct / 100,
         tax_rate: formData.tax_rate_pct / 100,
       };
@@ -88,7 +85,7 @@ export default function Home() {
       const data = await res.json();
       setResult(data);
     } catch (err) {
-      alert('Fehler bei der Verbindung zum Backend auf Render');
+      alert('Fehler bei der Verbindung zum Backend');
     } finally {
       setLoading(false);
     }
@@ -100,12 +97,11 @@ export default function Home() {
         <div style={{ background: '#F7F4EC', padding: '3rem', borderRadius: '12px', width: '100%', maxWidth: '480px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
           <div style={{ fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '2px', color: '#A37841', marginBottom: '8px' }}>Institutional Grade Suite</div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#13381A', margin: '0 0 10px 0' }}>Valuon Estate</h1>
-          <p style={{ color: '#555759', marginBottom: '2rem', fontSize: '0.95rem' }}>Authentifizierung erforderlich.</p>
           <button 
             onClick={() => { setAuthenticated(true); setUserEmail('developer@valuon-estate.de'); }}
-            style={{ width: '100%', padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer' }}
+            style={{ width: '100%', padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', marginTop: '1rem' }}
           >
-            Anmelden & Suite starten
+            Suite entsperren
           </button>
         </div>
       </main>
@@ -124,14 +120,14 @@ export default function Home() {
           <div style={{ fontSize: '0.85rem', color: '#A37841', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '2px' }}>Institutional Grade Investment Suite</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <span style={{ fontSize: '0.85rem', color: '#555759' }}>Angemeldet als: <strong>{userEmail}</strong></span>
+          <span style={{ fontSize: '0.85rem', color: '#555759' }}>{userEmail}</span>
           <button onClick={() => setAuthenticated(false)} style={{ padding: '8px 16px', background: '#D9534F', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
             Abmelden
           </button>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Navigation */}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${navItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
         {navItems.map((item) => (
           <button
@@ -155,156 +151,284 @@ export default function Home() {
 
       <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', marginBottom: '2rem' }} />
 
-      {/* --- MODUL: ANALYSE --- */}
       {navChoice === 'Analyse' && (
         <form onSubmit={handleCalculate}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '2.5rem' }}>
             
-            {/* LINKE SPALTE: EINGABEN & EXPANDER */}
+            {/* LINKE SPALTE: PARAMETRISIERUNG (EXAKT WIE AUF DEN SCREENSHOTS) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              
-              {/* Expander 1: Objektdaten */}
-              <Expander title="📌 1. Objektdaten & Stammdaten" defaultOpen={true}>
+              <div style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem', color: '#13381A' }}>Parametrisierung</div>
+
+              {/* SEKRETION 1: OBJEKTDATEN (EXPOSÉ) */}
+              <Expander title="1. Objektdaten (Exposé)" defaultOpen={true}>
                 <div style={groupStyle}>
                   <div>
-                    <label style={labelStyle}>Objektname</label>
+                    <label style={labelStyle}>Objektbezeichnung</label>
                     <input type="text" name="obj_name" value={formData.obj_name} onChange={handleChange} style={inputStyle} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
                     <div>
-                      <label style={labelStyle}>Kaufpreis (€)</label>
-                      <input type="number" name="kaufpreis" value={formData.kaufpreis} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>Objektart / Typ</label>
+                      <select name="objektart" value={formData.objektart} onChange={handleChange} style={inputStyle}>
+                        <option value="Eigentumswohnung">Eigentumswohnung</option>
+                        <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
+                        <option value="Haus">Haus</option>
+                      </select>
                     </div>
                     <div>
-                      <label style={labelStyle}>Wohnfläche (qm)</label>
-                      <input type="number" name="qm" value={formData.qm} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>Bundesland</label>
+                      <select name="bundesland" value={formData.bundesland} onChange={handleChange} style={inputStyle}>
+                        <option value="Niedersachsen">Niedersachsen</option>
+                        <option value="Nordrhein-Westfalen">Nordrhein-Westfalen</option>
+                        <option value="Bayern">Bayern</option>
+                        <option value="Berlin">Berlin</option>
+                      </select>
                     </div>
                   </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
-                      <label style={labelStyle}>Sanierungskosten (€)</label>
-                      <input type="number" name="sanierung" value={formData.sanierung} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>Stadt</label>
+                      <input type="text" name="stadt" value={formData.stadt} onChange={handleChange} style={inputStyle} />
                     </div>
                     <div>
-                      <label style={labelStyle}>Grundstücksanteil (%)</label>
-                      <input type="number" step="0.01" name="grund_anteil" value={formData.grund_anteil} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>Stadtteil</label>
+                      <input type="text" name="stadtteil" value={formData.stadtteil} onChange={handleChange} style={inputStyle} />
                     </div>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Kaufpreis (€) *</label>
+                    <input type="number" name="kaufpreis" value={formData.kaufpreis} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Wohnfläche (m²) *</label>
+                    <input type="number" name="qm" value={formData.qm} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Baujahr</label>
+                    <input type="number" name="baujahr" value={formData.baujahr} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <hr style={hrStyle} />
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={labelStyle}>Gesamtkaltmiete (€/Monat)</label>
+                      <input type="number" name="kaltmiete_monat" value={formData.kaltmiete_monat} onChange={handleChange} style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Kaltmiete (€/m²)</label>
+                      <input type="number" step="0.1" value={(formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 0).toFixed(2)} disabled style={{ ...inputStyle, background: '#eee' }} />
+                    </div>
+                  </div>
+
+                  <hr style={hrStyle} />
+
+                  <div>
+                    <label style={labelStyle}>Hausgeld gesamt (€/Monat)</label>
+                    <input type="number" name="hausgeld" value={formData.hausgeld} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  {/* Unter-Expander Hausgeld-Aufteilung */}
+                  <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <summary style={{ fontWeight: '600', color: '#13381A' }}>Hausgeld-Aufteilung</summary>
+                    <div style={{ marginTop: '10px', color: '#555759' }}>Details zur nicht umlegbaren Hausgeldkomponente.</div>
+                  </details>
+
+                  <div>
+                    <label style={labelStyle}>Sanierungsaufwand (€)</label>
+                    <input type="number" name="sanierung" value={formData.sanierung} onChange={handleChange} style={inputStyle} />
                   </div>
                 </div>
               </Expander>
 
-              {/* Expander 2: Kaufnebenkosten */}
-              <Expander title="🏛️ 2. Kaufnebenkosten">
+              {/* SEKTION 2: FINANZIERUNG & NEBENKOSTEN */}
+              <Expander title="2. Finanzierung & Nebenkosten">
                 <div style={groupStyle}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
-                      <label style={labelStyle}>Grunderwerbsteuer (%)</label>
+                      <label style={labelStyle}>1. Grunderwerbsteuer (%)</label>
                       <input type="number" step="0.1" name="grwt_p" value={formData.grwt_p} onChange={handleChange} style={inputStyle} />
+                      <div style={badgeStyle}>{((formData.kaufpreis * formData.grwt_p) / 100).toLocaleString('de-DE', {maximumFractionDigits:0})} €</div>
                     </div>
                     <div>
-                      <label style={labelStyle}>Notar & Grundbuch (%)</label>
+                      <label style={labelStyle}>2. Notar & Grundbuch (%)</label>
                       <input type="number" step="0.1" name="notar_p" value={formData.notar_p} onChange={handleChange} style={inputStyle} />
+                      <div style={badgeStyle}>{((formData.kaufpreis * formData.notar_p) / 100).toLocaleString('de-DE', {maximumFractionDigits:0})} €</div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Maklerprovision (%)</label>
-                      <input type="number" step="0.01" name="makler_p" value={formData.makler_p} onChange={handleChange} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Sonstige Nebenkosten (€)</label>
-                      <input type="number" name="sonst_nk" value={formData.sonst_nk} onChange={handleChange} style={inputStyle} />
-                    </div>
-                  </div>
-                </div>
-              </Expander>
 
-              {/* Expander 3: Finanzierung */}
-              <Expander title="💰 3. Finanzierung & Eigenkapital">
-                <div style={groupStyle}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
-                      <label style={labelStyle}>Eigenkapital (€)</label>
-                      <input type="number" name="ek_euro" value={formData.ek_euro} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>3. Maklerprovision (%)</label>
+                      <input type="number" step="0.01" name="makler_p" value={formData.makler_p} onChange={handleChange} style={inputStyle} />
+                      <div style={badgeStyle}>{((formData.kaufpreis * formData.makler_p) / 100).toLocaleString('de-DE', {maximumFractionDigits:0})} €</div>
                     </div>
                     <div>
-                      <label style={labelStyle}>Disagio (%)</label>
-                      <input type="number" step="0.1" name="disagio_p" value={formData.disagio_p} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>4. Sonst. NK (€)</label>
+                      <input type="number" name="sonst_nk" value={formData.sonst_nk} onChange={handleChange} style={inputStyle} />
+                      <div style={badgeStyle}>{Number(formData.sonst_nk).toLocaleString('de-DE', {maximumFractionDigits:0})} €</div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+
+                  <div style={{ background: '#F4EFE6', padding: '10px 14px', borderRadius: '6px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', fontWeight: '700', fontSize: '0.9rem' }}>
+                    <span>Summe Kaufnebenkosten:</span>
+                    <span>{(((formData.kaufpreis * (formData.grwt_p + formData.notar_p + formData.makler_p)) / 100) + Number(formData.sonst_nk)).toLocaleString('de-DE', {maximumFractionDigits:0})} €</span>
+                  </div>
+
+                  <hr style={hrStyle} />
+
+                  <div>
+                    <label style={labelStyle}>Darlehensart</label>
+                    <select name="loan_type" value={formData.loan_type} onChange={handleChange} style={inputStyle}>
+                      <option value="Annuitätendarlehen">Annuitätendarlehen</option>
+                      <option value="Endfälliges Darlehen">Endfälliges Darlehen</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
-                      <label style={labelStyle}>HBB Zins (%)</label>
+                      <label style={labelStyle}>Hausbank Zins (%)</label>
                       <input type="number" step="0.1" name="hb_zins" value={formData.hb_zins} onChange={handleChange} style={inputStyle} />
                     </div>
                     <div>
-                      <label style={labelStyle}>HBB Tilgung (%)</label>
+                      <label style={labelStyle}>Hausbank Tilgung (%)</label>
                       <input type="number" step="0.1" name="hb_tilg" value={formData.hb_tilg} onChange={handleChange} style={inputStyle} />
                     </div>
-                    <div>
-                      <label style={labelStyle}>Tilg.-freie Jahre</label>
-                      <input type="number" name="grace_years" value={formData.grace_years} onChange={handleChange} style={inputStyle} />
-                    </div>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Jährliche Sondertilgungsrate (€)</label>
+                    <input type="number" name="sondertilg" value={formData.sondertilg} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Tilgungsfreie Jahre</label>
+                    <input type="number" name="grace_years" value={formData.grace_years} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <summary style={{ fontWeight: '600', color: '#13381A' }}>Anschlussfinanzierung & Zinsbindung (Optional)</summary>
+                  </details>
+
+                  <details style={{ background: '#FAF8F5', borderRadius: '6px', border: '1px solid #E2D9CE', padding: '8px 12px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <summary style={{ fontWeight: '600', color: '#13381A' }}>KfW-Darlehen (Optional)</summary>
+                  </details>
+
+                  <hr style={hrStyle} />
+
+                  <div>
+                    <label style={labelStyle}>Eingesetztes Eigenkapital (€)</label>
+                    <input type="number" name="ek_euro" value={formData.ek_euro} onChange={handleChange} style={inputStyle} />
                   </div>
                 </div>
               </Expander>
 
-              {/* Expander 4: Miete & Bewirtschaftung */}
-              <Expander title="🏢 4. Miete & Bewirtschaftungskosten">
+              {/* SEKTION 3: ZIELMIETE & BEWIRTSCHAFTUNG */}
+              <Expander title="3. Zielmiete & Bewirtschaftung">
                 <div style={groupStyle}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
-                      <label style={labelStyle}>Ist-Miete (€/qm)</label>
-                      <input type="number" step="0.1" name="ist_sqm" value={formData.ist_sqm} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>Zielkaltmiete (€/Monat)</label>
+                      <input type="number" value={formData.kaltmiete_monat} onChange={handleChange} style={inputStyle} />
                     </div>
                     <div>
-                      <label style={labelStyle}>Soll-Miete (€/qm)</label>
-                      <input type="number" step="0.1" name="target_sqm" value={formData.target_sqm} onChange={handleChange} style={inputStyle} />
+                      <label style={labelStyle}>Zielkaltmiete (€/m²)</label>
+                      <input type="number" step="0.1" value={(formData.qm > 0 ? formData.kaltmiete_monat / formData.qm : 0).toFixed(2)} disabled style={{ ...inputStyle, background: '#eee' }} />
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Hausgeld (€)</label>
-                      <input type="number" name="hausgeld" value={formData.hausgeld} onChange={handleChange} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Nicht umlegbar (€)</label>
-                      <input type="number" name="hausgeld_nicht_umlegbar" value={formData.hausgeld_nicht_umlegbar} onChange={handleChange} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Instandhaltung (€/qm)</label>
-                      <input type="number" name="inst_sqm" value={formData.inst_sqm} onChange={handleChange} style={inputStyle} />
+
+                  <div>
+                    <label style={labelStyle}>Anpassung in Jahr</label>
+                    <input type="number" name="adj_year" value={formData.adj_year} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <hr style={hrStyle} />
+
+                  <div>
+                    <label style={labelStyle}>Instandhaltung (€/m²/Jahr)</label>
+                    <input type="number" name="inst_sqm" value={formData.inst_sqm} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Verwaltung (€/Monat)</label>
+                    <input type="number" name="mgt_monat" value={formData.mgt_monat} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Leerstandsquote (%) - {formData.vac_rate_pct}%</label>
+                    <input type="range" min="0" max="10" step="0.5" name="vac_rate_pct" value={formData.vac_rate_pct} onChange={handleChange} style={{ width: '100%', accentColor: '#13381A' }} />
+                  </div>
+
+                  <hr style={hrStyle} />
+
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '0.9rem', marginBottom: '4px' }}>Flexible Sonderinvestitionen (Capex)</div>
+                    <div style={{ fontSize: '0.8rem', color: '#555759', marginBottom: '10px' }}>Füge zielgerichtete Instandhaltungen oder Modernisierungen für spezifische Jahre hinzu.</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={labelStyle}>Jahr #1</label>
+                        <input type="number" value="3" readOnly style={{ ...inputStyle, background: '#eee' }} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Betrag (€) #1</label>
+                        <input type="number" value="0" readOnly style={{ ...inputStyle, background: '#eee' }} />
+                      </div>
                     </div>
                   </div>
                 </div>
               </Expander>
 
-              {/* Expander 5: Steuern & Makro */}
-              <Expander title="📈 5. Steuern & Makro-Annahmen">
+              {/* SEKTION 4: STEUERN, MAKRO & EXIT */}
+              <Expander title="4. Steuern, Makro & Exit">
                 <div style={groupStyle}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={labelStyle}>Steuersatz (%)</label>
-                      <input type="number" name="tax_rate_pct" value={formData.tax_rate_pct} onChange={handleChange} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Mietsteigerung (%)</label>
-                      <input type="number" step="0.1" name="miet_inc" value={formData.miet_inc} onChange={handleChange} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Kostensteigerung (%)</label>
-                      <input type="number" step="0.1" name="cost_inc" value={formData.cost_inc} onChange={handleChange} style={inputStyle} />
-                    </div>
+                  <div>
+                    <label style={labelStyle}>Grenzsteuersatz (%) - {formData.tax_rate_pct}%</label>
+                    <input type="range" min="0" max="50" step="1" name="tax_rate_pct" value={formData.tax_rate_pct} onChange={handleChange} style={{ width: '100%', accentColor: '#13381A' }} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>AfA-Modell</label>
+                    <select name="afa_model" value={formData.afa_model} onChange={handleChange} style={inputStyle}>
+                      <option value="Linear Standard">Linear Standard</option>
+                      <option value="Denkmalgeschützt">Denkmalgeschützt</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>AfA linear (%)</label>
+                    <input type="number" step="0.1" name="afa_lin" value={formData.afa_lin} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Mietsteigerung p.a. (%)</label>
+                    <input type="number" step="0.1" name="miet_inc" value={formData.miet_inc} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Wertsteigerung p.a. (%)</label>
+                    <input type="number" step="0.1" name="val_inc" value={formData.val_inc} onChange={handleChange} style={inputStyle} />
+                  </div>
+
+                  <hr style={hrStyle} />
+
+                  <div>
+                    <label style={labelStyle}>Verkaufsnebenkosten / Exit (%)</label>
+                    <input type="number" step="0.1" name="exit_cost" value={formData.exit_cost} onChange={handleChange} style={inputStyle} />
                   </div>
                 </div>
               </Expander>
 
               <button type="submit" disabled={loading} style={{ marginTop: '1rem', padding: '16px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.05rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(19,56,26,0.2)' }}>
-                {loading ? 'Berechne vollständige Analyse...' : '🚀 Investition analysieren'}
+                {loading ? 'Berechne Analyse...' : '🚀 Investition analysieren'}
               </button>
             </div>
 
-            {/* RECHTE SPALTE: ERGEBNISSE & KENNZAHLEN */}
+            {/* RECHTE SPALTE: AUSWERTUNG */}
             <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', height: 'fit-content' }}>
               <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', fontWeight: '700', borderBottom: '1px solid #E2D9CE', paddingBottom: '10px' }}>Investment-Auswertung & Cashflows</h3>
 
@@ -356,21 +480,19 @@ export default function Home() {
       {navChoice === 'Objekt Datenbank' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <h2>Objekt Datenbank & Pipeline</h2>
-          <p style={{ color: '#555759' }}>Übersicht aller gespeicherten Immobilienobjekte aus Supabase.</p>
+          <p style={{ color: '#555759' }}>Übersicht aller gespeicherten Immobilienobjekte.</p>
         </div>
       )}
 
       {navChoice === 'Immobilienwissen' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <h2>Immobilienwissen & KI-Assistent</h2>
-          <p style={{ color: '#555759' }}>Fachartikel, Kennzahlen und interaktiver KI-Support.</p>
         </div>
       )}
 
       {navChoice === 'Einstellungen' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <h2>Einstellungen & Anlagestrategien</h2>
-          <p style={{ color: '#555759' }}>Konfiguration deiner Parameter-Standards und Profile.</p>
         </div>
       )}
 
@@ -378,7 +500,6 @@ export default function Home() {
   );
 }
 
-// Hilfskomponente für einklappbare Abschnitte (wie st.expander)
 function Expander({ title, children, defaultOpen = false }) {
   return (
     <details open={defaultOpen} style={{ background: 'white', borderRadius: '10px', border: '1px solid #E2D9CE', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
@@ -403,4 +524,6 @@ function MetricCard({ title, value, highlight = false }) {
 
 const groupStyle = { display: 'flex', flexDirection: 'column', gap: '1rem' };
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px', color: '#555759' };
-const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CCC', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
+const inputStyle = { width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #CCC', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', background: 'white' };
+const hrStyle = { border: 'none', borderTop: '1px solid #E2D9CE', margin: '5px 0' };
+const badgeStyle = { marginTop: '4px', background: '#F4EFE6', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', color: '#13381A', textAlign: 'center', border: '1px solid #E2D9CE' };

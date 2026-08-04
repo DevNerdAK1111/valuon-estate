@@ -33,7 +33,7 @@ export default function Home() {
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
   const [tableTheme, setTableTheme] = useState('Kapitaldienst & Steuern');
-  const [projectionHorizon, setProjectionHorizon] = useState(10);
+  const [projectionHorizon, setProjectionHorizon] = useState('10');
   const [chartView, setChartView] = useState('1. Vermögensstruktur & NAV (Netto-Eigenkapital)');
 
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
@@ -368,7 +368,25 @@ export default function Home() {
   const monthlyCashflow = firstYearCashflow / 12;
   const bruttoMietrendite = formData.kaufpreis > 0 ? ((formData.kaltmiete_monat * 12) / formData.kaufpreis) * 100 : 0;
 
-  const slicedProjection = result?.projection ? result.projection.slice(0, projectionHorizon) : [];
+  // DYNAMISCHE ERMITTLUNG DES PROJEKTIONSHORIZONTS
+  let slicedProjection = [];
+  let actualHorizonYears = 10;
+
+  if (result?.projection && result.projection.length > 0) {
+    if (projectionHorizon === 'payoff') {
+      const payoffIdx = result.projection.findIndex(r => (r['Restschuld'] || 0) <= 0);
+      if (payoffIdx !== -1) {
+        slicedProjection = result.projection.slice(0, payoffIdx + 1);
+      } else {
+        slicedProjection = result.projection;
+      }
+    } else {
+      const numYears = parseInt(projectionHorizon, 10) || 10;
+      slicedProjection = result.projection.slice(0, numYears);
+    }
+    actualHorizonYears = slicedProjection.length;
+  }
+
   const cumulatedCashflowHorizon = slicedProjection.reduce((acc, curr) => acc + (curr['Cashflow Netto'] || 0), 0);
   const endYearObj = slicedProjection[slicedProjection.length - 1];
   const endNav = endYearObj ? ((endYearObj['Immobilienwert'] || 0) - (endYearObj['Restschuld'] || 0)) : 0;
@@ -695,7 +713,7 @@ export default function Home() {
             {/* RECHTE SPALTE: DASHBOARD & RESULTATE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* TOP HEADER & TOOLBAR */}
+              {/* TOP HEADER & TOOLBAR WITH 5-YEAR STEPS + FULL PAYOFF OPTION */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem' }}>
                 <div>
                   <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
@@ -711,14 +729,15 @@ export default function Home() {
                     <label style={{ ...labelStyle, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Projektionshorizont:</label>
                     <select
                       value={projectionHorizon}
-                      onChange={(e) => setProjectionHorizon(Number(e.target.value))}
+                      onChange={(e) => setProjectionHorizon(e.target.value)}
                       style={{ ...inputTextStyle, background: '#FAF8F5', fontWeight: 'bold', padding: '6px 12px' }}
                     >
-                      <option value={5}>5 Jahre</option>
-                      <option value={10}>10 Jahre (Standard)</option>
-                      <option value={15}>15 Jahre</option>
-                      <option value={20}>20 Jahre</option>
-                      <option value={30}>30 Jahre</option>
+                      <option value="10">10 Jahre (Standard)</option>
+                      <option value="15">15 Jahre</option>
+                      <option value="20">20 Jahre</option>
+                      <option value="25">25 Jahre</option>
+                      <option value="30">30 Jahre</option>
+                      <option value="payoff">Bis Darlehen vollständig getilgt ist</option>
                     </select>
                   </div>
 
@@ -778,7 +797,7 @@ export default function Home() {
                   value={`${formatPct(bruttoMietrendite)} %`} 
                 />
                 <MetricCard 
-                  title={`GESAMTGEWINN (${projectionHorizon} J.)`} 
+                  title={`GESAMTGEWINN (${actualHorizonYears} J.)`} 
                   value={`${formatEuroInt(result ? gesamtGewinnHorizon : 0)} €`} 
                 />
                 <MetricCard 
@@ -965,7 +984,9 @@ export default function Home() {
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt((row['Zinsen'] || 0) + (row['Tilgung'] || 0))} €</td>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['AfA'])} €</td>
                                   <td style={{ padding: '8px 10px', fontWeight: 'bold', color: taxVal < 0 ? '#38A169' : (taxVal > 0 ? '#9B2C2C' : 'inherit') }}>
-                                    {taxVal < 0 ? `+${formatEuroInt(Math.abs(taxVal))} € (Erstattung)` : `${formatEuroInt(taxVal)} €`}
+                                    {taxVal < 0 
+                                      ? `-${formatEuroInt(Math.abs(taxVal))} € (Erstattung)` 
+                                      : (taxVal > 0 ? `+${formatEuroInt(taxVal)} €` : '0 €')}
                                   </td>
                                 </>
                               )}
@@ -984,11 +1005,11 @@ export default function Home() {
 
                         {/* SUMMENZEILE */}
                         <tr style={{ background: '#FAF8F5', fontWeight: 'bold', borderTop: '2px solid #13381A' }}>
-                          <td style={{ padding: '10px', textAlign: 'left' }}>Summe ({projectionHorizon} J.)</td>
+                          <td style={{ padding: '10px', textAlign: 'left' }}>Summe ({actualHorizonYears} J.)</td>
                           {tableTheme === 'Mieten & Cashflow' && (
                             <>
                               <td style={{ padding: '10px' }}>
-                                {formatPct(slicedProjection.reduce((acc, curr) => acc + (((curr['Mieteinnahmen IST'] || 0) / (formData.kaufpreis || 1)) * 100), 0) / (projectionHorizon || 1))} % (Ø)
+                                {formatPct(slicedProjection.reduce((acc, curr) => acc + (((curr['Mieteinnahmen IST'] || 0) / (formData.kaufpreis || 1)) * 100), 0) / (actualHorizonYears || 1))} % (Ø)
                               </td>
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Mieteinnahmen IST'] || 0), 0))} €</td>
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + ((curr['Effektive Miete'] || curr['Mieteinnahmen IST'] || 0) - (curr['Bewirtschaftungskosten'] || 0)), 0))} €</td>
@@ -1007,8 +1028,8 @@ export default function Home() {
                                 {(() => {
                                   const sumTax = slicedProjection.reduce((acc, curr) => acc + (curr['Steuer'] || 0), 0);
                                   return sumTax < 0 
-                                    ? `+${formatEuroInt(Math.abs(sumTax))} € (Gesamterstattung)` 
-                                    : `${formatEuroInt(sumTax)} €`;
+                                    ? `-${formatEuroInt(Math.abs(sumTax))} € (Gesamterstattung)` 
+                                    : `+${formatEuroInt(sumTax)} € (Gesamtsteuer)`;
                                 })()}
                               </td>
                             </>
@@ -1032,7 +1053,7 @@ export default function Home() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <strong>Dynamische Tilgung:</strong> Bei einem Annuitätendarlehen bleibt die Gesamtrate konstant. Mit sinkender Restschuld sinkt der Zinsanteil, wodurch die Tilgung von Jahr zu Jahr automatisch ansteigt.<br />
-                        <strong>Steuer / Erstattung:</strong> Positive Grüne Beträge (+) stellen eine Steuererstattung durch Verrechnung der Verluste aus Vermietung mit deiner Einkommensteuer dar.
+                        <strong>Steuer / Erstattung:</strong> Rechnerisch negative Beträge (-) stellen eine Steuererstattung durch Verrechnung der Verluste aus Vermietung mit deiner Einkommensteuer dar.
                       </div>
                       <div>
                         <strong>Reinertrag (NOI):</strong> Mietertrag nach Abzug von Verwaltung, Instandhaltung und Leerstand (vor Zinsen/Steuer).<br />
@@ -1128,7 +1149,7 @@ export default function Home() {
   );
 }
 
-// --- PERFEKTIONIERTE DONUT CHART KOMPONENTE ---
+// --- DONUT CHART KOMPONENTE ---
 function DonutChart({ totalInvestment, equity, kfw, hb }) {
   const safeTotal = totalInvestment || 1;
   const eqPct = (equity / safeTotal) * 100;
@@ -1138,12 +1159,10 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '260px' }}>
       
-      {/* SVG RING MIT PROMINENTER TEXT-MITTE */}
       <div style={{ position: 'relative', width: '200px', height: '200px' }}>
         <svg width="100%" height="100%" viewBox="0 0 42 42">
           <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E2D9CE" strokeWidth="4.5" />
           
-          {/* Hausbank Segment (Dunkelgrün) */}
           <circle
             cx="21" cy="21" r="15.915"
             fill="transparent" stroke="#13381A" strokeWidth="4.5"
@@ -1151,7 +1170,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
             strokeDashoffset="25"
           />
 
-          {/* Eigenkapital Segment (Valuon Warm Gold - Edler Kontrast!) */}
           <circle
             cx="21" cy="21" r="15.915"
             fill="transparent" stroke="#A37841" strokeWidth="4.5"
@@ -1159,7 +1177,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
             strokeDashoffset={`${25 - hbPct}`}
           />
 
-          {/* KfW Segment (Steel Blue) */}
           {kfwPct > 0 && (
             <circle
               cx="21" cy="21" r="15.915"
@@ -1169,13 +1186,12 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
             />
           )}
 
-          {/* GESAMTINVESTITION ZENTRUMSTEXT */}
           <text x="21" y="19" textAnchor="middle" fontSize="3.2" fontWeight="800" fill="#718096">GESAMT</text>
           <text x="21" y="24.5" textAnchor="middle" fontSize="3.8" fontWeight="900" fill="#13381A">{formatEuroInt(totalInvestment)} €</text>
         </svg>
       </div>
 
-      {/* KLAR STRUKTURIERTE LEGENDE MIT ABSOLUTEN EUR-WERTE UND PROZENTEN */}
+      {/* STRUKTURIERTE LEGENDE MIT PROZENTZAHL HINTEN */}
       <div style={{ marginTop: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1208,7 +1224,33 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
   );
 }
 
-// --- PROJEKTIONS-CHART MIT KLARER X-ACHSE & DYNAMISCHEM CASHFLOW ---
+// HELFER FÜR RUNDE, SAUBERE Y-ACHSEN-SCHRITTE
+function getNiceScale(maxVal) {
+  if (!maxVal || maxVal <= 0) return { niceMax: 10000, ticks: [10000, 7500, 5000, 2500, 0] };
+
+  const allowedSteps = [
+    100, 200, 250, 500,
+    1000, 1500, 2000, 2500, 3000, 4000, 5000,
+    10000, 15000, 20000, 25000, 30000, 40000, 50000,
+    100000, 150000, 200000, 250000, 300000, 500000, 1000000
+  ];
+
+  const minNiceMax = maxVal * 1.05;
+  let chosenStep = 25000;
+
+  for (let s of allowedSteps) {
+    if (s * 4 >= minNiceMax) {
+      chosenStep = s;
+      break;
+    }
+  }
+
+  const niceMax = chosenStep * 4;
+  const ticks = [niceMax, chosenStep * 3, chosenStep * 2, chosenStep * 1, 0];
+  return { niceMax, ticks };
+}
+
+// --- PROJEKTIONS-CHART MIT SAUBEREN GANZEN Y-ACHSEN-ZAHLEN ---
 function ProjectionChart({ projection, kaufpreis, view }) {
   if (!projection || projection.length === 0) {
     return <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
@@ -1217,35 +1259,31 @@ function ProjectionChart({ projection, kaufpreis, view }) {
   const isNavView = view.includes('Vermögensstruktur');
 
   if (isNavView) {
-    // --- ANSICHT 1: VERMÖGENSSTRUKTUR & NAV ---
-    const maxVal = Math.max(...projection.map(r => r['Immobilienwert'] || kaufpreis || 100000)) * 1.1;
-    const yTicks = [maxVal, maxVal * 0.75, maxVal * 0.5, maxVal * 0.25, 0];
+    const rawMax = Math.max(...projection.map(r => r['Immobilienwert'] || kaufpreis || 100000));
+    const { niceMax, ticks } = getNiceScale(rawMax);
 
     return (
       <div style={{ width: '100%', marginTop: '10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', height: '220px' }}>
           
-          {/* Y-ACHSE */}
+          {/* SAUBERE RUNDE Y-ACHSEN ZAHLEN */}
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
-            {yTicks.map((val, idx) => (
+            {ticks.map((val, idx) => (
               <span key={idx}>{formatEuroInt(val)} €</span>
             ))}
           </div>
 
-          {/* SVG GRAPH */}
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <svg width="100%" height="100%" viewBox="0 0 500 220" preserveAspectRatio="none">
               
-              {/* Rasterlinien */}
               {[0, 42, 85, 127, 170].map((y, idx) => (
                 <line key={idx} x1="0" y1={y} x2="500" y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
               ))}
 
-              {/* NAV BALKEN (Gold) */}
               {projection.map((r, i) => {
                 const x = (i / projection.length) * 480 + 5;
                 const nav = (r['Immobilienwert'] || 0) - (r['Restschuld'] || 0);
-                const barHeight = (nav / maxVal) * 170;
+                const barHeight = (nav / niceMax) * 170;
                 const y = 170 - barHeight;
 
                 return (
@@ -1262,34 +1300,30 @@ function ProjectionChart({ projection, kaufpreis, view }) {
                 );
               })}
 
-              {/* OBJEKTWERT LINIE (Grün) */}
               <polyline
                 fill="none"
                 stroke="#13381A"
                 strokeWidth="3.5"
                 points={projection.map((r, i) => {
                   const x = (i / projection.length) * 480 + 20;
-                  const y = 170 - ((r['Immobilienwert'] || 0) / maxVal) * 170;
+                  const y = 170 - ((r['Immobilienwert'] || 0) / niceMax) * 170;
                   return `${x},${y}`;
                 }).join(' ')}
               />
 
-              {/* RESTSCHULD LINIE (Burgund) */}
               <polyline
                 fill="none"
                 stroke="#9B2C2C"
                 strokeWidth="3.5"
                 points={projection.map((r, i) => {
                   const x = (i / projection.length) * 480 + 20;
-                  const y = 170 - ((r['Restschuld'] || 0) / maxVal) * 170;
+                  const y = 170 - ((r['Restschuld'] || 0) / niceMax) * 170;
                   return `${x},${y}`;
                 }).join(' ')}
               />
 
-              {/* DIE ECHTE SAUBERE X-ACHSE LINIE */}
               <line x1="0" y1="170" x2="500" y2="170" stroke="#13381A" strokeWidth="2" />
 
-              {/* X-ACHSEN TICKS UND JAHRESZAHLEN-TEXTE */}
               {projection.map((r, i) => {
                 const x = (i / projection.length) * 480 + 20;
                 return (
@@ -1306,12 +1340,10 @@ function ProjectionChart({ projection, kaufpreis, view }) {
           </div>
         </div>
 
-        {/* ACHSEN-BESCHRIFTUNG MITTE UNTEN */}
         <div style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '700', color: '#718096', marginTop: '2px' }}>
           Projektionsjahre
         </div>
 
-        {/* LEGENDE */}
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '700', marginTop: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ width: '16px', height: '4px', background: '#13381A', borderRadius: '2px' }}></span>
@@ -1329,36 +1361,29 @@ function ProjectionChart({ projection, kaufpreis, view }) {
       </div>
     );
   } else {
-    // --- ANSICHT 2: CASHFLOW & MIETEINNAHMEN ---
-    const maxRent = Math.max(...projection.map(r => r['Mieteinnahmen IST'] || 10000)) * 1.2;
+    const rawRentMax = Math.max(...projection.map(r => r['Mieteinnahmen IST'] || 10000));
+    const { niceMax, ticks } = getNiceScale(rawRentMax);
     const absMaxCf = Math.max(1000, ...projection.map(r => Math.abs(r['Cashflow Netto'] || 0))) * 1.5;
-
-    const yTicks = [maxRent, maxRent * 0.66, maxRent * 0.33, 0];
 
     return (
       <div style={{ width: '100%', marginTop: '10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', height: '220px' }}>
           
-          {/* Y-ACHSE */}
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
-            {yTicks.map((val, idx) => (
+            {ticks.map((val, idx) => (
               <span key={idx}>{formatEuroInt(val)} €</span>
             ))}
           </div>
 
-          {/* SVG GRAPH */}
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <svg width="100%" height="100%" viewBox="0 0 500 220" preserveAspectRatio="none">
               
-              {/* Gridlines */}
               {[0, 42, 85, 127].map((y, idx) => (
                 <line key={idx} x1="0" y1={y} x2="500" y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
               ))}
 
-              {/* NULL-LINIE FÜR CASHFLOW (Bei Y = 130) */}
               <line x1="0" y1="130" x2="500" y2="130" stroke="#718096" strokeWidth="1" strokeDasharray="2 2" />
 
-              {/* CASHFLOW NETTO BALKEN (Positiv -> Grün nach oben, Negativ -> Burgund nach unten) */}
               {projection.map((r, i) => {
                 const x = (i / projection.length) * 480 + 8;
                 const cf = r['Cashflow Netto'] || 0;
@@ -1379,22 +1404,19 @@ function ProjectionChart({ projection, kaufpreis, view }) {
                 );
               })}
 
-              {/* KALTMIETE LINIE (Valuon Warm Gold) */}
               <polyline
                 fill="none"
                 stroke="#A37841"
                 strokeWidth="3.5"
                 points={projection.map((r, i) => {
                   const x = (i / projection.length) * 480 + 20;
-                  const y = 130 - ((r['Mieteinnahmen IST'] || 0) / maxRent) * 120;
+                  const y = 130 - ((r['Mieteinnahmen IST'] || 0) / niceMax) * 120;
                   return `${x},${y}`;
                 }).join(' ')}
               />
 
-              {/* ECHTE X-ACHSE LINIE (Bei Y = 170) */}
               <line x1="0" y1="170" x2="500" y2="170" stroke="#13381A" strokeWidth="2" />
 
-              {/* X-ACHSEN TICKS UND JAHRESZAHLEN */}
               {projection.map((r, i) => {
                 const x = (i / projection.length) * 480 + 20;
                 return (
@@ -1411,12 +1433,10 @@ function ProjectionChart({ projection, kaufpreis, view }) {
           </div>
         </div>
 
-        {/* ACHSEN-BESCHRIFTUNG MITTE UNTEN */}
         <div style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '700', color: '#718096', marginTop: '2px' }}>
           Projektionsjahre
         </div>
 
-        {/* LEGENDE */}
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '700', marginTop: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ width: '16px', height: '4px', background: '#A37841', borderRadius: '2px' }}></span>

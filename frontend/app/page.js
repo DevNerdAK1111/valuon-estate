@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-// ACHTUNG: Ersetze diese URL bei Bedarf exakt mit deiner echten Render-Backend-URL
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
 // Formatierungs-Helfer
@@ -9,7 +8,6 @@ const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigi
 const formatEuroInt = (val) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(Math.round(val || 0));
 const formatPct = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 
-// Grunderwerbsteuer-Tabelle nach Bundesland
 const grunderwerbsteuerSätze = {
   'Baden-Württemberg': 5.0,
   'Bayern': 3.5,
@@ -30,12 +28,32 @@ const grunderwerbsteuerSätze = {
 };
 
 export default function Home() {
-  const [authenticated, setAuthenticated] = useState(true);
+  const [authenticated] = useState(true);
   const [userEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Analyse');
 
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
+
+  // BACKEND-STATUS & PRE-TRIGGER STATE
+  const [backendStatus, setBackendStatus] = useState('sleeping'); // 'sleeping', 'waking', 'ready'
+
+  // AUTOMATISCHER TRIGGER: Weckt das Backend im Hintergrund auf, sobald die App geladen wird
+  useEffect(() => {
+    pingBackend();
+  }, []);
+
+  const pingBackend = () => {
+    if (backendStatus === 'ready') return;
+    setBackendStatus('waking');
+    
+    fetch(`${BACKEND_URL}/`)
+      .then((res) => {
+        if (res.ok) setBackendStatus('ready');
+        else setBackendStatus('sleeping');
+      })
+      .catch(() => setBackendStatus('sleeping'));
+  };
 
   // Formular-State
   const [formData, setFormData] = useState({
@@ -47,52 +65,36 @@ export default function Home() {
     kaufpreis: 170000.0,
     qm: 85.0,
     baujahr: 1996,
-    
-    // Miete IST
     kaltmiete_monat: 850.0,
     ist_sqm: 10.0,
-
-    // Miete ZIEL
     target_monat: 850.0,
     target_sqm: 10.0,
     adj_year: 1,
-
-    // Hausgeld & Bewirtschaftung
     hausgeld: 250.0,
     hausgeld_nicht_umlegbar: 62.50,
     sanierung: 0.0,
     inst_sqm: 12.0,
     mgt_monat: 30.0,
     vac_rate_pct: 2.0,
-
-    // Nebenkosten
     grwt_p: 5.0,
     notar_p: 2.0,
     makler_p: 3.57,
     sonst_nk: 0.0,
-
-    // Hauptfinanzierung
     loan_type: 'Annuitätendarlehen',
     hb_zins: 4.0,
     hb_tilg: 2.0,
     sondertilg: 0.0,
     grace_years: 0,
     ek_euro: 17969.0,
-
-    // Anschlussfinanzierung
     zinsbindung: 10,
     folge_zins: 3.8,
     folge_mode: 'Rate konstant halten (Annuität)',
     folge_tilg: 2.0,
-
-    // KfW-Darlehen
     kfw_amt: 0.0,
     kfw_zins: 2.1,
     kfw_tilg: 3.0,
     kfw_grace_years: 0,
     kfw_grant: 0.0,
-
-    // Steuern & Makro
     tax_rate_pct: 42.0,
     afa_model: 'Linear Standard',
     afa_lin: 2.0,
@@ -102,19 +104,12 @@ export default function Home() {
     exit_cost: 0.0
   });
 
-  // Dynamische Capex-Liste
-  const [capexList, setCapexList] = useState([
-    { year: 3, amount: 0 }
-  ]);
-
+  const [capexList, setCapexList] = useState([{ year: 3, amount: 0 }]);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [calcError, setCalcError] = useState(null);
-
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(null);
-
-  // Datenbank-State
   const [dbProperties, setDbProperties] = useState([]);
   const [loadingDb, setLoadingDb] = useState(false);
 
@@ -139,7 +134,6 @@ export default function Home() {
     }
   };
 
-  // Objekt in Datenbank speichern
   const handleSaveToDatabase = async () => {
     if (!result) return;
     setSaving(true);
@@ -198,8 +192,8 @@ export default function Home() {
     }
   };
 
-  // Logik für Kaltmieten
   const handleQmChange = (newQm) => {
+    pingBackend(); // Frühes Aufwecken bei Interaktion
     const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
     let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
     if (!isTargetCustomized) {
@@ -212,6 +206,7 @@ export default function Home() {
   };
 
   const handleIstMonatChange = (val) => {
+    pingBackend();
     const sqmVal = formData.qm > 0 ? val / formData.qm : 0;
     let updated = { ...formData, kaltmiete_monat: val, ist_sqm: sqmVal };
     if (!isTargetCustomized) {
@@ -222,6 +217,7 @@ export default function Home() {
   };
 
   const handleIstSqmChange = (val) => {
+    pingBackend();
     const monatVal = val * formData.qm;
     let updated = { ...formData, ist_sqm: val, kaltmiete_monat: monatVal };
     if (!isTargetCustomized) {
@@ -243,7 +239,6 @@ export default function Home() {
     setFormData({ ...formData, target_sqm: val, target_monat: monatVal });
   };
 
-  // Hausgeld
   const handleHausgeldChange = (val) => {
     let updated = { ...formData, hausgeld: val };
     if (!isHausgeldCustomized) {
@@ -257,7 +252,6 @@ export default function Home() {
     setFormData({ ...formData, hausgeld_nicht_umlegbar: val });
   };
 
-  // Capex
   const handleCapexChange = (index, field, value) => {
     const updated = [...capexList];
     updated[index][field] = value;
@@ -276,6 +270,7 @@ export default function Home() {
   };
 
   const updateField = (field, value) => {
+    pingBackend(); // Trigger bei Feldänderung
     let updated = { ...formData, [field]: value };
 
     if (field === 'bundesland' && grunderwerbsteuerSätze[value] !== undefined) {
@@ -299,13 +294,11 @@ export default function Home() {
     setFormData(updated);
   };
 
-  // Nebenkosten-Summe
   const grwt_euro = (formData.kaufpreis * formData.grwt_p) / 100;
   const notar_euro = (formData.kaufpreis * formData.notar_p) / 100;
   const makler_euro = (formData.kaufpreis * formData.makler_p) / 100;
   const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
 
-  // SICHERE BERECHNUNGS-FUNKTION (FEHLER-ABFANGEN)
   const handleCalculate = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -346,12 +339,12 @@ export default function Home() {
       }
 
       const data = await res.json();
-      
       if (!data || !data.summary) {
         throw new Error('Das Backend hat keine vollständige Auswertung geliefert.');
       }
 
       setResult(data);
+      setBackendStatus('ready');
     } catch (err) {
       setCalcError(err.message || 'Verbindung zum Backend fehlgeschlagen.');
     } finally {
@@ -364,13 +357,22 @@ export default function Home() {
   return (
     <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
       
-      {/* Header */}
+      {/* Header mit Backend-Statusanzeige */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '2rem', fontWeight: '800', color: '#13381A' }}>Valuon Estate</div>
           <div style={{ fontSize: '0.8rem', color: '#A37841', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Institutional Grade Investment Suite</div>
         </div>
-        <div style={{ fontSize: '0.85rem', color: '#555759' }}>Konto: <strong>{userEmail}</strong></div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          {/* Status-Lämpchen */}
+          <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 12px', borderRadius: '20px', border: '1px solid #E2D9CE' }}>
+            {backendStatus === 'ready' && <span style={{ color: '#38A169', fontWeight: 'bold' }}>🟢 Backend Bereit</span>}
+            {backendStatus === 'waking' && <span style={{ color: '#D69E2E', fontWeight: 'bold' }}>🟡 Backend wird aufgeweckt...</span>}
+            {backendStatus === 'sleeping' && <span style={{ color: '#E53E3E', fontWeight: 'bold' }}>🔴 Backend schläft</span>}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#555759' }}>Konto: <strong>{userEmail}</strong></div>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -409,7 +411,7 @@ export default function Home() {
                   
                   <div>
                     <label style={labelStyle}>Objektbezeichnung</label>
-                    <input type="text" value={formData.obj_name} onChange={(e) => updateField('obj_name', e.target.value)} style={inputTextStyle} />
+                    <input type="text" value={formData.obj_name} onFocus={pingBackend} onChange={(e) => updateField('obj_name', e.target.value)} style={inputTextStyle} />
                   </div>
 
                   <div>
@@ -443,13 +445,12 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <StepperInput label="Kaufpreis (€) *" value={formData.kaufpreis} onChange={(v) => updateField('kaufpreis', v)} step={5000} isCurrency={true} />
-                  <StepperInput label="Wohnfläche (m²) *" value={formData.qm} onChange={handleQmChange} step={1} />
+                  <StepperInput label="Kaufpreis (€) *" value={formData.kaufpreis} onChange={(v) => updateField('kaufpreis', v)} step={5000} isCurrency={true} onFocus={pingBackend} />
+                  <StepperInput label="Wohnfläche (m²) *" value={formData.qm} onChange={handleQmChange} step={1} onFocus={pingBackend} />
                   <StepperInput label="Baujahr" value={formData.baujahr} onChange={(v) => updateField('baujahr', v)} step={1} isYear={true} />
 
                   <hr style={hrStyle} />
 
-                  {/* Kaltmiete IST */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <StepperInput label="Gesamtkaltmiete (€/Monat)" value={formData.kaltmiete_monat} onChange={handleIstMonatChange} step={50} isCurrency={true} />
                     <StepperInput label="Kaltmiete (€/m²)" value={formData.ist_sqm} onChange={handleIstSqmChange} step={0.5} />
@@ -474,7 +475,6 @@ export default function Home() {
               {/* 2. FINANZIERUNG & NEBENKOSTEN */}
               <Expander title="2. Finanzierung & Nebenkosten">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
                       <StepperInput label="1. Grunderwerbsteuer (%)" value={formData.grwt_p} onChange={(v) => updateField('grwt_p', v)} step={0.1} isPercent={true} />
@@ -550,14 +550,12 @@ export default function Home() {
                       💡 <strong>EK-Empfehlung:</strong> Wir empfehlen mindestens die Kaufnebenkosten in Höhe von <strong>{formatEuroInt(summe_nk)} €</strong> als Eigenkapital einzubringen, um eine solide 100%-Finanzierung der Bank zu erhalten.
                     </div>
                   </div>
-
                 </div>
               </Expander>
 
               {/* 3. ZIELMIETE & BEWIRTSCHAFTUNG */}
               <Expander title="3. Zielmiete & Bewirtschaftung">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <StepperInput label="Zielkaltmiete (€/Monat)" value={formData.target_monat} onChange={handleTargetMonatChange} step={50} isCurrency={true} />
                     <StepperInput label="Zielkaltmiete (€/m²)" value={formData.target_sqm} onChange={handleTargetSqmChange} step={0.5} />
@@ -608,14 +606,12 @@ export default function Home() {
                       ＋ Weitere Sonderinvestition hinzufügen
                     </button>
                   </div>
-
                 </div>
               </Expander>
 
               {/* 4. STEUERN, MAKRO & EXIT */}
               <Expander title="4. Steuern, Makro & Exit">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', marginBottom: '4px' }}>
                       <span style={{ color: '#4A5568' }}>Grenzsteuersatz (%)</span>
@@ -667,12 +663,11 @@ export default function Home() {
                     isPercent={true} 
                     tooltip="Typischerweise liegen die Verkaufsnebenkosten bei ca. 1,0 % bis 3,0 % des Verkaufspreises (z. B. für Maklerprovision, Marketing, Grundbuch oder Notar/Vertragskosten)." 
                   />
-
                 </div>
               </Expander>
 
               <button type="submit" disabled={loading} style={{ padding: '14px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                {loading ? 'Berechne (Backend startet)...' : '🚀 Investition analysieren'}
+                {loading ? 'Berechne...' : '🚀 Investition analysieren'}
               </button>
 
             </div>
@@ -715,7 +710,7 @@ export default function Home() {
                   <strong>⚠️ Fehler bei der Berechnung:</strong><br />
                   {calcError}<br />
                   <span style={{ fontSize: '0.8rem', color: '#742A2A', marginTop: '4px', display: 'block' }}>
-                    Tipp: Wenn der Server im Ruhezustand war (Cold Start), versuche es in 30 Sekunden noch einmal.
+                    Tipp: Falls das Backend geschlafen hat, wird es in diesen Sekunden aufgeweckt. Klicke gleich noch einmal.
                   </span>
                 </div>
               )}
@@ -723,7 +718,7 @@ export default function Home() {
               {!result || !result.summary ? (
                 <div style={{ height: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
                   <p style={{ margin: 0, fontWeight: '500' }}>Klicke links auf "Investition analysieren".</p>
-                  {loading && <p style={{ fontSize: '0.85rem', color: '#A37841', marginTop: '8px' }}>⏳ Server wird kontaktiert / aufgeweckt...</p>}
+                  {loading && <p style={{ fontSize: '0.85rem', color: '#A37841', marginTop: '8px' }}>⏳ Backend wird kontaktiert...</p>}
                 </div>
               ) : (
                 <div>
@@ -843,8 +838,7 @@ export default function Home() {
   );
 }
 
-// Custom Stepper-Komponente
-function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null }) {
+function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null, onFocus = null }) {
   const getFormattedValue = (v) => {
     if (isYear) return String(Math.round(v || 0));
     if (isInteger) return formatEuroInt(v);
@@ -876,6 +870,7 @@ function StepperInput({ label, value, onChange, step = 1, isYear = false, isInte
         <input
           type="text"
           disabled={disabled}
+          onFocus={onFocus}
           value={getFormattedValue(value)}
           onChange={(e) => {
             const raw = e.target.value.replace(/[^0-9,-]/g, '').replace(',', '.');

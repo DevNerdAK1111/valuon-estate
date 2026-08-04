@@ -695,7 +695,7 @@ export default function Home() {
             {/* RECHTE SPALTE: DASHBOARD & RESULTATE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* TOP HEADER & TOOLBAR (OBJEKTNAME LINKS, HORIZONT & SPEICHERN RECHTS) */}
+              {/* TOP HEADER & TOOLBAR */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem' }}>
                 <div>
                   <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
@@ -706,7 +706,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* PROJEKTIONSHORIZONT UND SPEICHER-BUTTON RECHTS BÜNDIG */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div>
                     <label style={{ ...labelStyle, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Projektionshorizont:</label>
@@ -1129,7 +1128,7 @@ export default function Home() {
   );
 }
 
-// --- DONUT CHART KOMPONENTE ---
+// --- PERFEKTIONIERTE DONUT CHART KOMPONENTE ---
 function DonutChart({ totalInvestment, equity, kfw, hb }) {
   const safeTotal = totalInvestment || 1;
   const eqPct = (equity / safeTotal) * 100;
@@ -1138,221 +1137,303 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '260px' }}>
-      <svg width="180" height="180" viewBox="0 0 42 42">
-        <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E2D9CE" strokeWidth="5" />
-        <circle
-          cx="21" cy="21" r="15.915"
-          fill="transparent" stroke="#13381A" strokeWidth="5"
-          strokeDasharray={`${hbPct} ${100 - hbPct}`}
-          strokeDashoffset="25"
-        />
-        <circle
-          cx="21" cy="21" r="15.915"
-          fill="transparent" stroke="#2D3748" strokeWidth="5"
-          strokeDasharray={`${eqPct} ${100 - eqPct}`}
-          strokeDashoffset={`${25 - hbPct}`}
-        />
-        {kfwPct > 0 && (
+      
+      {/* SVG RING MIT PROMINENTER TEXT-MITTE */}
+      <div style={{ position: 'relative', width: '200px', height: '200px' }}>
+        <svg width="100%" height="100%" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E2D9CE" strokeWidth="4.5" />
+          
+          {/* Hausbank Segment (Dunkelgrün) */}
           <circle
             cx="21" cy="21" r="15.915"
-            fill="transparent" stroke="#A37841" strokeWidth="5"
-            strokeDasharray={`${kfwPct} ${100 - kfwPct}`}
-            strokeDashoffset={`${25 - hbPct - eqPct}`}
+            fill="transparent" stroke="#13381A" strokeWidth="4.5"
+            strokeDasharray={`${hbPct} ${100 - hbPct}`}
+            strokeDashoffset="25"
           />
-        )}
-      </svg>
 
-      <div style={{ marginTop: '1.2rem', display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '10px', height: '10px', background: '#13381A', borderRadius: '2px' }}></span>
-          <span>Hausbank Darlehen ({formatPct(hbPct)}%)</span>
+          {/* Eigenkapital Segment (Valuon Warm Gold - Edler Kontrast!) */}
+          <circle
+            cx="21" cy="21" r="15.915"
+            fill="transparent" stroke="#A37841" strokeWidth="4.5"
+            strokeDasharray={`${eqPct} ${100 - eqPct}`}
+            strokeDashoffset={`${25 - hbPct}`}
+          />
+
+          {/* KfW Segment (Steel Blue) */}
+          {kfwPct > 0 && (
+            <circle
+              cx="21" cy="21" r="15.915"
+              fill="transparent" stroke="#2B6CB0" strokeWidth="4.5"
+              strokeDasharray={`${kfwPct} ${100 - kfwPct}`}
+              strokeDashoffset={`${25 - hbPct - eqPct}`}
+            />
+          )}
+
+          {/* GESAMTINVESTITION ZENTRUMSTEXT */}
+          <text x="21" y="19" textAnchor="middle" fontSize="3.2" fontWeight="800" fill="#718096">GESAMT</text>
+          <text x="21" y="24.5" textAnchor="middle" fontSize="3.8" fontWeight="900" fill="#13381A">{formatEuroInt(totalInvestment)} €</text>
+        </svg>
+      </div>
+
+      {/* KLAR STRUKTURIERTE LEGENDE MIT ABSOLUTEN EUR-WERTE UND PROZENTEN */}
+      <div style={{ marginTop: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '12px', height: '12px', background: '#13381A', borderRadius: '3px', display: 'inline-block' }}></span>
+            <span>Hausbank Darlehen</span>
+          </div>
+          <span style={{ fontWeight: '800', color: '#13381A' }}>{formatEuroInt(hb)} € ({formatPct(hbPct)}%)</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '10px', height: '10px', background: '#2D3748', borderRadius: '2px' }}></span>
-          <span>Eigenkapital ({formatPct(eqPct)}%)</span>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '12px', height: '12px', background: '#A37841', borderRadius: '3px', display: 'inline-block' }}></span>
+            <span>Eigenkapital</span>
+          </div>
+          <span style={{ fontWeight: '800', color: '#A37841' }}>{formatEuroInt(equity)} € ({formatPct(eqPct)}%)</span>
         </div>
+
         {kfwPct > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ width: '10px', height: '10px', background: '#A37841', borderRadius: '2px' }}></span>
-            <span>KfW-Darlehen ({formatPct(kfwPct)}%)</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '12px', height: '12px', background: '#2B6CB0', borderRadius: '3px', display: 'inline-block' }}></span>
+              <span>KfW-Darlehen</span>
+            </div>
+            <span style={{ fontWeight: '800', color: '#2B6CB0' }}>{formatEuroInt(kfw)} € ({formatPct(kfwPct)}%)</span>
           </div>
         )}
       </div>
+
     </div>
   );
 }
 
-// --- SVG PROJEKTIONS-CHART MIT SKALIERTEN ACHSEN UND ANPASSBARER ANSICHT ---
+// --- PROJEKTIONS-CHART MIT KLARER X-ACHSE & DYNAMISCHEM CASHFLOW ---
 function ProjectionChart({ projection, kaufpreis, view }) {
   if (!projection || projection.length === 0) {
-    return <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
+    return <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
   }
 
   const isNavView = view.includes('Vermögensstruktur');
 
-  // Max-Wert-Ermittlung für dyn. Y-Achsenskalierung
-  let maxVal = 100000;
   if (isNavView) {
-    maxVal = Math.max(...projection.map(r => r['Immobilienwert'] || kaufpreis || 100000)) * 1.1;
-  } else {
-    maxVal = Math.max(...projection.map(r => r['Mieteinnahmen IST'] || 10000)) * 1.25;
-  }
+    // --- ANSICHT 1: VERMÖGENSSTRUKTUR & NAV ---
+    const maxVal = Math.max(...projection.map(r => r['Immobilienwert'] || kaufpreis || 100000)) * 1.1;
+    const yTicks = [maxVal, maxVal * 0.75, maxVal * 0.5, maxVal * 0.25, 0];
 
-  const yTicks = [maxVal, maxVal * 0.75, maxVal * 0.5, maxVal * 0.25, 0];
-
-  return (
-    <div style={{ width: '100%', height: '260px', position: 'relative', marginTop: '10px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr', height: '210px' }}>
-        
-        {/* Y-ACHSEN BESCHRIFTUNG */}
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
-          {yTicks.map((val, idx) => (
-            <span key={idx}>{formatEuroInt(val)} €</span>
-          ))}
-        </div>
-
-        {/* SVG GRAFIK FÜR BEIDE ANSICHTEN */}
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-          <svg width="100%" height="100%" viewBox="0 0 500 200" preserveAspectRatio="none">
-            
-            {/* Horizontal Gridlines */}
-            {[0, 50, 100, 150, 200].map((y, idx) => (
-              <line key={idx} x1="0" y1={y} x2="500" y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
+    return (
+      <div style={{ width: '100%', marginTop: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', height: '220px' }}>
+          
+          {/* Y-ACHSE */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
+            {yTicks.map((val, idx) => (
+              <span key={idx}>{formatEuroInt(val)} €</span>
             ))}
+          </div>
 
-            {isNavView ? (
-              <>
-                {/* NAV BALKEN */}
-                {projection.map((r, i) => {
-                  const x = (i / projection.length) * 480 + 5;
-                  const nav = (r['Immobilienwert'] || 0) - (r['Restschuld'] || 0);
-                  const barHeight = (nav / maxVal) * 200;
-                  const y = 200 - barHeight;
+          {/* SVG GRAPH */}
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <svg width="100%" height="100%" viewBox="0 0 500 220" preserveAspectRatio="none">
+              
+              {/* Rasterlinien */}
+              {[0, 42, 85, 127, 170].map((y, idx) => (
+                <line key={idx} x1="0" y1={y} x2="500" y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
+              ))}
 
-                  return (
-                    <rect
-                      key={i}
-                      x={x}
-                      y={y}
-                      width={380 / projection.length}
-                      height={Math.max(0, barHeight)}
-                      fill="#A37841"
-                      opacity="0.85"
-                      rx="2"
-                    />
-                  );
-                })}
+              {/* NAV BALKEN (Gold) */}
+              {projection.map((r, i) => {
+                const x = (i / projection.length) * 480 + 5;
+                const nav = (r['Immobilienwert'] || 0) - (r['Restschuld'] || 0);
+                const barHeight = (nav / maxVal) * 170;
+                const y = 170 - barHeight;
 
-                {/* OBJEKTWERT LINIE (Grün) */}
-                <polyline
-                  fill="none"
-                  stroke="#13381A"
-                  strokeWidth="3"
-                  points={projection.map((r, i) => {
-                    const x = (i / projection.length) * 480 + 15;
-                    const y = 200 - ((r['Immobilienwert'] || 0) / maxVal) * 200;
-                    return `${x},${y}`;
-                  }).join(' ')}
-                />
+                return (
+                  <rect
+                    key={i}
+                    x={x}
+                    y={y}
+                    width={380 / projection.length}
+                    height={Math.max(0, barHeight)}
+                    fill="#A37841"
+                    opacity="0.85"
+                    rx="3"
+                  />
+                );
+              })}
 
-                {/* RESTSCHULD LINIE (Burgund) */}
-                <polyline
-                  fill="none"
-                  stroke="#9B2C2C"
-                  strokeWidth="3"
-                  points={projection.map((r, i) => {
-                    const x = (i / projection.length) * 480 + 15;
-                    const y = 200 - ((r['Restschuld'] || 0) / maxVal) * 200;
-                    return `${x},${y}`;
-                  }).join(' ')}
-                />
-              </>
-            ) : (
-              <>
-                {/* CASHFLOW BALKEN (Grün für positiv, Burgund für negativ) */}
-                {projection.map((r, i) => {
-                  const x = (i / projection.length) * 480 + 5;
-                  const cfYear = (r['Cashflow Netto'] || 0);
-                  const absCf = Math.abs(cfYear);
-                  const barHeight = (absCf / maxVal) * 200;
-                  const y = cfYear >= 0 ? 200 - barHeight : 200;
+              {/* OBJEKTWERT LINIE (Grün) */}
+              <polyline
+                fill="none"
+                stroke="#13381A"
+                strokeWidth="3.5"
+                points={projection.map((r, i) => {
+                  const x = (i / projection.length) * 480 + 20;
+                  const y = 170 - ((r['Immobilienwert'] || 0) / maxVal) * 170;
+                  return `${x},${y}`;
+                }).join(' ')}
+              />
 
-                  return (
-                    <rect
-                      key={i}
-                      x={x}
-                      y={y}
-                      width={380 / projection.length}
-                      height={Math.max(2, barHeight)}
-                      fill={cfYear >= 0 ? '#13381A' : '#9B2C2C'}
-                      opacity="0.85"
-                      rx="2"
-                    />
-                  );
-                })}
+              {/* RESTSCHULD LINIE (Burgund) */}
+              <polyline
+                fill="none"
+                stroke="#9B2C2C"
+                strokeWidth="3.5"
+                points={projection.map((r, i) => {
+                  const x = (i / projection.length) * 480 + 20;
+                  const y = 170 - ((r['Restschuld'] || 0) / maxVal) * 170;
+                  return `${x},${y}`;
+                }).join(' ')}
+              />
 
-                {/* KALTMIETE LINIE (Gold) */}
-                <polyline
-                  fill="none"
-                  stroke="#A37841"
-                  strokeWidth="3"
-                  points={projection.map((r, i) => {
-                    const x = (i / projection.length) * 480 + 15;
-                    const y = 200 - ((r['Mieteinnahmen IST'] || 0) / maxVal) * 200;
-                    return `${x},${y}`;
-                  }).join(' ')}
-                />
-              </>
-            )}
+              {/* DIE ECHTE SAUBERE X-ACHSE LINIE */}
+              <line x1="0" y1="170" x2="500" y2="170" stroke="#13381A" strokeWidth="2" />
 
-          </svg>
+              {/* X-ACHSEN TICKS UND JAHRESZAHLEN-TEXTE */}
+              {projection.map((r, i) => {
+                const x = (i / projection.length) * 480 + 20;
+                return (
+                  <g key={i}>
+                    <line x1={x} y1="170" x2={x} y2="175" stroke="#13381A" strokeWidth="1.5" />
+                    <text x={x} y="195" textAnchor="middle" fontSize="11" fontWeight="700" fill="#13381A">
+                      {r['Jahr'] || i + 1}
+                    </text>
+                  </g>
+                );
+              })}
+
+            </svg>
+          </div>
+        </div>
+
+        {/* ACHSEN-BESCHRIFTUNG MITTE UNTEN */}
+        <div style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '700', color: '#718096', marginTop: '2px' }}>
+          Projektionsjahre
+        </div>
+
+        {/* LEGENDE */}
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '700', marginTop: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '16px', height: '4px', background: '#13381A', borderRadius: '2px' }}></span>
+            <span>Objektwert</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '16px', height: '4px', background: '#9B2C2C', borderRadius: '2px' }}></span>
+            <span>Restschuld</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '12px', background: '#A37841', borderRadius: '3px' }}></span>
+            <span>Netto-EK (NAV)</span>
+          </div>
         </div>
       </div>
+    );
+  } else {
+    // --- ANSICHT 2: CASHFLOW & MIETEINNAHMEN ---
+    const maxRent = Math.max(...projection.map(r => r['Mieteinnahmen IST'] || 10000)) * 1.2;
+    const absMaxCf = Math.max(1000, ...projection.map(r => Math.abs(r['Cashflow Netto'] || 0))) * 1.5;
 
-      {/* X-ACHSEN BESCHRIFTUNG (Jahre J1, J2, J3...) */}
-      <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(${projection.length}, 1fr)`, fontSize: '0.68rem', color: '#718096', textAlign: 'center', marginTop: '4px' }}>
-        <span></span>
-        {projection.map((r, i) => (
-          <span key={i}>J{r['Jahr'] || i + 1}</span>
-        ))}
-      </div>
+    const yTicks = [maxRent, maxRent * 0.66, maxRent * 0.33, 0];
 
-      {/* LEGENDEDETAILS */}
-      <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', marginTop: '10px' }}>
-        {isNavView ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '14px', height: '3px', background: '#13381A' }}></span>
-              <span>Objektwert</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '14px', height: '3px', background: '#9B2C2C' }}></span>
-              <span>Restschuld</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '10px', height: '10px', background: '#A37841', borderRadius: '2px' }}></span>
-              <span>Netto-EK (NAV)</span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '14px', height: '3px', background: '#A37841' }}></span>
-              <span>Kaltmiete (brutto)</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '10px', height: '10px', background: '#13381A', borderRadius: '2px' }}></span>
-              <span>Cashflow Netto (+)</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '10px', height: '10px', background: '#9B2C2C', borderRadius: '2px' }}></span>
-              <span>Cashflow Netto (-)</span>
-            </div>
-          </>
-        )}
+    return (
+      <div style={{ width: '100%', marginTop: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', height: '220px' }}>
+          
+          {/* Y-ACHSE */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
+            {yTicks.map((val, idx) => (
+              <span key={idx}>{formatEuroInt(val)} €</span>
+            ))}
+          </div>
+
+          {/* SVG GRAPH */}
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <svg width="100%" height="100%" viewBox="0 0 500 220" preserveAspectRatio="none">
+              
+              {/* Gridlines */}
+              {[0, 42, 85, 127].map((y, idx) => (
+                <line key={idx} x1="0" y1={y} x2="500" y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
+              ))}
+
+              {/* NULL-LINIE FÜR CASHFLOW (Bei Y = 130) */}
+              <line x1="0" y1="130" x2="500" y2="130" stroke="#718096" strokeWidth="1" strokeDasharray="2 2" />
+
+              {/* CASHFLOW NETTO BALKEN (Positiv -> Grün nach oben, Negativ -> Burgund nach unten) */}
+              {projection.map((r, i) => {
+                const x = (i / projection.length) * 480 + 8;
+                const cf = r['Cashflow Netto'] || 0;
+                const barHeight = (Math.abs(cf) / absMaxCf) * 45;
+                const y = cf >= 0 ? 130 - barHeight : 130;
+
+                return (
+                  <rect
+                    key={i}
+                    x={x}
+                    y={y}
+                    width={360 / projection.length}
+                    height={Math.max(4, barHeight)}
+                    fill={cf >= 0 ? '#38A169' : '#9B2C2C'}
+                    opacity="0.9"
+                    rx="2"
+                  />
+                );
+              })}
+
+              {/* KALTMIETE LINIE (Valuon Warm Gold) */}
+              <polyline
+                fill="none"
+                stroke="#A37841"
+                strokeWidth="3.5"
+                points={projection.map((r, i) => {
+                  const x = (i / projection.length) * 480 + 20;
+                  const y = 130 - ((r['Mieteinnahmen IST'] || 0) / maxRent) * 120;
+                  return `${x},${y}`;
+                }).join(' ')}
+              />
+
+              {/* ECHTE X-ACHSE LINIE (Bei Y = 170) */}
+              <line x1="0" y1="170" x2="500" y2="170" stroke="#13381A" strokeWidth="2" />
+
+              {/* X-ACHSEN TICKS UND JAHRESZAHLEN */}
+              {projection.map((r, i) => {
+                const x = (i / projection.length) * 480 + 20;
+                return (
+                  <g key={i}>
+                    <line x1={x} y1="170" x2={x} y2="175" stroke="#13381A" strokeWidth="1.5" />
+                    <text x={x} y="195" textAnchor="middle" fontSize="11" fontWeight="700" fill="#13381A">
+                      {r['Jahr'] || i + 1}
+                    </text>
+                  </g>
+                );
+              })}
+
+            </svg>
+          </div>
+        </div>
+
+        {/* ACHSEN-BESCHRIFTUNG MITTE UNTEN */}
+        <div style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '700', color: '#718096', marginTop: '2px' }}>
+          Projektionsjahre
+        </div>
+
+        {/* LEGENDE */}
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '700', marginTop: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '16px', height: '4px', background: '#A37841', borderRadius: '2px' }}></span>
+            <span>Kaltmiete (brutto)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '12px', background: '#38A169', borderRadius: '3px' }}></span>
+            <span>Cashflow Netto (+)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '12px', background: '#9B2C2C', borderRadius: '3px' }}></span>
+            <span>Cashflow Netto (-)</span>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 function MetricCard({ title, value, highlight = false, isNegative = false }) {

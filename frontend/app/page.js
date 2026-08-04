@@ -27,8 +27,12 @@ const grunderwerbsteuerSätze = {
 };
 
 export default function Home() {
-  const [authenticated] = useState(true);
-  const [userEmail] = useState('developer@valuon-estate.de');
+  // NAVIGATION CONTROL: LANDING PAGE VS APP
+  const [showApp, setShowApp] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  
+  const [authenticated, setAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Analyse');
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
@@ -114,10 +118,10 @@ export default function Home() {
   const [loadingDb, setLoadingDb] = useState(false);
 
   useEffect(() => {
-    if (navChoice === 'Objekt Datenbank') {
+    if (navChoice === 'Objekt Datenbank' && showApp) {
       fetchDatabaseProperties();
     }
-  }, [navChoice]);
+  }, [navChoice, showApp]);
 
   const fetchDatabaseProperties = async () => {
     setLoadingDb(true);
@@ -368,7 +372,6 @@ export default function Home() {
   const monthlyCashflow = firstYearCashflow / 12;
   const bruttoMietrendite = formData.kaufpreis > 0 ? ((formData.kaltmiete_monat * 12) / formData.kaufpreis) * 100 : 0;
 
-  // DYNAMISCHE ERMITTLUNG DES PROJEKTIONSHORIZONTS
   let slicedProjection = [];
   let actualHorizonYears = 10;
 
@@ -394,6 +397,227 @@ export default function Home() {
 
   const navItems = ['Objekt Datenbank', 'Analyse', 'Immobilienwissen', 'Einstellungen'];
 
+  // ----------------------------------------------------------------------------------
+  // 1. NEUE LANDING PAGE (WENN showApp === false)
+  // ----------------------------------------------------------------------------------
+  if (!showApp) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0D1F12', color: '#F7F4EC', fontFamily: 'sans-serif', overflowX: 'hidden', position: 'relative' }}>
+        
+        {/* HINTERGRUND GLOW-EFFEKTE (FUTURISTISCHER TOUCH) */}
+        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(163,120,65,0.2) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '-5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(19,56,26,0.4) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
+
+        {/* TOP BAR */}
+        <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 4rem', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(226,217,206,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '12px', height: '12px', background: '#A37841', borderRadius: '50%' }}></div>
+            <span style={{ fontSize: '1.8rem', fontWeight: '900', letterSpacing: '-0.5px', color: 'white' }}>Valuon Estate</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <button onClick={() => { setAuthMode('login'); document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ background: 'transparent', border: 'none', color: '#F7F4EC', fontWeight: '600', cursor: 'pointer', fontSize: '0.95rem' }}>
+              Anmelden
+            </button>
+            <button onClick={() => { setAuthMode('register'); document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ background: '#A37841', color: 'white', border: 'none', padding: '10px 22px', borderRadius: '25px', fontWeight: '800', cursor: 'pointer', fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(163,120,65,0.3)' }}>
+              Jetzt Registrieren
+            </button>
+          </div>
+        </nav>
+
+        {/* HERO SECTION */}
+        <header style={{ padding: '4rem 4rem 2rem 4rem', textAlign: 'center', maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(163,120,65,0.15)', border: '1px solid #A37841', padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', color: '#A37841', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '1.5rem' }}>
+            Immobilien-Investment Suite der nächsten Generation
+          </div>
+          <h1 style={{ fontSize: '3.6rem', fontWeight: '900', lineHeight: '1.15', letterSpacing: '-1.5px', marginBottom: '1.5rem' }}>
+            Präzise Cashflow- & Renditeanalysen für seriöse Immobilieninvestoren.
+          </h1>
+          <p style={{ fontSize: '1.2rem', color: '#A0AEC0', maxWidth: '750px', margin: '0 auto 3rem auto', lineHeight: '1.6' }}>
+            Keine geschönten Zahlen, sondern echte Annuitätendynamik, exakte Steuerschild-Berechnung und professionelle Portfolio-Verwaltung.
+          </p>
+        </header>
+
+        {/* FUTURISTISCHES KACHEL-GRID (REALISTISCHE IMMOBILIEN) */}
+        <section style={{ padding: '1rem 4rem 4rem 4rem', maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
+            
+            {/* KACHEL 1: MEHRFAMILIENHAUS */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
+              <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
+                <img 
+                  src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80" 
+                  alt="Mehrfamilienhaus" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(19,56,26,0.85)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  MFH Bestands-Portfolio
+                </div>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Mehrfamilienhaus Leipzig</h3>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>6 Wohneinheiten · Voll vermietet · 540 m² Wohnfläche</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem' }}>
+                  <span>Kaufpreis: <strong>890.000 €</strong></span>
+                  <span style={{ color: '#38A169', fontWeight: 'bold' }}>IRR: 8,40 %</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KACHEL 2: STADT-WOHNUNG */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
+              <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
+                <img 
+                  src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80" 
+                  alt="Eigentumswohnung" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(163,120,65,0.85)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  ETW Kapitalanlage
+                </div>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Moderne 3-Zimmer ETW</h3>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Niedersachsen / Weyhe · Bj. 1996 · 85 m²</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem' }}>
+                  <span>Kaufpreis: <strong>170.000 €</strong></span>
+                  <span style={{ color: '#38A169', fontWeight: 'bold' }}>Rendite: 6,00 %</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KACHEL 3: REIHENHAUS / WOHNANLAGE */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
+              <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
+                <img 
+                  src="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80" 
+                  alt="Wohnquartier" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(19,56,26,0.85)', backdropFilter: 'blur(4px)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  Reihenendhaus
+                </div>
+              </div>
+              <div style={{ padding: '1.5rem' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Reihenhaus Hannover</h3>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Solide Bauweise · Bj. 2008 · 128 m² Wohnfläche</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem' }}>
+                  <span>Kaufpreis: <strong>340.000 €</strong></span>
+                  <span style={{ color: '#38A169', fontWeight: 'bold' }}>IRR: 7,15 %</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* AUTHENTIFIZIERUNGS / LOGIN BEREICH (KACHEL FORM) */}
+        <section id="auth-section" style={{ padding: '2rem 4rem 4rem 4rem', maxWidth: '520px', margin: '0 auto' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(226,217,206,0.2)', borderRadius: '20px', padding: '2.5rem', backdropFilter: 'blur(15px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+            
+            {/* AUTH SWITCHER TABS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '12px', marginBottom: '1.8rem' }}>
+              <button
+                type="button"
+                onClick={() => setAuthMode('login')}
+                style={{
+                  padding: '10px',
+                  background: authMode === 'login' ? '#13381A' : 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Anmelden
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode('register')}
+                style={{
+                  padding: '10px',
+                  background: authMode === 'register' ? '#A37841' : 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Registrieren
+              </button>
+            </div>
+
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', textAlign: 'center', marginBottom: '0.5rem' }}>
+              {authMode === 'login' ? 'Willkommen zurück' : 'Kostenloses Konto erstellen'}
+            </h2>
+            <p style={{ textAlign: 'center', color: '#A0AEC0', fontSize: '0.85rem', marginBottom: '1.8rem' }}>
+              {authMode === 'login' ? 'Greifen Sie auf Ihre gespeicherten Immobilien zu' : 'Starten Sie Ihre professionellen Objektanalysen'}
+            </p>
+
+            <form onSubmit={(e) => { e.preventDefault(); setShowApp(true); setAuthenticated(true); }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {authMode === 'register' && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#A0AEC0', marginBottom: '4px', fontWeight: '600' }}>Vollständiger Name</label>
+                    <input type="text" placeholder="Max Mustermann" style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#A0AEC0', marginBottom: '4px', fontWeight: '600' }}>E-Mail-Adresse</label>
+                  <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} required style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#A0AEC0', marginBottom: '4px', fontWeight: '600' }}>Passwort</label>
+                  <input type="password" placeholder="••••••••" required style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+
+                <button type="submit" style={{ marginTop: '0.5rem', padding: '14px', background: authMode === 'login' ? '#13381A' : '#A37841', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.3)' }}>
+                  {authMode === 'login' ? 'Anmelden & Dashboard öffnen' : 'Jetzt kostenlos registrieren'}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </section>
+
+        {/* DEVELOPER SCHNELLZUGANG FOOTER BUTTON */}
+        <footer style={{ padding: '3rem 2rem', textAlign: 'center', borderTop: '1px solid rgba(226,217,206,0.1)', background: 'rgba(0,0,0,0.4)' }}>
+          <div style={{ fontSize: '0.85rem', color: '#718096', marginBottom: '1rem' }}>
+            Entwicklermodus aktiv · Valuon Estate Suite v2.4
+          </div>
+          
+          <button
+            onClick={() => { setShowApp(true); setAuthenticated(true); }}
+            style={{
+              padding: '12px 28px',
+              background: 'transparent',
+              color: '#A37841',
+              border: '2px stroke #A37841',
+              border: '2px dashed #A37841',
+              borderRadius: '30px',
+              fontWeight: '800',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            ⚡ Developer Direktzugang (Ohne Login zur Analyse)
+          </button>
+        </footer>
+
+      </div>
+    );
+  }
+
+  // ----------------------------------------------------------------------------------
+  // 2. DIE JETZIGE ANALYSE- & DASHBOARD-ANSICHT (WENN showApp === true)
+  // ----------------------------------------------------------------------------------
   return (
     <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
       
@@ -413,8 +637,8 @@ export default function Home() {
           <div style={{ fontSize: '0.85rem', color: '#555759' }}>
             <span>Konto: <strong>{userEmail}</strong></span>
           </div>
-          <button style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', color: '#13381A' }}>
-            Abmelden
+          <button onClick={() => setShowApp(false)} style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', color: '#13381A' }}>
+            Zur Startseite
           </button>
         </div>
       </div>
@@ -713,7 +937,7 @@ export default function Home() {
             {/* RECHTE SPALTE: DASHBOARD & RESULTATE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* TOP HEADER & TOOLBAR WITH 5-YEAR STEPS + FULL PAYOFF OPTION */}
+              {/* TOP HEADER & TOOLBAR */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem' }}>
                 <div>
                   <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
@@ -1191,7 +1415,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
         </svg>
       </div>
 
-      {/* STRUKTURIERTE LEGENDE MIT PROZENTZAHL HINTEN */}
       <div style={{ marginTop: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1224,7 +1447,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
   );
 }
 
-// HELFER FÜR RUNDE, SAUBERE Y-ACHSEN-SCHRITTE
 function getNiceScale(maxVal) {
   if (!maxVal || maxVal <= 0) return { niceMax: 10000, ticks: [10000, 7500, 5000, 2500, 0] };
 
@@ -1250,7 +1472,6 @@ function getNiceScale(maxVal) {
   return { niceMax, ticks };
 }
 
-// --- PROJEKTIONS-CHART MIT SAUBEREN GANZEN Y-ACHSEN-ZAHLEN ---
 function ProjectionChart({ projection, kaufpreis, view }) {
   if (!projection || projection.length === 0) {
     return <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Keine Projektionsdaten vorhanden.</div>;
@@ -1266,7 +1487,6 @@ function ProjectionChart({ projection, kaufpreis, view }) {
       <div style={{ width: '100%', marginTop: '10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr', height: '220px' }}>
           
-          {/* SAUBERE RUNDE Y-ACHSEN ZAHLEN */}
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.68rem', color: '#718096', textAlign: 'right', paddingRight: '8px', fontVariantNumeric: 'tabular-nums' }}>
             {ticks.map((val, idx) => (
               <span key={idx}>{formatEuroInt(val)} €</span>

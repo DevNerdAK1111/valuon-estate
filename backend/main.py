@@ -185,7 +185,6 @@ async def calculate_investment(payload: CalculatePayload):
         hb_zins_initial = payload.hb_zins if payload.hb_zins is not None else 0.04
         hb_tilg_initial = payload.hb_tilg if payload.hb_tilg is not None else 0.02
 
-        # KONSTANTE ANNUITÄTEN-RATE FÜR ANNUITÄTENDARLEHEN
         hb_annuity_constant = hb_loan * (hb_zins_initial + hb_tilg_initial)
         kfw_annuity_constant = kfw_loan * ((payload.kfw_zins or 0.021) + (payload.kfw_tilg or 0.03))
 
@@ -195,7 +194,8 @@ async def calculate_investment(payload: CalculatePayload):
         property_value = payload.kaufpreis
         tax_rate = payload.tax_rate if payload.tax_rate is not None else ((payload.tax_rate_pct or 42.0) / 100.0)
 
-        for year in range(1, 31):
+        # BERECHNUNG BIS ZU 50 JAHRE FÜR DIE VOLLSTÄNDIGE TILGUNG
+        for year in range(1, 51):
             if year < (payload.adj_year or 1):
                 annual_rent_base = payload.kaltmiete_monat * 12.0
             else:
@@ -214,12 +214,13 @@ async def calculate_investment(payload: CalculatePayload):
             total_non_rec_costs = mgt_cost + inst_cost + non_recoverable_hausgeld
             capex_current = capex_map.get(year, 0.0)
 
-            # ECHTE ANNUITÄTENLOGIK HAUSBANK
+            # HB LOAN ANNUITÄT
             hb_zins_rate = hb_zins_initial if year <= (payload.zinsbindung or 10) else (payload.folge_zins or 0.038)
             hb_interest = hb_rest * hb_zins_rate
 
             if year <= (payload.grace_years or 0) or hb_rest <= 0:
                 hb_principal = 0.0
+                hb_interest = 0.0
             else:
                 if payload.loan_type == "Endfälliges Darlehen":
                     hb_principal = 0.0
@@ -231,10 +232,11 @@ async def calculate_investment(payload: CalculatePayload):
             hb_debt_service = hb_interest + hb_principal
             hb_rest = max(0.0, hb_rest - hb_principal)
 
-            # ECHTE ANNUITÄTENLOGIK KFW
+            # KFW LOAN ANNUITÄT
             kfw_interest = kfw_rest * (payload.kfw_zins or 0.021)
             if year <= (payload.kfw_grace_years or 0) or kfw_rest <= 0:
                 kfw_principal = 0.0
+                kfw_interest = 0.0
             else:
                 calculated_kfw_principal = max(0.0, kfw_annuity_constant - kfw_interest)
                 kfw_principal = min(kfw_rest, calculated_kfw_principal)
@@ -247,7 +249,7 @@ async def calculate_investment(payload: CalculatePayload):
             total_debt_service = hb_debt_service + kfw_debt_service
             total_remaining_debt = hb_rest + kfw_rest
 
-            # AfA BERECHNUNG
+            # AfA
             afa_model = payload.afa_model or "Linear Standard"
             afa_amount = 0.0
 
@@ -272,19 +274,12 @@ async def calculate_investment(payload: CalculatePayload):
             afa_amount = min(afa_amount, afa_book_value)
             afa_book_value = max(0.0, afa_book_value - afa_amount)
 
-            # STEUER & STEUERSCHILD (Erstattung bei Verlusten)
             taxable_income = effective_rent - total_non_rec_costs - total_interest - afa_amount
             tax_amount = taxable_income * tax_rate
 
             net_cashflow = effective_rent - total_non_rec_costs - capex_current - total_debt_service - tax_amount
 
             property_value *= (1.0 + (payload.val_inc or 0.01))
-
-            if year == 30:
-                net_exit_proceeds = property_value * (1.0 - (payload.exit_cost or 0.0)) - total_remaining_debt
-                cashflows_for_irr.append(net_cashflow + net_exit_proceeds)
-            else:
-                cashflows_for_irr.append(net_cashflow)
 
             projection.append({
                 "Jahr": year,
@@ -300,6 +295,10 @@ async def calculate_investment(payload: CalculatePayload):
                 "Restschuld": round(total_remaining_debt, 2),
                 "Immobilienwert": round(property_value, 2)
             })
+
+            # SCHLEIFE BEENDEN, WENN VOLLSTÄNDIG GETILGT UND MINDESTENS JAHR 30 ERREICHT
+            if total_remaining_debt <= 0 and year >= 30:
+                break
 
         irr_val = calculate_irr(cashflows_for_irr)
 

@@ -133,6 +133,7 @@ export default function Home() {
     }
   };
 
+  // VERBESSERTE SPEICHERFUNKTION MIT FEHLER-ANALYSE
   const handleSaveToDatabase = async () => {
     if (!result) return;
     setSaving(true);
@@ -141,13 +142,16 @@ export default function Home() {
     try {
       const payload = {
         name: formData.obj_name,
+        obj_name: formData.obj_name,
         objektart: formData.objektart,
         stadt: formData.stadt,
         bundesland: formData.bundesland,
-        kaufpreis: formData.kaufpreis,
-        qm: formData.qm,
-        irr: result?.summary?.irr || 0,
-        cashflow_y1: result?.projection?.[0]?.['Cashflow Netto'] || 0,
+        kaufpreis: Number(formData.kaufpreis),
+        qm: Number(formData.qm),
+        irr: Number(result?.summary?.irr || 0),
+        cashflow_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
+        cashflow_netto_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
+        user_email: userEmail,
         form_data: formData,
         capex_list: capexList,
         created_at: new Date().toISOString()
@@ -162,10 +166,14 @@ export default function Home() {
       if (res.ok) {
         setSaveSuccess('✅ Objekt erfolgreich in der Datenbank gespeichert!');
       } else {
-        setSaveSuccess('❌ Fehler beim Speichern in der Datenbank.');
+        const errorData = await res.json().catch(() => ({}));
+        const detailMsg = typeof errorData.detail === 'string' 
+          ? errorData.detail 
+          : JSON.stringify(errorData.detail || errorData.message || `Status HTTP ${res.status}`);
+        setSaveSuccess(`❌ Fehler beim Speichern: ${detailMsg}`);
       }
     } catch (err) {
-      setSaveSuccess('❌ Verbindung zum Datenbank-Backend fehlgeschlagen.');
+      setSaveSuccess(`❌ Verbindung fehlgeschlagen: ${err.message || 'Backend nicht erreichbar.'}`);
     } finally {
       setSaving(false);
     }
@@ -323,7 +331,6 @@ export default function Home() {
         val_inc: formData.val_inc / 100,
         exit_cost: formData.exit_cost / 100,
         afa_lin: formData.afa_lin / 100,
-        // Sende sowohl deutsche als auch englische Keys für maximale Kompatibilität mit dem Backend:
         capex_list: capexList.map(item => ({
           jahr: Number(item.year),
           year: Number(item.year),
@@ -676,7 +683,7 @@ export default function Home() {
 
             </div>
 
-            {/* RECHTE SPALTE: ERGEBNISSE & SICHERE ANZEIGE */}
+            {/* RECHTE SPALTE: ERGEBNISSE & DATENBANK-SPEICHERUNG */}
             <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', height: 'fit-content' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2D9CE', paddingBottom: '10px' }}>
                 <h3 style={{ margin: 0, color: '#13381A' }}>Investment-Auswertung & Cashflows</h3>
@@ -704,7 +711,16 @@ export default function Home() {
               </div>
 
               {saveSuccess && (
-                <div style={{ marginBottom: '1rem', padding: '10px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid #B2F5EA' }}>
+                <div style={{
+                  marginBottom: '1rem',
+                  padding: '12px',
+                  background: saveSuccess.startsWith('✅') ? '#E6FFFA' : '#FFF5F5',
+                  color: saveSuccess.startsWith('✅') ? '#234E52' : '#C53030',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  border: `1px solid ${saveSuccess.startsWith('✅') ? '#B2F5EA' : '#FEB2B2'}`,
+                  wordBreak: 'break-word'
+                }}>
                   {saveSuccess}
                 </div>
               )}
@@ -713,9 +729,6 @@ export default function Home() {
                 <div style={{ marginBottom: '1.5rem', padding: '12px 16px', background: '#FFF5F5', color: '#C53030', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #FEB2B2', lineHeight: '1.4' }}>
                   <strong>⚠️ Fehler bei der Berechnung:</strong><br />
                   {calcError}<br />
-                  <span style={{ fontSize: '0.8rem', color: '#742A2A', marginTop: '4px', display: 'block' }}>
-                    Tipp: Falls das Backend geschlafen hat, wird es in diesen Sekunden aufgeweckt. Klicke gleich noch einmal.
-                  </span>
                 </div>
               )}
 
@@ -797,7 +810,7 @@ export default function Home() {
                 <tbody>
                   {dbProperties.map((item, idx) => (
                     <tr key={item.id || idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
-                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#13381A' }}>{item.name || item.form_data?.obj_name}</td>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#13381A' }}>{item.name || item.obj_name || item.form_data?.obj_name}</td>
                       <td style={{ padding: '12px' }}>{item.objektart || item.form_data?.objektart}</td>
                       <td style={{ padding: '12px' }}>{item.stadt || item.form_data?.stadt}</td>
                       <td style={{ padding: '12px' }}>{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>

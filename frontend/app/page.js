@@ -1004,7 +1004,14 @@ export default function Home() {
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Tilgung'] || 0), 0))} €</td>
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Zinsen'] || 0) + (curr['Tilgung'] || 0), 0))} €</td>
                               <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['AfA'] || 0), 0))} €</td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Steuer'] || 0), 0))} €</td>
+                              <td style={{ padding: '10px', color: slicedProjection.reduce((acc, curr) => acc + (curr['Steuer'] || 0), 0) < 0 ? '#38A169' : '#9B2C2C' }}>
+                                {(() => {
+                                  const sumTax = slicedProjection.reduce((acc, curr) => acc + (curr['Steuer'] || 0), 0);
+                                  return sumTax < 0 
+                                    ? `+${formatEuroInt(Math.abs(sumTax))} € (Gesamterstattung)` 
+                                    : `${formatEuroInt(sumTax)} €`;
+                                })()}
+                              </td>
                             </>
                           )}
 

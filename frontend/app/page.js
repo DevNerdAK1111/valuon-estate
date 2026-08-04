@@ -5,38 +5,6 @@ const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
 // Hilfsfunktionen für deutsches Zahlenformat
 const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
-const formatPercent = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
-
-// Grunderwerbsteuersätze nach Bundesländern
-const grunderwerbsteuerSätze = {
-  'Baden-Württemberg': 5.0,
-  'Bayern': 3.5,
-  'Berlin': 6.0,
-  'Brandenburg': 6.5,
-  'Bremen': 5.0,
-  'Hamburg': 5.5,
-  'Hessen': 6.0,
-  'Mecklenburg-Vorpommern': 5.0,
-  'Niedersachsen': 5.0,
-  'Nordrhein-Westfalen': 6.5,
-  'Rheinland-Pfalz': 5.0,Das ist ein extrem wichtiger Punkt. Eine professionelle Investment-Suite muss nicht nur optisch exakt sitzen, sondern auch in der Logik (Abhängigkeiten zwischen Feldern, automatische Steuer- und Nebenkostenanpassungen je nach Bundesland, korrekte AfA-Modelle) und in der deutschen Zahlenformatierung (`179.000,00 €` und `5,00 %`) absolut fehlerfrei funktionieren.
-
-Hier sind die konkreten Logik-Anpassungen, die jetzt integriert wurden:
-1. **Alle 16 Bundesländer** mit ihren korrekten Grunderwerbsteuersätzen (wird bei Auswahl automatisch angepasst).
-2. **Dynamische Abhängigkeiten:** Wenn du das Bundesland oder die Objektart änderst, passen sich Standardwerte (wie Instandhaltungsrücklagen oder Steuersätze) automatisch an.
-3. **Exakte deutsche Formatierung** für alle Währungen (`179.000,00 €`) und Prozentsätze (`5,00 %`).
-4. **Vollständige Auswahlmöglichkeiten** für Wohnungstypen, AfA-Modelle (Linear, Sonder-AfA, Denkmal) und Darlehensarten.
-
-Hier ist der aktualisierte, vollständige Code für deine `frontend/app/page.js`:
-
-```jsx
-'use client';
-import { useState, useEffect } from 'react';
-
-const BACKEND_URL = '[https://valuon-estate-backend.onrender.com](https://valuon-estate-backend.onrender.com)';
-
-// Hilfsfunktionen für deutsches Zahlenformat
-const formatEuro = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 const formatPct = (val) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0);
 
 // Grunderwerbsteuer-Tabelle nach Bundesland
@@ -110,20 +78,18 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Automatische Abhängigkeiten bei Änderungen (z.B. Bundesland oder Objektart)
+  // Automatische Abhängigkeiten bei Änderungen
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     let updatedData = { ...formData, [name]: type === 'number' ? parseFloat(value) || 0 : value };
 
-    // Dynamische Anpassung der Grunderwerbsteuer bei Bundeslandwechsel
     if (name === 'bundesland' && grunderwerbsteuerSätze[value] !== undefined) {
       updatedData.grwt_p = grunderwerbsteuerSätze[value];
     }
 
-    // Dynamische Anpassung von Instandhaltung je nach Objektart
     if (name === 'objektart') {
       if (value === 'Mehrfamilienhaus') {
-        updatedData.inst_sqm = 15.0; // Höhere Instandhaltung bei MFH
+        updatedData.inst_sqm = 15.0;
       } else if (value === 'Eigentumswohnung') {
         updatedData.inst_sqm = 12.0;
       }
@@ -228,8 +194,8 @@ export default function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem', color: '#13381A' }}>Parametrisierung</div>
 
-              {/* SEKTION 1: OBJEKTDATEN (EXPOSÉ) */}
-              <Expander defaultOpen="{true}" title="1. Objektdaten (Exposé)">
+              {/* SEKTION 1 */}
+              <Expander defaultOpen={true} title="1. Objektdaten (Exposé)">
                 <div style={groupStyle}>
                   <div>
                     <label style={labelStyle}>Objektbezeichnung</label>
@@ -316,7 +282,7 @@ export default function Home() {
                 </div>
               </Expander>
 
-              {/* SEKTION 2: FINANZIERUNG & NEBENKOSTEN */}
+              {/* SEKTION 2 */}
               <Expander title="2. Finanzierung & Nebenkosten">
                 <div style={groupStyle}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -398,7 +364,7 @@ export default function Home() {
                 </div>
               </Expander>
 
-              {/* SEKTION 3: ZIELMIETE & BEWIRTSCHAFTUNG */}
+              {/* SEKTION 3 */}
               <Expander title="3. Zielmiete & Bewirtschaftung">
                 <div style={groupStyle}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -453,7 +419,7 @@ export default function Home() {
                 </div>
               </Expander>
 
-              {/* SEKTION 4: STEUERN, MAKRO & EXIT */}
+              {/* SEKTION 4 */}
               <Expander title="4. Steuern, Makro & Exit">
                 <div style={groupStyle}>
                   <div>
@@ -511,10 +477,10 @@ export default function Home() {
               ) : (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <MetricCard title="Gesamtinvestment" value="{`${formatEuro(result.summary.total_investment)}" €`}/>
-                    <MetricCard title="Eigenkapitalbedarf" value="{`${formatEuro(result.summary.equity_absolute)}" €`}/>
-                    <MetricCard %`} * 100)} highlight="{true}" title="IRR (Rendite)" value="{`${formatPct(result.summary.irr"/>
-                    <MetricCard title="AfA-Basis" value="{`${formatEuro(result.summary.afa_base)}" €`}/>
+                    <MetricCard title="Gesamtinvestment" value={`${formatEuro(result.summary.total_investment)} €`} />
+                    <MetricCard title="Eigenkapitalbedarf" value={`${formatEuro(result.summary.equity_absolute)} €`} />
+                    <MetricCard title="IRR (Rendite)" value={`${formatPct(result.summary.irr * 100)} %`} highlight={true} />
+                    <MetricCard title="AfA-Basis" value={`${formatEuro(result.summary.afa_base)} €`} />
                   </div>
 
                   <h4 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '10px' }}>Projektionsverlauf (Jahre)</h4>

@@ -1,8 +1,8 @@
 'use client';
-import { formatEuro, formatEuroInt, formatPct } from '@/utils/formatters';
+import { formatEuro, formatEuroInt, formatPct } from '../../utils/formatters';
 
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568' };
-const stepBtnStyle = { border: 'none', background: '#FAF8F5', color: '#13381A', width: '22px', height: '22px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: '1px solid #E2D9CE', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const stepBtnStyle = { border: 'none', background: '#FAF8F5', color: '#13381A', width: '24px', height: '24px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: '1px solid #E2D9CE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' };
 const tooltipStyle = { cursor: 'pointer', fontSize: '0.75rem', color: '#718096', border: '1px solid #CBD5E0', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };
 
 export default function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null, onFocus = null }) {
@@ -29,11 +29,11 @@ export default function StepperInput({ label, value, onChange, step = 1, isYear 
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', height: '18px' }}>
         <label style={labelStyle}>{label}</label>
         {tooltip && <span title={tooltip} style={tooltipStyle}>?</span>}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', background: disabled ? '#EDF2F7' : 'white', border: '1px solid #CBD5E0', borderRadius: '8px', padding: '4px 8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', background: disabled ? '#EDF2F7' : 'white', border: '1px solid #CBD5E0', borderRadius: '8px', padding: '0 8px', height: '42px', boxSizing: 'border-box' }}>
         <input
           type="text"
           disabled={disabled}

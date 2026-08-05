@@ -1,7 +1,5 @@
 'use client';
-import KeyMetrics from './KeyMetrics';
-import ProjectionChart from './ProjectionChart';
-import TableView from './TableView';
+import ProjectionChart from '../charts/ProjectionChart';
 import { IconSave } from '../ui/Icons';
 import { formatEuroInt } from '../../utils/formatters';
 
@@ -63,7 +61,7 @@ export default function ExecutiveDashboard({
           </div>
         </div>
 
-        {/* SPEICHERN-BUTTON: FLEXIBLES LAYOUT FÜR KORREKTE SCHRIFTANZEIGE */}
+        {/* SPEICHERN-BUTTON: FLEXIBLES LAYOUT */}
         {result && (
           <button
             type="button"
@@ -165,7 +163,7 @@ export default function ExecutiveDashboard({
       {/* DASHBOARD INHALTE WENN ERGEBNIS DA IST */}
       {result && (
         <>
-          {/* HORIZONT-FILTER (10 JAHRE, 20 JAHRE, BIS TILGUNG) */}
+          {/* HORIZONT-FILTER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -197,7 +195,7 @@ export default function ExecutiveDashboard({
             </div>
           </div>
 
-          {/* KENNZAHLEN-BOXEN (KEY METRICS) */}
+          {/* KENNZAHLEN-BOXEN */}
           <KeyMetrics 
             result={result}
             monthlyCashflow={monthlyCashflow}
@@ -217,7 +215,7 @@ export default function ExecutiveDashboard({
             />
           )}
 
-          {/* TAB 2 & STEUERN: TABELLEN-ANSICHT */}
+          {/* TAB 2, 3 & 4: TABELLEN-ANSICHTEN */}
           {(activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' || activeDashboardTab === 'Finanzierung & Tilgung' || activeDashboardTab === 'Steuern & AfA') && (
             <TableView 
               activeDashboardTab={activeDashboardTab}
@@ -231,6 +229,235 @@ export default function ExecutiveDashboard({
         </>
       )}
 
+    </div>
+  );
+}
+
+{/* UNTERKOMPONENTE: KEY METRICS */}
+function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonYears, gesamtGewinnHorizon, cumulatedCashflowHorizon, endNav }) {
+  const irrPct = result?.summary?.irr ? (result.summary.irr * 100).toFixed(2) : '0.00';
+  const isCfPositive = monthlyCashflow >= 0;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+      
+      <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Netto Cashflow (monatlich)
+        </div>
+        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: isCfPositive ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+          {isCfPositive ? '+' : ''}{formatEuroInt(monthlyCashflow)} € / Mo.
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
+          Nach Kapitaldienst, Bewirtschaftung & Steuern
+        </div>
+      </div>
+
+      <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Brutto-Mietrendite
+        </div>
+        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
+          {bruttoMietrendite.toFixed(2)} %
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
+          Miete p.a. / Kaufpreis
+        </div>
+      </div>
+
+      <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Eigenkapitalrendite (IRR)
+        </div>
+        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#A37841', marginTop: '4px' }}>
+          {irrPct} %
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
+          Effektive Verzinsung deines EK
+        </div>
+      </div>
+
+      <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Gesamtgewinn ({actualHorizonYears} J.)
+        </div>
+        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: gesamtGewinnHorizon >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+          {gesamtGewinnHorizon >= 0 ? '+' : ''}{formatEuroInt(gesamtGewinnHorizon)} €
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
+          Cashflow ({formatEuroInt(cumulatedCashflowHorizon)} €) + NAV-Aufbau
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+{/* UNTERKOMPONENTE: TABLE VIEW INKLUSIVE SUMMENZEILEN & ACCURATE STEUERLOGIK */}
+function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk }) {
+  if (!slicedProjection || slicedProjection.length === 0) return null;
+
+  // BERECHNUNG DER SUMMEN FÜR DIE SUMMENZEILE
+  const totals = slicedProjection.reduce((acc, curr) => {
+    acc.miete += curr['Mieteinnahmen p.a.'] || curr['Kaltmiete'] || 0;
+    acc.zins += curr['Zinszahlung'] || curr['Zinsen'] || 0;
+    acc.tilg += curr['Tilgungszahlung'] || curr['Tilgung'] || 0;
+    acc.cfNetto += curr['Cashflow Netto'] || 0;
+    acc.steuer += curr['Steuerliche Auswirkung'] || curr['Steuern'] || 0;
+    return acc;
+  }, { miete: 0, zins: 0, tilg: 0, cfNetto: 0, steuer: 0 });
+
+  return (
+    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2D9CE', padding: '1.5rem', overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'right' }}>
+        <thead>
+          <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE', color: '#13381A' }}>
+            <th style={{ padding: '10px', textAlign: 'left' }}>Jahr</th>
+            {activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' && (
+              <>
+                <th style={{ padding: '10px' }}>Kaltmiete p.a.</th>
+                <th style={{ padding: '10px' }}>Kapitaldienst (Zins+Tilg)</th>
+                <th style={{ padding: '10px' }}>Bewirtschaftung</th>
+                <th style={{ padding: '10px' }}>Steuer-Effekt</th>
+                <th style={{ padding: '10px' }}>Cashflow Netto p.a.</th>
+                <th style={{ padding: '10px' }}>Cashflow / Monat</th>
+              </>
+            )}
+            {activeDashboardTab === 'Finanzierung & Tilgung' && (
+              <>
+                <th style={{ padding: '10px' }}>Restschuld</th>
+                <th style={{ padding: '10px' }}>Zinszahlung</th>
+                <th style={{ padding: '10px' }}>Tilgungszahlung</th>
+                <th style={{ padding: '10px' }}>Sondertilgung</th>
+                <th style={{ padding: '10px' }}>Gesamte Tilgung</th>
+              </>
+            )}
+            {activeDashboardTab === 'Steuern & AfA' && (
+              <>
+                <th style={{ padding: '10px' }}>Mieteinnahmen</th>
+                <th style={{ padding: '10px' }}>Abziehbare Zinsen</th>
+                <th style={{ padding: '10px' }}>AfA-Betrag</th>
+                <th style={{ padding: '10px' }}>Zu versteuernder Ertrag</th>
+                <th style={{ padding: '10px' }}>Steuer-Auswirkung</th>
+              </>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {slicedProjection.map((row, idx) => {
+            const year = row['Jahr'] || idx + 1;
+            const miete = row['Mieteinnahmen p.a.'] || row['Kaltmiete'] || 0;
+            const zins = row['Zinszahlung'] || row['Zinsen'] || 0;
+            const tilg = row['Tilgungszahlung'] || row['Tilgung'] || 0;
+            const cfNetto = row['Cashflow Netto'] || 0;
+            const cfMonat = cfNetto / 12;
+            const steuer = row['Steuerliche Auswirkung'] || row['Steuern'] || 0;
+            const restschuld = row['Restschuld'] || 0;
+            const afa = row['AfA'] || row['AfA-Betrag'] || 0;
+            const zstErtrag = row['Zu versteuernder Ertrag'] || (miete - zins - afa);
+
+            // STEUER-FORMATIERUNG (PUNKT 11):
+            // Erstattung (>0): Grüner Text, KEIN Vorzeichen (z.B. 450 €)
+            // Zahlung (<0): Roter Text, MIT Minuszeichen (z.B. -320 €)
+            const isSteuerRefund = steuer > 0;
+            const isSteuerPayment = steuer < 0;
+
+            return (
+              <tr key={idx} style={{ borderBottom: '1px solid #E2D9CE', background: idx % 2 === 0 ? 'white' : '#FAF8F5' }}>
+                <td style={{ padding: '10px', textAlign: 'left', fontWeight: '800', color: '#13381A' }}>Jahr {year}</td>
+                
+                {activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' && (
+                  <>
+                    <td style={{ padding: '10px' }}>{formatEuroInt(miete)} €</td>
+                    <td style={{ padding: '10px' }}>-{formatEuroInt(zins + tilg)} €</td>
+                    <td style={{ padding: '10px' }}>-{formatEuroInt(row['Bewirtschaftung'] || 0)} €</td>
+                    <td style={{
+                      padding: '10px',
+                      fontWeight: '700',
+                      color: isSteuerRefund ? '#276749' : isSteuerPayment ? '#9B2C2C' : '#4A5568'
+                    }}>
+                      {isSteuerPayment ? '-' : ''}{formatEuroInt(Math.abs(steuer))} €
+                    </td>
+                    <td style={{ padding: '10px', fontWeight: '800', color: cfNetto >= 0 ? '#276749' : '#9B2C2C' }}>
+                      {cfNetto >= 0 ? '+' : ''}{formatEuroInt(cfNetto)} €
+                    </td>
+                    <td style={{ padding: '10px', fontWeight: '800', color: cfMonat >= 0 ? '#276749' : '#9B2C2C' }}>
+                      {cfMonat >= 0 ? '+' : ''}{formatEuroInt(cfMonat)} €
+                    </td>
+                  </>
+                )}
+
+                {activeDashboardTab === 'Finanzierung & Tilgung' && (
+                  <>
+                    <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(restschuld)} €</td>
+                    <td style={{ padding: '10px', color: '#9B2C2C' }}>-{formatEuroInt(zins)} €</td>
+                    <td style={{ padding: '10px', color: '#276749' }}>+{formatEuroInt(tilg)} €</td>
+                    <td style={{ padding: '10px' }}>{formatEuroInt(row['Sondertilgung'] || 0)} €</td>
+                    <td style={{ padding: '10px', fontWeight: '800', color: '#276749' }}>+{formatEuroInt(tilg + (row['Sondertilgung'] || 0))} €</td>
+                  </>
+                )}
+
+                {activeDashboardTab === 'Steuern & AfA' && (
+                  <>
+                    <td style={{ padding: '10px' }}>{formatEuroInt(miete)} €</td>
+                    <td style={{ padding: '10px' }}>-{formatEuroInt(zins)} €</td>
+                    <td style={{ padding: '10px' }}>-{formatEuroInt(afa)} €</td>
+                    <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(zstErtrag)} €</td>
+                    <td style={{
+                      padding: '10px',
+                      fontWeight: '800',
+                      color: isSteuerRefund ? '#276749' : isSteuerPayment ? '#9B2C2C' : '#4A5568'
+                    }}>
+                      {isSteuerPayment ? '-' : ''}{formatEuroInt(Math.abs(steuer))} €
+                    </td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+
+        {/* SUMMENZEILE FÜR GESAMTEN HORIZONT */}
+        <tfoot>
+          <tr style={{ background: '#13381A', color: 'white', fontWeight: '800', borderTop: '2px solid #13381A' }}>
+            <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({slicedProjection.length} J.)</td>
+            {activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' && (
+              <>
+                <td style={{ padding: '12px' }}>{formatEuroInt(totals.miete)} €</td>
+                <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins + totals.tilg)} €</td>
+                <td style={{ padding: '12px' }}>-</td>
+                <td style={{ padding: '12px', color: totals.steuer >= 0 ? '#68D391' : '#FC8181' }}>
+                  {totals.steuer < 0 ? '-' : ''}{formatEuroInt(Math.abs(totals.steuer))} €
+                </td>
+                <td style={{ padding: '12px', color: totals.cfNetto >= 0 ? '#68D391' : '#FC8181' }}>
+                  {totals.cfNetto >= 0 ? '+' : ''}{formatEuroInt(totals.cfNetto)} €
+                </td>
+                <td style={{ padding: '12px' }}>-</td>
+              </>
+            )}
+            {activeDashboardTab === 'Finanzierung & Tilgung' && (
+              <>
+                <td style={{ padding: '12px' }}>-</td>
+                <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins)} €</td>
+                <td style={{ padding: '12px' }}>+{formatEuroInt(totals.tilg)} €</td>
+                <td style={{ padding: '12px' }}>-</td>
+                <td style={{ padding: '12px' }}>+{formatEuroInt(totals.tilg)} €</td>
+              </>
+            )}
+            {activeDashboardTab === 'Steuern & AfA' && (
+              <>
+                <td style={{ padding: '12px' }}>{formatEuroInt(totals.miete)} €</td>
+                <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins)} €</td>
+                <td style={{ padding: '12px' }}>-</td>
+                <td style={{ padding: '12px' }}>-</td>
+                <td style={{ padding: '12px', color: totals.steuer >= 0 ? '#68D391' : '#FC8181' }}>
+                  {totals.steuer < 0 ? '-' : ''}{formatEuroInt(Math.abs(totals.steuer))} €
+                </td>
+              </>
+            )}
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }

@@ -1,112 +1,153 @@
 'use client';
-import { IconGear, IconUser } from '@/components/ui/Icons';
+import { IconGear, IconUser, IconHome } from '../ui/Icons';
 
 export default function Header({ navChoice, setNavChoice, backendStatus, setDevNotice, userEmail }) {
-  const mainNavItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen'];
+  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen', 'Einstellungen'];
 
   return (
-    <>
-      {/* HEADER BAR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        
-        {/* LOGO (KLICKBAR -> STARTSEITE) */}
-        <div 
-          onClick={() => setNavChoice('Startseite')} 
-          style={{ cursor: 'pointer', userSelect: 'none' }}
-          title="Zurück zur Startseite"
-        >
-          <div style={{ fontSize: '2.2rem', fontWeight: '900', color: '#13381A', letterSpacing: '-0.5px' }}>Valuon Estate</div>
-          <div style={{ fontSize: '0.8rem', color: '#A37841', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '2px' }}>INVESTMENT SUITE</div>
+    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      
+      {/* BRANDING / LOGO */}
+      <div 
+        onClick={() => setNavChoice('Startseite')} 
+        style={{ cursor: 'pointer', userSelect: 'none' }}
+      >
+        <div style={{ fontSize: '2rem', fontWeight: '900', color: '#13381A', letterSpacing: '-0.8px', lineHeight: '1' }}>
+          Valuon Estate
         </div>
-        
-        {/* AKTIONEN RECHTS (BACKEND STATUS, EINSTELLUNGEN & PROFIL) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          
-          {/* BACKEND STATUS DOT */}
-          <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 14px', borderRadius: '20px', border: '1px solid #E2D9CE' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: backendStatus === 'ready' ? '#38A169' : (backendStatus === 'waking' ? '#D69E2E' : '#9B2C2C') }} />
-            <span style={{ fontWeight: '700', color: '#13381A' }}>
-              {backendStatus === 'ready' && 'Backend Bereit'}
-              {backendStatus === 'waking' && 'Backend startet...'}
-              {backendStatus === 'sleeping' && 'Backend inaktiv'}
-            </span>
-          </div>
-
-          {/* EINSTELLUNGEN ZAHNRAD BUTTON */}
-          <button
-            onClick={() => setNavChoice('Einstellungen')}
-            title="Einstellungen öffnen"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justify: 'center',
-              width: '38px',
-              height: '38px',
-              padding: 0,
-              background: navChoice === 'Einstellungen' ? '#13381A' : 'white',
-              color: navChoice === 'Einstellungen' ? 'white' : '#13381A',
-              border: '1px solid #E2D9CE',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-            }}
-          >
-            <IconGear />
-          </button>
-
-          {/* PROFIL / KONTO BUTTON */}
-          <button
-            onClick={() => setDevNotice('Profil & Kontoverwaltung')}
-            title={`Angemeldet als: ${userEmail}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justify: 'center',
-              width: '38px',
-              height: '38px',
-              padding: 0,
-              background: 'white',
-              color: '#13381A',
-              border: '1px solid #E2D9CE',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-            }}
-          >
-            <IconUser />
-          </button>
-
+        <div style={{ fontSize: '0.7rem', color: '#A37841', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.8px', marginTop: '4px' }}>
+          INVESTMENT SUITE
         </div>
       </div>
 
-      {/* HAUPTNAVIGATION BAR (WIRD AUF DER STARTSEITE AUTOMATISCH AUSGEBLENDET) */}
-      {navChoice !== 'Startseite' && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${mainNavItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
-          {mainNavItems.map((item) => {
-            const isActive = navChoice === item;
-            return (
-              <button
-                key={item}
-                onClick={() => setNavChoice(item)}
-                style={{
-                  padding: '12px',
-                  background: isActive ? '#13381A' : 'white',
-                  color: isActive ? 'white' : '#13381A',
-                  border: '1px solid #E2D9CE',
-                  borderRadius: '25px',
-                  fontWeight: '700',
-                  fontSize: '0.95rem',
-                  cursor: 'pointer',
-                  boxShadow: isActive ? '0 4px 12px rgba(19,56,26,0.15)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {item}
-              </button>
-            );
-          })}
+      {/* NAVIGATION TABS */}
+      <nav style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.6)', padding: '5px', borderRadius: '30px', border: '1px solid #E2D9CE', backdropFilter: 'blur(8px)' }}>
+        {navItems.map((item) => {
+          const isActive = navChoice === item;
+          return (
+            <button
+              key={item}
+              onClick={() => setNavChoice(item)}
+              style={{
+                padding: '8px 18px',
+                background: isActive ? '#13381A' : 'transparent',
+                color: isActive ? '#F7F4EC' : '#4A5568',
+                border: 'none',
+                borderRadius: '20px',
+                fontWeight: isActive ? '800' : '600',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease-in-out',
+                boxShadow: isActive ? '0 2px 8px rgba(19,56,26,0.18)' : 'none'
+              }}
+            >
+              {item}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* RECHTE TOOLBAR / STATUS & PROFIL */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        
+        {/* BACKEND STATUS BADGE */}
+        <div style={{
+          height: '38px',
+          padding: '0 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'white',
+          borderRadius: '20px',
+          border: '1px solid #E2D9CE',
+          fontSize: '0.8rem',
+          fontWeight: '700',
+          color: '#13381A',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}>
+          {backendStatus === 'ready' && (
+            <>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38A169', display: 'inline-block' }}></span>
+              <span>Backend Bereit</span>
+            </>
+          )}
+          {backendStatus === 'waking' && (
+            <>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#D69E2E', display: 'inline-block' }}></span>
+              <span style={{ color: '#D69E2E' }}>Startet...</span>
+            </>
+          )}
+          {backendStatus === 'sleeping' && (
+            <>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#E53E3E', display: 'inline-block' }}></span>
+              <span style={{ color: '#E53E3E' }}>Inaktiv</span>
+            </>
+          )}
         </div>
-      )}
-    </>
+
+        {/* SETTINGS BUTTON */}
+        <button
+          onClick={() => setNavChoice('Einstellungen')}
+          title="Einstellungen"
+          style={{
+            width: '38px',
+            height: '38px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: navChoice === 'Einstellungen' ? '#13381A' : 'white',
+            color: navChoice === 'Einstellungen' ? 'white' : '#13381A',
+            border: '1px solid #E2D9CE',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease-in-out',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}
+        >
+          <IconGear />
+        </button>
+
+        {/* PROFIL / USER BADGE */}
+        <div 
+          onClick={() => setDevNotice('Benutzerprofil & Kontoverwaltung')}
+          title="Kontooptionen"
+          style={{
+            height: '38px',
+            padding: '0 12px 0 8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'white',
+            borderRadius: '20px',
+            border: '1px solid #E2D9CE',
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            fontWeight: '700',
+            color: '#13381A',
+            transition: 'all 0.15s ease-in-out',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+          }}
+        >
+          <div style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '50%',
+            background: '#FAF8F5',
+            border: '1px solid #E2D9CE',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#13381A'
+          }}>
+            <IconUser />
+          </div>
+          <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {userEmail ? userEmail.split('@')[0] : 'Konto'}
+          </span>
+        </div>
+
+      </div>
+
+    </header>
   );
 }

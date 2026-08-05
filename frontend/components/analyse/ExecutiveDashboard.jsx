@@ -27,20 +27,20 @@ export default function ExecutiveDashboard({
   cumulatedCashflowHorizon,
   endNav
 }) {
-  const propertyTitle = formData.obj_name || 'Neues Investment-Objekt';
-  const locationText = [formData.stadt, formData.stadtteil].filter(Boolean).join(' • ') || 'Kein Standort angegeben';
+  const propertyTitle = formData?.obj_name || 'Neues Investment-Objekt';
+  const locationText = [formData?.stadt, formData?.stadtteil].filter(Boolean).join(' • ') || 'Kein Standort angegeben';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* KOPFZEILE MIT OBJ-NAME UND BUTTON */}
+      {/* KOPFZEILE */}
       <div style={{
         background: 'white',
         padding: '1.2rem 1.5rem',
         borderRadius: '12px',
         border: '1px solid #E2D9CE',
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         alignItems: 'center',
         gap: '1rem'
       }}>
@@ -57,7 +57,7 @@ export default function ExecutiveDashboard({
             {propertyTitle}
           </h2>
           <div style={{ fontSize: '0.8rem', color: '#718096', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {locationText} • {formatEuroInt(formData.kaufpreis)} € • {formData.qm} m²
+            {locationText} • {formatEuroInt(formData?.kaufpreis || 0)} € • {formData?.qm || 0} m²
           </div>
         </div>
 
@@ -116,7 +116,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* TAB-NAVIGATION DES DASHBOARDS */}
+      {/* TABS */}
       <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
         {['Executive Dashboard', 'Liquiditätsverlauf (Tabelle)', 'Finanzierung & Tilgung', 'Steuern & AfA'].map((tab) => (
           <button
@@ -140,7 +140,7 @@ export default function ExecutiveDashboard({
         ))}
       </div>
 
-      {/* LEERZUSTAND VOR DER ERSTEN BERECHNUNG */}
+      {/* LEERZUSTAND */}
       {!result && !calcError && (
         <div style={{
           background: 'white',
@@ -159,10 +159,9 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* DASHBOARD INHALTE WENN ERGEBNIS DA IST */}
+      {/* ERGEBNISSE */}
       {result && (
         <>
-          {/* HORIZONT-FILTER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -194,7 +193,6 @@ export default function ExecutiveDashboard({
             </div>
           </div>
 
-          {/* KENNZAHLEN-BOXEN */}
           <KeyMetrics 
             result={result}
             monthlyCashflow={monthlyCashflow}
@@ -205,7 +203,6 @@ export default function ExecutiveDashboard({
             endNav={endNav}
           />
 
-          {/* TAB 1: EXECUTIVE DASHBOARD (GRAFIKEN) */}
           {activeDashboardTab === 'Executive Dashboard' && (
             <ProjectionChart 
               chartView={chartView}
@@ -214,7 +211,6 @@ export default function ExecutiveDashboard({
             />
           )}
 
-          {/* TAB 2, 3 & 4: TABELLEN-ANSICHTEN */}
           {(activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' || activeDashboardTab === 'Finanzierung & Tilgung' || activeDashboardTab === 'Steuern & AfA') && (
             <TableView 
               activeDashboardTab={activeDashboardTab}
@@ -232,10 +228,9 @@ export default function ExecutiveDashboard({
   );
 }
 
-{/* UNTERKOMPONENTE: KEY METRICS */}
 function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonYears, gesamtGewinnHorizon, cumulatedCashflowHorizon, endNav }) {
   const irrPct = result?.summary?.irr ? (result.summary.irr * 100).toFixed(2) : '0.00';
-  const isCfPositive = monthlyCashflow >= 0;
+  const isCfPositive = (monthlyCashflow || 0) >= 0;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
@@ -245,7 +240,7 @@ function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonY
           Netto Cashflow (monatlich)
         </div>
         <div style={{ fontSize: '1.4rem', fontWeight: '900', color: isCfPositive ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
-          {isCfPositive ? '+' : ''}{formatEuroInt(monthlyCashflow)} € / Mo.
+          {isCfPositive ? '+' : ''}{formatEuroInt(monthlyCashflow || 0)} € / Mo.
         </div>
         <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
           Nach Kapitaldienst, Bewirtschaftung & Steuern
@@ -257,7 +252,7 @@ function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonY
           Brutto-Mietrendite
         </div>
         <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
-          {bruttoMietrendite.toFixed(2)} %
+          {(bruttoMietrendite || 0).toFixed(2)} %
         </div>
         <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
           Miete p.a. / Kaufpreis
@@ -278,13 +273,13 @@ function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonY
 
       <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
         <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Gesamtgewinn ({actualHorizonYears} J.)
+          Gesamtgewinn ({actualHorizonYears || 0} J.)
         </div>
-        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: gesamtGewinnHorizon >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
-          {gesamtGewinnHorizon >= 0 ? '+' : ''}{formatEuroInt(gesamtGewinnHorizon)} €
+        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: (gesamtGewinnHorizon || 0) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+          {(gesamtGewinnHorizon || 0) >= 0 ? '+' : ''}{formatEuroInt(gesamtGewinnHorizon || 0)} €
         </div>
         <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '4px' }}>
-          Cashflow ({formatEuroInt(cumulatedCashflowHorizon)} €) + NAV-Aufbau
+          Cashflow ({formatEuroInt(cumulatedCashflowHorizon || 0)} €) + NAV-Aufbau
         </div>
       </div>
 
@@ -292,11 +287,11 @@ function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonY
   );
 }
 
-{/* UNTERKOMPONENTE: TABLE VIEW */}
-function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk }) {
-  if (!slicedProjection || slicedProjection.length === 0) return null;
+function TableView({ activeDashboardTab, slicedProjection }) {
+  const data = slicedProjection || [];
+  if (data.length === 0) return null;
 
-  const totals = slicedProjection.reduce((acc, curr) => {
+  const totals = data.reduce((acc, curr) => {
     acc.miete += curr['Mieteinnahmen p.a.'] || curr['Kaltmiete'] || 0;
     acc.zins += curr['Zinszahlung'] || curr['Zinsen'] || 0;
     acc.tilg += curr['Tilgungszahlung'] || curr['Tilgung'] || 0;
@@ -342,7 +337,7 @@ function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk })
           </tr>
         </thead>
         <tbody>
-          {slicedProjection.map((row, idx) => {
+          {data.map((row, idx) => {
             const year = row['Jahr'] || idx + 1;
             const miete = row['Mieteinnahmen p.a.'] || row['Kaltmiete'] || 0;
             const zins = row['Zinszahlung'] || row['Zinsen'] || 0;
@@ -414,7 +409,7 @@ function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk })
 
         <tfoot>
           <tr style={{ background: '#13381A', color: 'white', fontWeight: '800', borderTop: '2px solid #13381A' }}>
-            <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({slicedProjection.length} J.)</td>
+            <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({data.length} J.)</td>
             {activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' && (
               <>
                 <td style={{ padding: '12px' }}>{formatEuroInt(totals.miete)} €</td>

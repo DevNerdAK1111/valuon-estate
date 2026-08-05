@@ -66,6 +66,8 @@ export default function ProfileView({
     setTimeout(() => setPwdStatus(null), 4000);
   };
 
+  const displayName = userProfile.profilname || (userProfile.vorname ? `${userProfile.vorname} ${userProfile.nachname || ''}` : 'Nutzerprofil');
+
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -73,11 +75,11 @@ export default function ProfileView({
       <div style={{ background: 'white', padding: '1.8rem', borderRadius: '16px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#13381A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: '900' }}>
-            {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
+            {displayName.charAt(0).toUpperCase()}
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#13381A', fontWeight: '900' }}>
-              {userProfile.vorname || userProfile.nachname ? `${userProfile.vorname || ''} ${userProfile.nachname || ''}` : 'Nutzerprofil'}
+              {displayName}
             </h1>
             <div style={{ fontSize: '0.85rem', color: '#718096', marginTop: '2px' }}>{userEmail}</div>
           </div>
@@ -132,14 +134,19 @@ export default function ProfileView({
       {activeTab === 'persoenlich' && (
         <form onSubmit={handleSave} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           
+          <div>
+            <label style={labelStyle}>Profilname / Anzeigename *</label>
+            <input type="text" required value={userProfile.profilname || ''} onChange={(e) => handleProfileChange('profilname', e.target.value)} style={inputTextStyle} placeholder="z.B. ImmoInvestor99" />
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
-              <label style={labelStyle}>Vorname</label>
-              <input type="text" value={userProfile.vorname || ''} onChange={(e) => handleProfileChange('vorname', e.target.value)} style={inputTextStyle} placeholder="Max" />
+              <label style={labelStyle}>Vorname *</label>
+              <input type="text" required value={userProfile.vorname || ''} onChange={(e) => handleProfileChange('vorname', e.target.value)} style={inputTextStyle} placeholder="Max" />
             </div>
             <div>
-              <label style={labelStyle}>Nachname</label>
-              <input type="text" value={userProfile.nachname || ''} onChange={(e) => handleProfileChange('nachname', e.target.value)} style={inputTextStyle} placeholder="Mustermann" />
+              <label style={labelStyle}>Nachname *</label>
+              <input type="text" required value={userProfile.nachname || ''} onChange={(e) => handleProfileChange('nachname', e.target.value)} style={inputTextStyle} placeholder="Mustermann" />
             </div>
           </div>
 
@@ -200,7 +207,7 @@ export default function ProfileView({
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <StepperInput
-              label="Bruttojahreseinkommen (€)"
+              label="Bruttojahreseinkommen (€) *"
               value={userProfile.bruttoEinkommen || 65000}
               onChange={(v) => handleProfileChange('bruttoEinkommen', v)}
               step={2500}
@@ -208,7 +215,7 @@ export default function ProfileView({
             />
 
             <div>
-              <label style={labelStyle}>Steuerklasse</label>
+              <label style={labelStyle}>Steuerklasse *</label>
               <select
                 value={userProfile.steuerklasse || '1'}
                 onChange={(e) => handleProfileChange('steuerklasse', e.target.value)}
@@ -247,7 +254,6 @@ export default function ProfileView({
             />
           </div>
 
-          {/* EXAKTE KIRCHENSTEUER-STEUERUNG */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Kirchensteuerpflichtig?</label>
@@ -275,7 +281,7 @@ export default function ProfileView({
               </div>
             ) : (
               <StepperInput
-                label="Individueller Grenzsteuersatz (%)"
+                label="Individueller Grenzsteuersatz (%) *"
                 value={userProfile.grenzsteuersatz || 42.0}
                 onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
                 step={0.5}
@@ -287,7 +293,7 @@ export default function ProfileView({
           {userProfile.kirchensteuer && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
               <StepperInput
-                label="Individueller Grenzsteuersatz (%)"
+                label="Individueller Grenzsteuersatz (%) *"
                 value={userProfile.grenzsteuersatz || 42.0}
                 onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
                 step={0.5}
@@ -313,7 +319,6 @@ export default function ProfileView({
       {activeTab === 'sicherheit' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          {/* E-MAIL ADRESSE ÄNDERN */}
           <form onSubmit={handleEmailSubmit} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 style={{ margin: 0, color: '#13381A', fontSize: '1.1rem', fontWeight: '800' }}>E-Mail-Adresse verwalten</h3>
             
@@ -333,7 +338,6 @@ export default function ProfileView({
             </button>
           </form>
 
-          {/* PASSWORT ÄNDERN */}
           <form onSubmit={handlePwdSubmit} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 style={{ margin: 0, color: '#13381A', fontSize: '1.1rem', fontWeight: '800' }}>Passwort ändern</h3>
             
@@ -364,7 +368,6 @@ export default function ProfileView({
             </button>
           </form>
 
-          {/* DANGER ZONE: ACCOUNT LÖSCHEN */}
           <div style={{ background: '#FFF5F5', padding: '2rem', borderRadius: '12px', border: '1px solid #FEB2B2', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 style={{ margin: 0, color: '#9B2C2C', fontSize: '1.1rem', fontWeight: '800' }}>Account dauerhaft löschen</h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: '#742A2A', lineHeight: '1.5' }}>

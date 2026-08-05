@@ -33,7 +33,7 @@ export default function ExecutiveDashboard({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* 1. KOPFZEILE (OBJEKTNAME & SPEICHERN) */}
+      {/* 1. KOPFZEILE */}
       <div style={{
         background: 'white',
         padding: '1.2rem 1.5rem',
@@ -120,7 +120,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* 2. BETRACHTUNGSHORIZONT (DIREKT UNTER DEM NAMEN) */}
+      {/* 2. BETRACHTUNGSHORIZONT */}
       {result && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
@@ -328,6 +328,12 @@ function TableView({ activeDashboardTab, slicedProjection, formData }) {
 
   return (
     <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2D9CE', padding: '1.5rem', overflowX: 'auto' }}>
+      
+      {/* VISUELLER KONTROLL-HINWEIS */}
+      <div style={{ fontSize: '0.75rem', color: '#718096', marginBottom: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        Ansicht: {activeDashboardTab} (Struktur v2)
+      </div>
+
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'right' }}>
         <thead>
           <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE', color: '#13381A' }}>

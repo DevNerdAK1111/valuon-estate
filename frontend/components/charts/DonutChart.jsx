@@ -28,7 +28,7 @@ export default function DonutChart({ formData, summe_nk }) {
         Finanzierungsstruktur & Mittelherkunft
       </h3>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', justifyContent: 'center', my: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
         <div style={{ position: 'relative', width: '190px', height: '190px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="190" height="190" viewBox="0 0 190 190" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
             {slices.map((slice, idx) => {
@@ -49,7 +49,7 @@ export default function DonutChart({ formData, summe_nk }) {
                   strokeWidth="24"
                   strokeDasharray={strokeDasharray}
                   strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
+                  strokeLinecap="butt"
                   style={{ transition: 'stroke-dasharray 0.5s ease' }}
                 />
               );
@@ -70,25 +70,24 @@ export default function DonutChart({ formData, summe_nk }) {
           </div>
         </div>
 
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* BÜNDIGE LEGENDE ÜBER EIN GEMEINSAMES GRID-LAYOUT */}
+        <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '14px 1fr auto', rowGap: '8px', columnGap: '8px', alignItems: 'center', fontSize: '0.82rem' }}>
           {slices.map((slice, idx) => {
             const pct = totalValue > 0 ? (slice.value / totalValue) * 100 : 0;
             return (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: slice.color, flexShrink: 0 }} />
-                  <span style={{ color: '#4A5568', fontWeight: '600' }}>{slice.label}</span>
-                </div>
-                <div style={{ fontWeight: '800', color: '#13381A', whiteSpace: 'nowrap' }}>
+              <div key={idx} style={{ display: 'contents' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: slice.color, display: 'inline-block' }} />
+                <span style={{ color: '#4A5568', fontWeight: '600' }}>{slice.label}</span>
+                <span style={{ fontWeight: '800', color: '#13381A', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {formatEuroInt(slice.value)} € <span style={{ color: '#718096', fontWeight: 'normal', fontSize: '0.75rem' }}>({pct.toFixed(1)}%)</span>
-                </div>
+                </span>
               </div>
             );
           })}
         </div>
       </div>
       
-      <div /> {/* Spacer für exakte Gleichhöhe */}
+      <div />
     </div>
   );
 }

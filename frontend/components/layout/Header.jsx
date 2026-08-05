@@ -1,8 +1,8 @@
 'use client';
-import { IconGear, IconUser, IconHome } from '../ui/Icons';
+import { IconGear, IconUser } from '../ui/Icons';
 
-export default function Header({ navChoice, setNavChoice, backendStatus, setDevNotice, userEmail }) {
-  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen', 'Einstellungen'];
+export default function Header({ navChoice, setNavChoice, backendStatus, userEmail, onLogout }) {
+  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen', 'Profil', 'Einstellungen'];
 
   return (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -109,21 +109,21 @@ export default function Header({ navChoice, setNavChoice, backendStatus, setDevN
 
         {/* PROFIL / USER BADGE */}
         <div 
-          onClick={() => setDevNotice('Benutzerprofil & Kontoverwaltung')}
-          title="Kontooptionen"
+          onClick={() => setNavChoice('Profil')}
+          title="Nutzerprofil öffnen"
           style={{
             height: '38px',
             padding: '0 12px 0 8px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'white',
+            background: navChoice === 'Profil' ? '#13381A' : 'white',
+            color: navChoice === 'Profil' ? 'white' : '#13381A',
             borderRadius: '20px',
             border: '1px solid #E2D9CE',
             cursor: 'pointer',
             fontSize: '0.8rem',
             fontWeight: '700',
-            color: '#13381A',
             transition: 'all 0.15s ease-in-out',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}
@@ -132,16 +132,16 @@ export default function Header({ navChoice, setNavChoice, backendStatus, setDevN
             width: '24px',
             height: '24px',
             borderRadius: '50%',
-            background: '#FAF8F5',
+            background: navChoice === 'Profil' ? '#A37841' : '#FAF8F5',
             border: '1px solid #E2D9CE',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#13381A'
+            color: navChoice === 'Profil' ? 'white' : '#13381A'
           }}>
             <IconUser />
           </div>
-          <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {userEmail ? userEmail.split('@')[0] : 'Konto'}
           </span>
         </div>

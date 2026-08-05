@@ -1,6 +1,5 @@
 'use client';
 import ProjectionChart from '../charts/ProjectionChart';
-import { IconSave } from '../ui/Icons';
 import { formatEuroInt } from '../../utils/formatters';
 
 export default function ExecutiveDashboard({
@@ -82,7 +81,12 @@ export default function ExecutiveDashboard({
               flexShrink: 0
             }}
           >
-            <IconSave />
+            {/* INLINE SAVE ICON */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              polyline points="17 21 17 13 7 13 7 21"></polyline>
+              line x1="7" y1="3" x2="7" y2="8"></line>
+            </svg>
             <span>{saving ? 'Speichert...' : 'In Datenbank speichern'}</span>
           </button>
         )}

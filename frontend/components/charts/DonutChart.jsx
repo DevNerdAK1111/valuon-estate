@@ -1,72 +1,90 @@
 'use client';
-import { formatEuroInt, formatPct } from '@/utils/formatters';
+import { formatEuroInt } from '../../utils/formatters';
 
-export default function DonutChart({ totalInvestment, equity, kfw, hb }) {
-  const safeTotal = totalInvestment || 1;
-  const eqPct = (equity / safeTotal) * 100;
-  const kfwPct = (kfw / safeTotal) * 100;
-  const hbPct = Math.max(0, 100 - eqPct - kfwPct);
+export default function DonutChart({ formData, summe_nk }) {
+  const kaufpreis = Number(formData?.kaufpreis || 0);
+  const nk = Number(summe_nk || 0);
+  const gesamtkosten = kaufpreis + nk;
+
+  const ek = Number(formData?.ek_euro || 0);
+  const kfwAmt = Number(formData?.kfw_amt || 0);
+  // Hauptdarlehen = Gesamtkosten minus Eigenkapital minus KfW-Darlehen (mindestens 0)
+  const hauptdarlehen = Math.max(0, gesamtkosten - ek - kfwAmt);
+
+  const slices = [
+    { label: 'Eigenkapital', value: ek, color: '#A37841' },
+    { label: 'Hauptdarlehen (Bank)', value: hauptdarlehen, color: '#13381A' },
+    ...(kfwAmt > 0 ? [{ label: 'KfW-Darlehen', value: kfwAmt, color: '#3182CE' }] : [])
+  ];
+
+  const totalValue = slices.reduce((acc, s) => acc + s.value, 0) || 1;
+
+  let cumulativePercent = 0;
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '260px' }}>
-      <div style={{ position: 'relative', width: '200px', height: '200px' }}>
-        <svg width="100%" height="100%" viewBox="0 0 42 42">
-          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E2D9CE" strokeWidth="4.5" />
-          
-          <circle
-            cx="21" cy="21" r="15.915"
-            fill="transparent" stroke="#13381A" strokeWidth="4.5"
-            strokeDasharray={`${hbPct} ${100 - hbPct}`}
-            strokeDashoffset="25"
-          />
+    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+      <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#13381A', fontWeight: '800' }}>
+        Finanzierungsstruktur & Mittelherkunft
+      </h3>
 
-          <circle
-            cx="21" cy="21" r="15.915"
-            fill="transparent" stroke="#A37841" strokeWidth="4.5"
-            strokeDasharray={`${eqPct} ${100 - eqPct}`}
-            strokeDashoffset={`${25 - hbPct}`}
-          />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', justifyContent: 'center', padding: '10px 0' }}>
+        <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+          <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
+            {slices.map((slice, idx) => {
+              const percent = slice.value / totalValue;
+              const strokeDasharray = `${percent * circumference} ${circumference}`;
+              const strokeDashoffset = -cumulativePercent * circumference;
+              cumulativePercent += percent;
 
-          {kfwPct > 0 && (
-            <circle
-              cx="21" cy="21" r="15.915"
-              fill="transparent" stroke="#2B6CB0" strokeWidth="4.5"
-              strokeDasharray={`${kfwPct} ${100 - kfwPct}`}
-              strokeDashoffset={`${25 - hbPct - eqPct}`}
-            />
-          )}
-
-          <text x="21" y="19" textAnchor="middle" fontSize="3.2" fontWeight="800" fill="#718096">GESAMT</text>
-          <text x="21" y="24.5" textAnchor="middle" fontSize="3.8" fontWeight="900" fill="#13381A">{formatEuroInt(totalInvestment)} €</text>
-        </svg>
-      </div>
-
-      <div style={{ marginTop: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '12px', height: '12px', background: '#13381A', borderRadius: '3px', display: 'inline-block' }}></span>
-            <span>Hausbank Darlehen</span>
+              return (
+                <circle
+                  key={idx}
+                  cx="80"
+                  cy="80"
+                  r={radius}
+                  fill="transparent"
+                  stroke={slice.color}
+                  strokeWidth="24"
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                />
+              );
+            })}
+          </svg>
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            pointerEvents: 'none'
+          }}>
+            <span style={{ fontSize: '0.7rem', color: '#718096', fontWeight: '700' }}>Gesamtkosten</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: '900', color: '#13381A' }}>{formatEuroInt(gesamtkosten)} €</span>
           </div>
-          <span style={{ fontWeight: '800', color: '#13381A' }}>{formatEuroInt(hb)} € ({formatPct(hbPct)}%)</span>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '12px', height: '12px', background: '#A37841', borderRadius: '3px', display: 'inline-block' }}></span>
-            <span>Eigenkapital</span>
-          </div>
-          <span style={{ fontWeight: '800', color: '#A37841' }}>{formatEuroInt(equity)} € ({formatPct(eqPct)}%)</span>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {slices.map((slice, idx) => {
+            const pct = totalValue > 0 ? (slice.value / totalValue) * 100 : 0;
+            return (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: slice.color }} />
+                  <span style={{ color: '#4A5568', fontWeight: '600' }}>{slice.label}</span>
+                </div>
+                <div style={{ fontWeight: '800', color: '#13381A' }}>
+                  {formatEuroInt(slice.value)} € <span style={{ color: '#718096', fontWeight: 'normal', fontSize: '0.75rem' }}>({pct.toFixed(1)}%)</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        {kfwPct > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FAF8F5', padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2D9CE' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '12px', height: '12px', background: '#2B6CB0', borderRadius: '3px', display: 'inline-block' }}></span>
-              <span>KfW-Darlehen</span>
-            </div>
-            <span style={{ fontWeight: '800', color: '#2B6CB0' }}>{formatEuroInt(kfw)} € ({formatPct(kfwPct)}%)</span>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import Parametrisierung from '../components/analyse/Parametrisierung';
 import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
 import ProfileView from '../components/profile/ProfileView';
+import OnboardingView from '../components/profile/OnboardingView';
 
 import { IconGear, IconFolder, IconLock, IconArrowRight } from '../components/ui/Icons';
 import { formatEuroInt } from '../utils/formatters';
@@ -27,26 +28,28 @@ const grunderwerbsteuerSätze = {
 export default function Home() {
   const [showApp, setShowApp] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState('developer@valuon-estate.de');
+  const [userEmail, setUserEmail] = useState('');
   const [navChoice, setNavChoice] = useState('Startseite');
 
-  // NUTZERPROFIL STATE
+  // NEUTRALE ZUSTÄNDE FÜR NEUE BENUTZER (ONBOARDING-FLAG INKLUSIVE)
   const [userProfile, setUserProfile] = useState({
-    vorname: 'Developer',
-    nachname: 'User',
-    geburtsdatum: '1990-01-01',
-    telefon: '+49 170 1234567',
-    strasse: 'Musterstraße 1',
-    plz: '28844',
-    ort: 'Weyhe',
+    profilname: '',
+    vorname: '',
+    nachname: '',
+    geburtsdatum: '',
+    telefon: '',
+    strasse: '',
+    plz: '',
+    ort: '',
     land: 'Deutschland',
-    bruttoEinkommen: 75000,
+    bruttoEinkommen: 65000,
     steuerklasse: '1',
     familienstand: 'Ledig',
     kinderAnzahl: 0,
     kirchensteuer: false,
     kirchensteuersatz: 9.0,
-    grenzsteuersatz: 42.0
+    grenzsteuersatz: 42.0,
+    onboarded: false
   });
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
@@ -62,7 +65,6 @@ export default function Home() {
   useEffect(() => {
     pingBackend();
 
-    // Check: Ist der Nutzer bereits eingeloggt (z.B. nach Mail-Klick)?
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUserEmail(session.user.email);
@@ -71,7 +73,6 @@ export default function Home() {
       }
     });
 
-    // Listener für Auth-Status-Änderungen (Login/Logout/E-Mail-Bestätigung)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUserEmail(session.user.email);
@@ -96,22 +97,23 @@ export default function Home() {
       .catch(() => setBackendStatus('sleeping'));
   };
 
+  // NEUTRALE BASELINE-WERTE FÜR ANALYSE (KEINE DEVELOPER-DATEN MEHR)
   const [formData, setFormData] = useState({
-    obj_name: 'Muster Wohnung',
+    obj_name: '',
     objektart: 'Eigentumswohnung',
     bundesland: 'Niedersachsen',
-    stadt: 'Weyhe',
-    stadtteil: 'Sudweyhe',
-    kaufpreis: 170000.0,
-    qm: 85.0,
-    baujahr: 1996,
-    kaltmiete_monat: 850.0,
-    ist_sqm: 10.0,
-    target_monat: 850.0,
-    target_sqm: 10.0,
+    stadt: '',
+    stadtteil: '',
+    kaufpreis: 0.0,
+    qm: 0.0,
+    baujahr: 2000,
+    kaltmiete_monat: 0.0,
+    ist_sqm: 0.0,
+    target_monat: 0.0,
+    target_sqm: 0.0,
     adj_year: 1,
-    hausgeld: 250.0,
-    hausgeld_nicht_umlegbar: 62.50,
+    hausgeld: 0.0,
+    hausgeld_nicht_umlegbar: 0.0,
     sanierung: 0.0,
     inst_sqm: 12.0,
     mgt_monat: 30.0,
@@ -121,11 +123,11 @@ export default function Home() {
     makler_p: 3.57,
     sonst_nk: 0.0,
     loan_type: 'Annuitätendarlehen',
-    hb_zins: 4.0,
+    hb_zins: 3.8,
     hb_tilg: 2.0,
     sondertilg: 0.0,
     grace_years: 0,
-    ek_euro: 17969.0,
+    ek_euro: 0.0,
     zinsbindung: 10,
     folge_zins: 3.8,
     folge_mode: 'Rate konstant halten (Annuität)',
@@ -183,8 +185,8 @@ export default function Home() {
 
     try {
       const payload = {
-        name: formData.obj_name,
-        obj_name: formData.obj_name,
+        name: formData.obj_name || 'Unbenanntes Objekt',
+        obj_name: formData.obj_name || 'Unbenanntes Objekt',
         objektart: formData.objektart,
         stadt: formData.stadt,
         bundesland: formData.bundesland,
@@ -230,6 +232,16 @@ export default function Home() {
     }));
   };
 
+  const handleCompleteOnboarding = (completedProfile) => {
+    const updated = { ...completedProfile, onboarded: true };
+    setUserProfile(updated);
+    setFormData((prev) => ({
+      ...prev,
+      tax_rate_pct: updated.grenzsteuersatz || prev.tax_rate_pct
+    }));
+    setNavChoice('Startseite');
+  };
+
   const handlePasswordChange = (oldPwd, newPwd) => {
     console.log('Passwort geändert für:', userEmail);
   };
@@ -245,6 +257,7 @@ export default function Home() {
     setAuthenticated(false);
     setNavChoice('Startseite');
     setResult(null);
+    setUserProfile((prev) => ({ ...prev, onboarded: false }));
   };
 
   const loadPropertyFromDb = (item) => {
@@ -459,6 +472,8 @@ export default function Home() {
   const endNav = endYearObj ? ((endYearObj['Immobilienwert'] || 0) - (endYearObj['Restschuld'] || 0)) : 0;
   const gesamtGewinnHorizon = cumulatedCashflowHorizon + (endNav - formData.ek_euro);
 
+  const greetingName = userProfile.profilname || userProfile.vorname || (userEmail ? userEmail.split('@')[0] : 'Investor');
+
   if (!showApp) {
     return (
       <LandingPage 
@@ -467,6 +482,20 @@ export default function Home() {
         userEmail={userEmail} 
         setUserEmail={setUserEmail} 
       />
+    );
+  }
+
+  // FORCE ONBOARDING ERST-EINRICHTUNG WENN PROFIL NOCH NICHT ERSTELLT IST
+  if (!userProfile.onboarded) {
+    return (
+      <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
+        <OnboardingView 
+          userEmail={userEmail}
+          userProfile={userProfile}
+          setUserProfile={setUserProfile}
+          onCompleteOnboarding={handleCompleteOnboarding}
+        />
+      </main>
     );
   }
 
@@ -480,6 +509,7 @@ export default function Home() {
         setNavChoice={setNavChoice} 
         backendStatus={backendStatus} 
         userEmail={userEmail} 
+        userProfile={userProfile}
         onLogout={handleLogout}
       />
 
@@ -493,7 +523,7 @@ export default function Home() {
                 Zentrale Immobilien-Suite
               </div>
               <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
-                Willkommen zurück, {userProfile.vorname || userEmail.split('@')[0]}
+                Willkommen zurück, {greetingName}
               </h2>
               <p style={{ margin: 0, color: '#A0AEC0', fontSize: '0.95rem', lineHeight: '1.5' }}>
                 Ihre professionelle Plattform für präzise Cashflow-Rechnungen, 50-Jahre-Prognosen, Abschreibungsmodelle und Portfolioverwaltung.
@@ -526,10 +556,8 @@ export default function Home() {
               Funktionen & Analyse-Module
             </div>
 
-            {/* ALLE 6 FUNKTIONSKACHELN VOLLSTÄNDIG */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
               
-              {/* KACHEL 1 */}
               <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(19,56,26,0.08)' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -546,7 +574,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* KACHEL 2 */}
               <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -563,7 +590,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* KACHEL 3 */}
               <div onClick={() => setDevNotice('Multi-Objekt Portfolio-Dashboard')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -578,7 +604,6 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              {/* KACHEL 4 */}
               <div onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -593,7 +618,6 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              {/* KACHEL 5 */}
               <div onClick={() => setDevNotice('Bank-Exposé PDF-Generator')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -608,7 +632,6 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              {/* KACHEL 6 */}
               <div onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>

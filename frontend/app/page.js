@@ -29,7 +29,7 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Startseite');
 
-  // NUTZERPROFIL STATE MIT VOLLSTÄNDIGEN PERSÖNLICHEN DATEN
+  // NUTZERPROFIL STATE
   const [userProfile, setUserProfile] = useState({
     vorname: 'Developer',
     nachname: 'User',
@@ -44,6 +44,7 @@ export default function Home() {
     familienstand: 'Ledig',
     kinderAnzahl: 0,
     kirchensteuer: false,
+    kirchensteuersatz: 9.0,
     grenzsteuersatz: 42.0
   });
 
@@ -498,8 +499,10 @@ export default function Home() {
               Funktionen & Analyse-Module
             </div>
 
+            {/* ALLE 6 FUNKTIONSKACHELN VOLLSTÄNDIG */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
               
+              {/* KACHEL 1 */}
               <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(19,56,26,0.08)' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -516,6 +519,7 @@ export default function Home() {
                 </button>
               </div>
 
+              {/* KACHEL 2 */}
               <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -532,6 +536,7 @@ export default function Home() {
                 </button>
               </div>
 
+              {/* KACHEL 3 */}
               <div onClick={() => setDevNotice('Multi-Objekt Portfolio-Dashboard')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -541,6 +546,51 @@ export default function Home() {
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Portfolio Aggregator</h3>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
                     Kombiniert alle Objekte deiner Datenbank zu einer Gesamtbilanz. Ermittelt kumulierten Cashflow und Gesamt-LTV.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+              </div>
+
+              {/* KACHEL 4 */}
+              <div onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Simulation</span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Szenario-Vergleich</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Analysiere 'What-If'-Szenarien: Zinserhöhungen, schwankende Leerstände oder alternative Eigenkapital-Einsätze.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+              </div>
+
+              {/* KACHEL 5 */}
+              <div onClick={() => setDevNotice('Bank-Exposé PDF-Generator')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Export</span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Bank-Exposé Generator</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Erstelle ein druckfertiges, strukturiertes PDF-Exposé für Bankgespräche mit allen betriebswirtschaftlichen Kennzahlen.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+              </div>
+
+              {/* KACHEL 6 */}
+              <div onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Smart Import</span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>KI-Exposé Scanner</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Füge Freitext aus Online-Portalen ein. Die KI extrahiert Kaufpreis, Quadratmeter und Mieteinzeldaten automatisch.
                   </p>
                 </div>
                 <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>

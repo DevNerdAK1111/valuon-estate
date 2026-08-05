@@ -29,22 +29,22 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Startseite');
 
-  // NUTZERPROFIL STATE
+  // NUTZERPROFIL STATE MIT VOLLSTÄNDIGEN PERSÖNLICHEN DATEN
   const [userProfile, setUserProfile] = useState({
     vorname: 'Developer',
     nachname: 'User',
+    geburtsdatum: '1990-01-01',
+    telefon: '+49 170 1234567',
+    strasse: 'Musterstraße 1',
+    plz: '28844',
+    ort: 'Weyhe',
+    land: 'Deutschland',
     bruttoEinkommen: 75000,
     steuerklasse: '1',
     familienstand: 'Ledig',
     kinderAnzahl: 0,
     kirchensteuer: false,
-    grenzsteuersatz: 42.0,
-    stdNotar: 2.0,
-    stdMakler: 3.57,
-    stdZins: 3.8,
-    stdTilg: 2.0,
-    stdInst: 12.0,
-    stdLeerstand: 2.0
+    grenzsteuersatz: 42.0
   });
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
@@ -86,16 +86,16 @@ export default function Home() {
     hausgeld: 250.0,
     hausgeld_nicht_umlegbar: 62.50,
     sanierung: 0.0,
-    inst_sqm: userProfile.stdInst || 12.0,
+    inst_sqm: 12.0,
     mgt_monat: 30.0,
-    vac_rate_pct: userProfile.stdLeerstand || 2.0,
+    vac_rate_pct: 2.0,
     grwt_p: 5.0,
-    notar_p: userProfile.stdNotar || 2.0,
-    makler_p: userProfile.stdMakler || 3.57,
+    notar_p: 2.0,
+    makler_p: 3.57,
     sonst_nk: 0.0,
     loan_type: 'Annuitätendarlehen',
-    hb_zins: userProfile.stdZins || 4.0,
-    hb_tilg: userProfile.stdTilg || 2.0,
+    hb_zins: 4.0,
+    hb_tilg: 2.0,
     sondertilg: 0.0,
     grace_years: 0,
     ek_euro: 17969.0,
@@ -139,7 +139,6 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         const rawList = data.properties || data || [];
-        // Datenisolierung: Nur Objekte des aktuell angemeldeten Nutzers anzeigen
         const userList = rawList.filter(item => !item.user_email || item.user_email === userEmail);
         setDbProperties(userList);
       }
@@ -198,16 +197,9 @@ export default function Home() {
 
   const handleSaveProfile = (updatedProfile) => {
     setUserProfile(updatedProfile);
-    // Standard-Steuersatz direkt in den Formular-State übernehmen
     setFormData((prev) => ({
       ...prev,
-      tax_rate_pct: updatedProfile.grenzsteuersatz || prev.tax_rate_pct,
-      notar_p: updatedProfile.stdNotar || prev.notar_p,
-      makler_p: updatedProfile.stdMakler || prev.makler_p,
-      hb_zins: updatedProfile.stdZins || prev.hb_zins,
-      hb_tilg: updatedProfile.stdTilg || prev.hb_tilg,
-      inst_sqm: updatedProfile.stdInst || prev.inst_sqm,
-      vac_rate_pct: updatedProfile.stdLeerstand || prev.vac_rate_pct
+      tax_rate_pct: updatedProfile.grenzsteuersatz || prev.tax_rate_pct
     }));
   };
 
@@ -666,6 +658,7 @@ export default function Home() {
       {navChoice === 'Profil' && (
         <ProfileView 
           userEmail={userEmail}
+          setUserEmail={setUserEmail}
           userProfile={userProfile}
           setUserProfile={setUserProfile}
           onSaveProfile={handleSaveProfile}
@@ -698,14 +691,6 @@ export default function Home() {
             <div>
               <label style={labelStyle}>Standard Grenzsteuersatz (%)</label>
               <input type="number" value={userProfile.grenzsteuersatz || 42} onChange={(e) => setUserProfile({ ...userProfile, grenzsteuersatz: parseFloat(e.target.value) })} style={inputTextStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Standard Maklerprovision (%)</label>
-              <input type="number" step="0.01" value={userProfile.stdMakler || 3.57} onChange={(e) => setUserProfile({ ...userProfile, stdMakler: parseFloat(e.target.value) })} style={inputTextStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Standard Notar & Grundbuch (%)</label>
-              <input type="number" step="0.1" value={userProfile.stdNotar || 2.0} onChange={(e) => setUserProfile({ ...userProfile, stdNotar: parseFloat(e.target.value) })} style={inputTextStyle} />
             </div>
             <button onClick={() => alert('Einstellungen übernommen.')} style={{ padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', width: 'fit-content' }}>
               Einstellungen speichern

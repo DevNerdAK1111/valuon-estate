@@ -226,6 +226,7 @@ export default function Home() {
         obj_name: formData.obj_name || 'Unbenanntes Objekt',
         objektart: formData.objektart,
         stadt: formData.stadt,
+        stadtteil: formData.stadtteil,
         bundesland: formData.bundesland,
         kaufpreis: Number(formData.kaufpreis),
         qm: Number(formData.qm),
@@ -402,6 +403,7 @@ export default function Home() {
     }
   };
 
+  // DYNAMISCHE SCHÄTZUNGEN FÜR INSTANDHALTUNG & VERWALTUNG BEI BAUJAHR / OBJEKTART-ÄNDERUNG
   const updateField = (field, value) => {
     pingBackend();
     let updated = { ...formData, [field]: value };
@@ -410,10 +412,22 @@ export default function Home() {
       updated.grwt_p = grunderwerbsteuerSätze[value];
     }
 
-    if (field === 'objektart') {
-      if (value === 'Mehrfamilienhaus') updated.inst_sqm = 15.0;
-      else if (value === 'Eigentumswohnung') updated.inst_sqm = 12.0;
-      else if (value === 'Einfamilienhaus') updated.inst_sqm = 10.0;
+    const currentBaujahr = field === 'baujahr' ? Number(value) : Number(formData.baujahr);
+    const currentObjektart = field === 'objektart' ? value : formData.objektart;
+
+    if (field === 'baujahr' || field === 'objektart') {
+      // Instandhaltungs-Schätzung (€/m²/Jahr)
+      if (currentBaujahr < 1980) updated.inst_sqm = 16.0;
+      else if (currentBaujahr <= 2005) updated.inst_sqm = 13.0;
+      else updated.inst_sqm = 10.0;
+
+      if (currentObjektart === 'Mehrfamilienhaus') updated.inst_sqm += 2.0;
+      else if (currentObjektart === 'Einfamilienhaus') updated.inst_sqm -= 1.0;
+
+      // Verwaltungs-Schätzung (€/Monat)
+      if (currentBaujahr < 1980) updated.mgt_monat = 35.0;
+      else if (currentBaujahr <= 2005) updated.mgt_monat = 30.0;
+      else updated.mgt_monat = 25.0;
     }
 
     if (field === 'afa_model') {
@@ -432,6 +446,7 @@ export default function Home() {
   const makler_euro = (formData.kaufpreis * formData.makler_p) / 100;
   const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
 
+  // VOLLSTÄNDIGE BACKEND-BERECHNUNG (ALLE PARAMETER INKL. KFW UND ANSCHLUSS)
   const handleCalculate = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
@@ -446,10 +461,16 @@ export default function Home() {
         makler_proz: formData.makler_p / 100,
         hb_zins: formData.hb_zins / 100,
         hb_tilg: formData.hb_tilg / 100,
+        sondertilg: Number(formData.sondertilg || 0),
+        grace_years: Number(formData.grace_years || 0),
+        zinsbindung: Number(formData.zinsbindung || 10),
         folge_zins: formData.folge_zins / 100,
         folge_tilg: formData.folge_tilg / 100,
-        kfw_zins: formData.kfw_zins / 100,
-        kfw_tilg: formData.kfw_tilg / 100,
+        kfw_amt: Number(formData.kfw_amt || 0),
+        kfw_zins: (formData.kfw_zins || 0) / 100,
+        kfw_tilg: (formData.kfw_tilg || 0) / 100,
+        kfw_grace_years: Number(formData.kfw_grace_years || 0),
+        kfw_grant: Number(formData.kfw_grant || 0),
         vac_rate: formData.vac_rate_pct / 100,
         tax_rate: formData.tax_rate_pct / 100,
         miet_inc: formData.miet_inc / 100,
@@ -561,7 +582,6 @@ export default function Home() {
       {navChoice === 'Startseite' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
-          {/* GRÜNER HEADER BANNER */}
           <div style={{ background: '#13381A', color: '#FAF8F5', padding: '2.5rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 25px rgba(19,56,26,0.2)' }}>
             <div style={{ maxWidth: '650px' }}>
               <div style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>
@@ -596,7 +616,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* KARTEN-RASTER */}
           <div>
             <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#13381A', marginBottom: '1rem' }}>
               Funktionen & Analyse-Module
@@ -604,7 +623,6 @@ export default function Home() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
               
-              {/* KARTE 1: INVESTITIONS-ANALYSE */}
               <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(19,56,26,0.08)' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -620,7 +638,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* KARTE 2: OBJEKT-DATENBANK */}
               <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -636,7 +653,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* KARTE 3: PORTFOLIO AGGREGATOR */}
               <div onClick={() => setDevNotice('Multi-Objekt Portfolio-Dashboard')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -650,7 +666,6 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              {/* KARTE 4: SZENARIO-VERGLEICH */}
               <div onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -664,7 +679,6 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              {/* KARTE 5: BANK-EXPOSÉ GENERATOR */}
               <div onClick={() => setDevNotice('Bank-Exposé PDF-Generator')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -678,7 +692,6 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              {/* KARTE 6: KI-EXPOSÉ SCANNER */}
               <div onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -695,7 +708,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* QUICK LOAD BEREICH */}
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#13381A', fontWeight: '800' }}>Deine gespeicherten Objekte (Quick Load)</h3>

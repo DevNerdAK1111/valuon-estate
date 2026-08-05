@@ -1,15 +1,15 @@
 'use client';
 import { useState } from 'react';
 import StepperInput from '../ui/StepperInput';
-import { IconUser, IconGear, IconLock, IconTrash } from '../ui/Icons';
-import { formatEuroInt, formatPct } from '../../utils/formatters';
+import { formatEuroInt } from '../../utils/formatters';
 
-const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568', marginBottom: '4px' };
-const inputTextStyle = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box' };
-const infoBoxStyle = { background: '#EBF8FF', color: '#2B6CB0', border: '1px solid #BEE3F8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', lineHeight: '1.4' };
+const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568', marginBottom: '4px', height: '18px' };
+const inputTextStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
+const infoBoxStyle = { background: '#EBF8FF', color: '#2B6CB0', border: '1px solid #BEE3F8', padding: '12px 16px', borderRadius: '8px', fontSize: '0.85rem', lineHeight: '1.4' };
 
 export default function ProfileView({
   userEmail,
+  setUserEmail,
   userProfile,
   setUserProfile,
   onSaveProfile,
@@ -17,8 +17,11 @@ export default function ProfileView({
   onDeleteAccount,
   onLogout
 }) {
-  const [activeTab, setActiveTab] = useState('steuer'); // 'steuer' | 'standards' | 'sicherheit'
+  const [activeTab, setActiveTab] = useState('persoenlich'); // 'persoenlich' | 'steuer' | 'sicherheit'
   
+  const [emailForm, setEmailForm] = useState({ newEmail: userEmail });
+  const [emailStatus, setEmailStatus] = useState(null);
+
   const [pwdForm, setPwdForm] = useState({ oldPwd: '', newPwd: '', confirmPwd: '' });
   const [pwdStatus, setPwdStatus] = useState(null);
 
@@ -32,8 +35,19 @@ export default function ProfileView({
   const handleSave = (e) => {
     e.preventDefault();
     onSaveProfile(userProfile);
-    setSaveStatus('Profil erfolgreich gespeichert!');
+    setSaveStatus('Profildaten erfolgreich gespeichert!');
     setTimeout(() => setSaveStatus(null), 3000);
+  };
+
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    if (!emailForm.newEmail || !emailForm.newEmail.includes('@')) {
+      setEmailStatus({ type: 'error', text: 'Bitte gib eine gültige E-Mail-Adresse ein.' });
+      return;
+    }
+    setUserEmail(emailForm.newEmail);
+    setEmailStatus({ type: 'success', text: 'E-Mail-Adresse erfolgreich aktualisiert!' });
+    setTimeout(() => setEmailStatus(null), 3000);
   };
 
   const handlePwdSubmit = (e) => {
@@ -64,7 +78,7 @@ export default function ProfileView({
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', color: '#13381A', fontWeight: '900' }}>
-              {userProfile.vorname ? `${userProfile.vorname} ${userProfile.nachname}` : 'Nutzerprofil'}
+              {userProfile.vorname || userProfile.nachname ? `${userProfile.vorname || ''} ${userProfile.nachname || ''}` : 'Nutzerprofil'}
             </h1>
             <div style={{ fontSize: '0.85rem', color: '#718096', marginTop: '2px' }}>{userEmail}</div>
           </div>
@@ -81,6 +95,17 @@ export default function ProfileView({
       {/* NAVIGATION TABS */}
       <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #E2D9CE', paddingBottom: '4px' }}>
         <button
+          onClick={() => setActiveTab('persoenlich')}
+          style={{
+            background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.95rem', fontWeight: '800',
+            color: activeTab === 'persoenlich' ? '#13381A' : '#718096',
+            borderBottom: activeTab === 'persoenlich' ? '3px solid #13381A' : 'none',
+            cursor: 'pointer'
+          }}
+        >
+          Persönliche Daten
+        </button>
+        <button
           onClick={() => setActiveTab('steuer')}
           style={{
             background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.95rem', fontWeight: '800',
@@ -90,17 +115,6 @@ export default function ProfileView({
           }}
         >
           Steuer- & Gehaltsprofil
-        </button>
-        <button
-          onClick={() => setActiveTab('standards')}
-          style={{
-            background: 'none', border: 'none', padding: '8px 12px', fontSize: '0.95rem', fontWeight: '800',
-            color: activeTab === 'standards' ? '#13381A' : '#718096',
-            borderBottom: activeTab === 'standards' ? '3px solid #13381A' : 'none',
-            cursor: 'pointer'
-          }}
-        >
-          Standard-Parameter für Analysen
         </button>
         <button
           onClick={() => setActiveTab('sicherheit')}
@@ -115,15 +129,11 @@ export default function ProfileView({
         </button>
       </div>
 
-      {/* TAB 1: STEUER- & GEHALTSPROFIL */}
-      {activeTab === 'steuer' && (
+      {/* TAB 1: PERSÖNLICHE DATEN */}
+      {activeTab === 'persoenlich' && (
         <form onSubmit={handleSave} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           
-          <div style={infoBoxStyle}>
-            💡 <strong>Warum sind diese Angaben wichtig?</strong> Dein persönliches Einkommen und deine Steuerklasse bestimmen deinen Grenzsteuersatz. Dieser entscheidet darüber, wie viel Steuern du durch Abschreibungen (AfA) und Zinsen bei deinen Immobilien sparen kannst.
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Vorname</label>
               <input type="text" value={userProfile.vorname || ''} onChange={(e) => handleProfileChange('vorname', e.target.value)} style={inputTextStyle} placeholder="Max" />
@@ -134,9 +144,62 @@ export default function ProfileView({
             </div>
           </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
+            <div>
+              <label style={labelStyle}>Geburtsdatum</label>
+              <input type="date" value={userProfile.geburtsdatum || ''} onChange={(e) => handleProfileChange('geburtsdatum', e.target.value)} style={inputTextStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Telefonnummer</label>
+              <input type="tel" value={userProfile.telefon || ''} onChange={(e) => handleProfileChange('telefon', e.target.value)} style={inputTextStyle} placeholder="+49 170 1234567" />
+            </div>
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.2rem' }}>
+            <div>
+              <label style={labelStyle}>Straße & Hausnummer</label>
+              <input type="text" value={userProfile.strasse || ''} onChange={(e) => handleProfileChange('strasse', e.target.value)} style={inputTextStyle} placeholder="Musterstraße 12" />
+            </div>
+            <div>
+              <label style={labelStyle}>Postleitzahl (PLZ)</label>
+              <input type="text" value={userProfile.plz || ''} onChange={(e) => handleProfileChange('plz', e.target.value)} style={inputTextStyle} placeholder="10115" />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
+            <div>
+              <label style={labelStyle}>Ort / Stadt</label>
+              <input type="text" value={userProfile.ort || ''} onChange={(e) => handleProfileChange('ort', e.target.value)} style={inputTextStyle} placeholder="Berlin" />
+            </div>
+            <div>
+              <label style={labelStyle}>Land</label>
+              <input type="text" value={userProfile.land || 'Deutschland'} onChange={(e) => handleProfileChange('land', e.target.value)} style={inputTextStyle} placeholder="Deutschland" />
+            </div>
+          </div>
+
+          {saveStatus && (
+            <div style={{ padding: '10px 14px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+              {saveStatus}
+            </div>
+          )}
+
+          <button type="submit" style={{ marginTop: '0.5rem', padding: '12px 24px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', alignSelf: 'flex-start' }}>
+            Persönliche Daten speichern
+          </button>
+        </form>
+      )}
+
+      {/* TAB 2: STEUER- & GEHALTSPROFIL */}
+      {activeTab === 'steuer' && (
+        <form onSubmit={handleSave} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          
+          <div style={infoBoxStyle}>
+            💡 <strong>Warum sind diese Angaben wichtig?</strong> Dein persönliches Einkommen und deine Steuerklasse bestimmen deinen Grenzsteuersatz. Dieser entscheidet darüber, wie viel Steuern du durch Abschreibungen (AfA) und Zinsen bei deinen Immobilien sparen kannst.
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <StepperInput
               label="Bruttojahreseinkommen (€)"
               value={userProfile.bruttoEinkommen || 65000}
@@ -162,7 +225,7 @@ export default function ProfileView({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Familienstand</label>
               <select
@@ -185,7 +248,7 @@ export default function ProfileView({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Kirchensteuerpflichtig?</label>
               <select
@@ -198,19 +261,17 @@ export default function ProfileView({
               </select>
             </div>
 
-            <div>
-              <StepperInput
-                label="Individueller Grenzsteuersatz (%)"
-                value={userProfile.grenzsteuersatz || 42.0}
-                onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
-                step={0.5}
-                isPercent={true}
-              />
-            </div>
+            <StepperInput
+              label="Individueller Grenzsteuersatz (%)"
+              value={userProfile.grenzsteuersatz || 42.0}
+              onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
+              step={0.5}
+              isPercent={true}
+            />
           </div>
 
           {saveStatus && (
-            <div style={{ padding: '10px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+            <div style={{ padding: '10px 14px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
               {saveStatus}
             </div>
           )}
@@ -221,80 +282,30 @@ export default function ProfileView({
         </form>
       )}
 
-      {/* TAB 2: STANDARD-PARAMETER FÜR ANALYSEN */}
-      {activeTab === 'standards' && (
-        <form onSubmit={handleSave} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          
-          <div style={infoBoxStyle}>
-            ⚡ <strong>Zeitersparnis für deine Analysen:</strong> Die hier eingestellten Standardwerte werden automatisch vorausgefüllt, wenn du ein neues Objekt in die Investitions-Analyse lädst.
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <StepperInput
-              label="Standard Notar- & Grundbuchkosten (%)"
-              value={userProfile.stdNotar || 2.0}
-              onChange={(v) => handleProfileChange('stdNotar', v)}
-              step={0.1}
-              isPercent={true}
-            />
-            <StepperInput
-              label="Standard Maklerprovision (%)"
-              value={userProfile.stdMakler || 3.57}
-              onChange={(v) => handleProfileChange('stdMakler', v)}
-              step={0.01}
-              isPercent={true}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <StepperInput
-              label="Standard Hausbank Zinssatz (%)"
-              value={userProfile.stdZins || 3.8}
-              onChange={(v) => handleProfileChange('stdZins', v)}
-              step={0.1}
-              isPercent={true}
-            />
-            <StepperInput
-              label="Standard Hausbank Tilgung (%)"
-              value={userProfile.stdTilg || 2.0}
-              onChange={(v) => handleProfileChange('stdTilg', v)}
-              step={0.1}
-              isPercent={true}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <StepperInput
-              label="Standard Instandhaltungsrücklage (€/m²/Jahr)"
-              value={userProfile.stdInst || 12.0}
-              onChange={(v) => handleProfileChange('stdInst', v)}
-              step={1}
-            />
-            <StepperInput
-              label="Standard Leerstandsrisiko (%)"
-              value={userProfile.stdLeerstand || 2.0}
-              onChange={(v) => handleProfileChange('stdLeerstand', v)}
-              step={0.5}
-              isPercent={true}
-            />
-          </div>
-
-          {saveStatus && (
-            <div style={{ padding: '10px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
-              {saveStatus}
-            </div>
-          )}
-
-          <button type="submit" style={{ marginTop: '0.5rem', padding: '12px 24px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', alignSelf: 'flex-start' }}>
-            Standard-Parameter speichern
-          </button>
-        </form>
-      )}
-
       {/* TAB 3: SICHERHEIT & ACCOUNT */}
       {activeTab === 'sicherheit' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
+          {/* E-MAIL ADRESSE ÄNDERN */}
+          <form onSubmit={handleEmailSubmit} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3 style={{ margin: 0, color: '#13381A', fontSize: '1.1rem', fontWeight: '800' }}>E-Mail-Adresse verwalten</h3>
+            
+            <div>
+              <label style={labelStyle}>Aktuelle E-Mail-Adresse</label>
+              <input type="email" required value={emailForm.newEmail} onChange={(e) => setEmailForm({ newEmail: e.target.value })} style={inputTextStyle} />
+            </div>
+
+            {emailStatus && (
+              <div style={{ padding: '10px 14px', background: emailStatus.type === 'error' ? '#FFF5F5' : '#E6FFFA', color: emailStatus.type === 'error' ? '#9B2C2C' : '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                {emailStatus.text}
+              </div>
+            )}
+
+            <button type="submit" style={{ padding: '10px 20px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', alignSelf: 'flex-start' }}>
+              E-Mail-Adresse aktualisieren
+            </button>
+          </form>
+
           {/* PASSWORT ÄNDERN */}
           <form onSubmit={handlePwdSubmit} style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3 style={{ margin: 0, color: '#13381A', fontSize: '1.1rem', fontWeight: '800' }}>Passwort ändern</h3>
@@ -304,7 +315,7 @@ export default function ProfileView({
               <input type="password" required value={pwdForm.oldPwd} onChange={(e) => setPwdForm({ ...pwdForm, oldPwd: e.target.value })} style={inputTextStyle} placeholder="••••••••" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
               <div>
                 <label style={labelStyle}>Neues Passwort</label>
                 <input type="password" required value={pwdForm.newPwd} onChange={(e) => setPwdForm({ ...pwdForm, newPwd: e.target.value })} style={inputTextStyle} placeholder="••••••••" />
@@ -316,13 +327,13 @@ export default function ProfileView({
             </div>
 
             {pwdStatus && (
-              <div style={{ padding: '10px', background: pwdStatus.type === 'error' ? '#FFF5F5' : '#E6FFFA', color: pwdStatus.type === 'error' ? '#9B2C2C' : '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
+              <div style={{ padding: '10px 14px', background: pwdStatus.type === 'error' ? '#FFF5F5' : '#E6FFFA', color: pwdStatus.type === 'error' ? '#9B2C2C' : '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>
                 {pwdStatus.text}
               </div>
             )}
 
             <button type="submit" style={{ padding: '10px 20px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', alignSelf: 'flex-start' }}>
-              Passwort Aktualisieren
+              Passwort aktualisieren
             </button>
           </form>
 

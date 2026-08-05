@@ -26,19 +26,64 @@ const grunderwerbsteuerSätze = {
   'Thüringen': 6.5
 };
 
+// --- SVG PIKTOGRAMME (KEINE EMOJIS) ---
+const IconGear = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+);
+
+const IconTrash = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
+
+const IconFolder = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+
+const IconRefresh = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+  </svg>
+);
+
+const IconLightning = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+  </svg>
+);
+
+const IconLock = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+);
+
+const IconArrowRight = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+  </svg>
+);
+
 export default function Home() {
   const [showApp, setShowApp] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authMode, setAuthMode] = useState('login');
   
   const [authenticated, setAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState('developer@valuon-estate.de');
-  const [navChoice, setNavChoice] = useState('Analyse');
+  const [navChoice, setNavChoice] = useState('Startseite'); // 'Startseite' | 'Analyse' | 'Objekt Datenbank' | 'Immobilienwissen' | 'Einstellungen'
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
   const [tableTheme, setTableTheme] = useState('Kapitaldienst & Steuern');
   const [projectionHorizon, setProjectionHorizon] = useState('10');
   const [chartView, setChartView] = useState('1. Vermögensstruktur & NAV (Netto-Eigenkapital)');
 
+  const [devNotice, setDevNotice] = useState(null); // Für Modal-Hinweis bei Features in Entwicklung
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
   const [backendStatus, setBackendStatus] = useState('sleeping');
@@ -60,7 +105,7 @@ export default function Home() {
   };
 
   const [formData, setFormData] = useState({
-    obj_name: 'TEST Wohnung',
+    obj_name: 'Muster Wohnung',
     objektart: 'Eigentumswohnung',
     bundesland: 'Niedersachsen',
     stadt: 'Weyhe',
@@ -117,7 +162,7 @@ export default function Home() {
   const [loadingDb, setLoadingDb] = useState(false);
 
   useEffect(() => {
-    if (navChoice === 'Objekt Datenbank' && showApp) {
+    if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite') && showApp) {
       fetchDatabaseProperties();
     }
   }, [navChoice, showApp]);
@@ -167,16 +212,16 @@ export default function Home() {
       });
 
       if (res.ok) {
-        setSaveSuccess('✅ Objekt erfolgreich in der Datenbank gespeichert!');
+        setSaveSuccess('Objekt erfolgreich in der Datenbank gespeichert.');
       } else {
         const errorData = await res.json().catch(() => ({}));
         const detailMsg = typeof errorData.detail === 'string' 
           ? errorData.detail 
           : JSON.stringify(errorData.detail || errorData.message || `Status HTTP ${res.status}`);
-        setSaveSuccess(`❌ Fehler beim Speichern: ${detailMsg}`);
+        setSaveSuccess(`Fehler beim Speichern: ${detailMsg}`);
       }
     } catch (err) {
-      setSaveSuccess(`❌ Verbindung fehlgeschlagen: ${err.message || 'Backend nicht erreichbar.'}`);
+      setSaveSuccess(`Verbindung fehlgeschlagen: ${err.message || 'Backend nicht erreichbar.'}`);
     } finally {
       setSaving(false);
     }
@@ -394,16 +439,15 @@ export default function Home() {
   const endNav = endYearObj ? ((endYearObj['Immobilienwert'] || 0) - (endYearObj['Restschuld'] || 0)) : 0;
   const gesamtGewinnHorizon = cumulatedCashflowHorizon + (endNav - formData.ek_euro);
 
-  const navItems = ['Objekt Datenbank', 'Analyse', 'Immobilienwissen', 'Einstellungen'];
+  const mainNavItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen'];
 
   // ----------------------------------------------------------------------------------
-  // 1. NEUE LANDING PAGE (WENN showApp === false)
+  // 1. EXTERNE LANDING PAGE (WENN showApp === false)
   // ----------------------------------------------------------------------------------
   if (!showApp) {
     return (
       <div style={{ minHeight: '100vh', background: '#0D1F12', color: '#F7F4EC', fontFamily: 'sans-serif', overflowX: 'hidden', position: 'relative' }}>
         
-        {/* HINTERGRUND GLOW-EFFEKTE */}
         <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(163,120,65,0.2) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: '30%', right: '-5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(19,56,26,0.4) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
 
@@ -437,12 +481,11 @@ export default function Home() {
           </p>
         </header>
 
-        {/* FUTURISTISCHES KACHEL-GRID (SERIÖSE IMMOBILIEN OHNE AUTOS) */}
+        {/* KACHEL-GRID (SERIÖSE IMMOBILIEN) */}
         <section style={{ padding: '1rem 4rem 4rem 4rem', maxWidth: '1400px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
             
-            {/* KACHEL 1: MEHRFAMILIENHAUS */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
               <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
                 <img 
                   src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80" 
@@ -457,13 +500,12 @@ export default function Home() {
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Mehrparteienhäuser analysieren</h3>
                 <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Kalkuliere Mieteinnahmen, Instandhaltungsrücklagen und Abschreibungen über Jahrzehnte.</p>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem', color: '#A37841', fontWeight: 'bold' }}>
-                  → Cashflow & Zinsbindung prüfen
+                  Analyse starten
                 </div>
               </div>
             </div>
 
-            {/* KACHEL 2: STADT-WOHNUNG */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
               <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
                 <img 
                   src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=800&q=80" 
@@ -478,13 +520,12 @@ export default function Home() {
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Klassische Kapitalanlage</h3>
                 <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Simuliere Hausgeld-Aufteilungen, Leerstandsquoten und den perfekten Eigenkapital-Hebel.</p>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem', color: '#A37841', fontWeight: 'bold' }}>
-                  → Rendite & Steuereffekte berechnen
+                  Rendite berechnen
                 </div>
               </div>
             </div>
 
-            {/* KACHEL 3: ARCHITEKTUR / WOHNGEBÄUDE */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)', transition: 'all 0.3s' }}>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(226,217,206,0.12)', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
               <div style={{ height: '220px', position: 'relative', overflow: 'hidden' }}>
                 <img 
                   src="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80" 
@@ -499,7 +540,7 @@ export default function Home() {
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: 'white' }}>Sanierung & Abschreibung</h3>
                 <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#A0AEC0' }}>Beachte degressive Abschreibungen, KfW-Fördermittel und steuerliche Verlustverrechnungen.</p>
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', fontSize: '0.85rem', color: '#A37841', fontWeight: 'bold' }}>
-                  → Steuerschild optimal nutzen
+                  Steuerpotenzial prüfen
                 </div>
               </div>
             </div>
@@ -507,7 +548,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* AUTHENTIFIZIERUNGS / LOGIN BEREICH */}
+        {/* AUTH BEREICH */}
         <section id="auth-section" style={{ padding: '2rem 4rem 4rem 4rem', maxWidth: '520px', margin: '0 auto' }}>
           <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(226,217,206,0.2)', borderRadius: '20px', padding: '2.5rem', backdropFilter: 'blur(15px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
             
@@ -581,7 +622,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* DEVELOPER SCHNELLZUGANG FOOTER BUTTON */}
+        {/* DEVELOPER FOOTER */}
         <footer style={{ padding: '3rem 2rem', textAlign: 'center', borderTop: '1px solid rgba(226,217,206,0.1)', background: 'rgba(0,0,0,0.4)' }}>
           <div style={{ fontSize: '0.85rem', color: '#718096', marginBottom: '1rem' }}>
             Valuon Estate Investment Suite v2.4
@@ -590,6 +631,9 @@ export default function Home() {
           <button
             onClick={() => { setShowApp(true); setAuthenticated(true); }}
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
               padding: '12px 28px',
               background: 'transparent',
               color: '#A37841',
@@ -597,11 +641,10 @@ export default function Home() {
               borderRadius: '30px',
               fontWeight: '800',
               fontSize: '0.9rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
+              cursor: 'pointer'
             }}
           >
-            ⚡ Developer Direktzugang (Ohne Login zur Analyse)
+            <IconLightning /> Developer Direktzugang (Ohne Login zur Analyse)
           </button>
         </footer>
 
@@ -610,36 +653,87 @@ export default function Home() {
   }
 
   // ----------------------------------------------------------------------------------
-  // 2. DIE JETZIGE ANALYSE- & DASHBOARD-ANSICHT (WENN showApp === true)
+  // 2. INTERNE TOOL-ANSICHT (WENN showApp === true)
   // ----------------------------------------------------------------------------------
   return (
-    <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
+    <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif', position: 'relative' }}>
       
-      {/* HEADER */}
+      {/* MODAL FÜR FEATURES IN ENTWICKLUNG */}
+      {devNotice && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(13,31,18,0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '16px', padding: '2rem', maxWidth: '480px', width: '90%', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#A37841', fontWeight: '800', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+              <IconLock /> Funktion in Entwicklung
+            </div>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.4rem', color: '#13381A', fontWeight: '800' }}>
+              {devNotice}
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#4A5568', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              Dieses Modul wird derzeit entwickelt und steht in Kürze zur Verfügung. Nutze in der Zwischenzeit unser voll funktionsfähiges Investitions-Analyse Tool für deine detaillierten Objektberechnungen.
+            </p>
+            <button
+              onClick={() => setDevNotice(null)}
+              style={{ width: '100%', padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer' }}
+            >
+              Verstanden & Schließen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER BAR */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '2.2rem', fontWeight: '900', color: '#13381A', letterSpacing: '-0.5px' }}>Valuon Estate</div>
           <div style={{ fontSize: '0.8rem', color: '#A37841', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '2px' }}>INVESTMENT SUITE</div>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 14px', borderRadius: '20px', border: '1px solid #E2D9CE' }}>
-            {backendStatus === 'ready' && <span style={{ color: '#38A169', fontWeight: 'bold' }}>🟢 Backend Bereit</span>}
-            {backendStatus === 'waking' && <span style={{ color: '#D69E2E', fontWeight: 'bold' }}>🟡 Backend wird aufgeweckt...</span>}
-            {backendStatus === 'sleeping' && <span style={{ color: '#9B2C2C', fontWeight: 'bold' }}>🔴 Backend schläft</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+          
+          {/* BACKEND STATUS DOT */}
+          <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 14px', borderRadius: '20px', border: '1px solid #E2D9CE' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: backendStatus === 'ready' ? '#38A169' : (backendStatus === 'waking' ? '#D69E2E' : '#9B2C2C') }} />
+            <span style={{ fontWeight: '700', color: '#13381A' }}>
+              {backendStatus === 'ready' && 'Backend Bereit'}
+              {backendStatus === 'waking' && 'Backend startet...'}
+              {backendStatus === 'sleeping' && 'Backend inaktiv'}
+            </span>
           </div>
+
           <div style={{ fontSize: '0.85rem', color: '#555759' }}>
-            <span>Konto: <strong>{userEmail}</strong></span>
+            Konto: <strong>{userEmail}</strong>
           </div>
-          <button onClick={() => setShowApp(false)} style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '6px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', color: '#13381A' }}>
-            Zur Startseite
+
+          {/* EINSTELLUNGEN ZAHNRAD BUTTON */}
+          <button
+            onClick={() => setNavChoice('Einstellungen')}
+            title="Einstellungen öffnen"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justify: 'center',
+              width: '38px',
+              height: '38px',
+              background: navChoice === 'Einstellungen' ? '#13381A' : 'white',
+              color: navChoice === 'Einstellungen' ? 'white' : '#13381A',
+              border: '1px solid #E2D9CE',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+            }}
+          >
+            <IconGear />
+          </button>
+
+          <button onClick={() => setShowApp(false)} style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '8px', padding: '8px 14px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', color: '#13381A' }}>
+            Startseite verlassen
           </button>
         </div>
       </div>
 
-      {/* MAIN NAV TABS */}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${navItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
-        {navItems.map((item) => {
+      {/* HAUPTNAVIGATION BAR */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${mainNavItems.length}, 1fr)`, gap: '1rem', marginBottom: '2rem' }}>
+        {mainNavItems.map((item) => {
           const isActive = navChoice === item;
           return (
             <button
@@ -664,7 +758,243 @@ export default function Home() {
         })}
       </div>
 
-      {/* MODUL 1: ANALYSE */}
+      {/* ================================================================================== */}
+      {/* MODUL: INTERNE STARTSEITE (DASHBOARD ÜBERSICHT) */}
+      {/* ================================================================================== */}
+      {navChoice === 'Startseite' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* HERO SCHNELLSTART BANNER */}
+          <div style={{ background: '#13381A', color: '#FAF8F5', padding: '2.5rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 25px rgba(19,56,26,0.2)' }}>
+            <div style={{ maxWidth: '650px' }}>
+              <div style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>
+                Zentrale Immobilien-Suite
+              </div>
+              <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
+                Willkommen bei Valuon Estate
+              </h2>
+              <p style={{ margin: 0, color: '#A0AEC0', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                Ihre professionelle Plattform für präzise Cashflow-Rechnungen, 50-Jahre-Prognosen, Abschreibungsmodelle und Portfolioverwaltung.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setNavChoice('Analyse')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '16px 28px',
+                background: '#A37841',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '800',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(163,120,65,0.4)'
+              }}
+            >
+              Neues Objekt analysieren <IconArrowRight />
+            </button>
+          </div>
+
+          {/* WIDGET GRID (HAUPTFUNKTION + ERWEITERUNGEN) */}
+          <div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#13381A', marginBottom: '1rem' }}>
+              Funktionen & Analyse-Module
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+              
+              {/* KACHEL 1: ANALYSE TOOL (AKTIV - HERVORGEHOBEN) */}
+              <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(19,56,26,0.08)' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: '#13381A', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      Haupt-Tool
+                    </span>
+                    <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: 'bold' }}>Aktiv</span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Investitions-Analyse</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Umfassender Rechner für Cashflow, Annuitätendynamik, AfA-Modelle (Linear, Degressiv, Denkmal), Steuerschild und Netto-Eigenkapitalentwicklung.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNavChoice('Analyse')}
+                  style={{ marginTop: '1.5rem', padding: '10px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  Rechner öffnen
+                </button>
+              </div>
+
+              {/* KACHEL 2: OBJEKT DATENBANK (AKTIV) */}
+              <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      Verwaltung
+                    </span>
+                    <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: 'bold' }}>Aktiv</span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Objekt-Datenbank</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Verwalte deine gespeicherten Immobilienkalkulationen, rufe frühere Berechnungen ab oder entferne alte Datensätze.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNavChoice('Objekt Datenbank')}
+                  style={{ marginTop: '1.5rem', padding: '10px', background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  Zur Datenbank
+                </button>
+              </div>
+
+              {/* KACHEL 3: PORTFOLIO AGGREGATOR (IN ENTWICKLUNG) */}
+              <div 
+                onClick={() => setDevNotice('Multi-Objekt Portfolio-Dashboard')}
+                style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      Erweiterung
+                    </span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <IconLock /> In Entwicklung
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Portfolio Aggregator</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Kombiniert alle Objekte deiner Datenbank zu einer Gesamtbilanz. Ermittelt kumulierten Cashflow und Gesamt-LTV.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>
+                  Vorschau anzeigen →
+                </div>
+              </div>
+
+              {/* KACHEL 4: SZENARIO-VERGLEICH (IN ENTWICKLUNG) */}
+              <div 
+                onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')}
+                style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      Simulation
+                    </span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <IconLock /> In Entwicklung
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Szenario-Vergleich</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Analysiere 'What-If'-Szenarien: Zinserhöhungen, schwankende Leerstände oder alternative Eigenkapital-Einsätze im direkten Vergleich.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>
+                  Vorschau anzeigen →
+                </div>
+              </div>
+
+              {/* KACHEL 5: BANK-EXPOSÉ GENERATOR (IN ENTWICKLUNG) */}
+              <div 
+                onClick={() => setDevNotice('Bank-Exposé PDF-Generator')}
+                style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      Export
+                    </span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <IconLock /> In Entwicklung
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Bank-Exposé Generator</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Erstelle ein druckfertiges, strukturiertes PDF-Exposé für Bankgespräche mit allen betriebswirtschaftlichen Kennzahlen.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>
+                  Vorschau anzeigen →
+                </div>
+              </div>
+
+              {/* KACHEL 6: KI-EXPOSÉ SCANNER (IN ENTWICKLUNG) */}
+              <div 
+                onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')}
+                style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      Smart Import
+                    </span>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <IconLock /> In Entwicklung
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>KI-Exposé Scanner</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
+                    Füge Freitext aus Online-Portalen ein. Die KI extrahiert Kaufpreis, Quadratmeter und Mieteinzeldaten automatisch in den Rechner.
+                  </p>
+                </div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>
+                  Vorschau anzeigen →
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* SCHNELLZUGRIFF AUF DIE ZULETZT GESPEICHERTEN OBJEKTE */}
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#13381A', fontWeight: '800' }}>
+                Gespeicherte Objekte (Quick Load)
+              </h3>
+              <button onClick={() => setNavChoice('Objekt Datenbank')} style={{ background: 'none', border: 'none', color: '#A37841', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
+                Alle Objekte anzeigen →
+              </button>
+            </div>
+
+            {loadingDb ? (
+              <div style={{ fontSize: '0.85rem', color: '#718096', padding: '1rem 0' }}>Lade Objekte aus der Datenbank...</div>
+            ) : dbProperties.length === 0 ? (
+              <div style={{ fontSize: '0.85rem', color: '#718096', padding: '1rem 0' }}>Noch keine Objekte in der Datenbank gespeichert.</div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                {dbProperties.slice(0, 3).map((item, idx) => (
+                  <div key={item.id || idx} style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontWeight: '800', color: '#13381A', fontSize: '0.95rem', marginBottom: '4px' }}>
+                        {item.name || item.obj_name || 'Unbenanntes Objekt'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                        {item.stadt || 'Keine Stadt'} · {formatEuroInt(item.kaufpreis)} € · {item.qm} m²
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => loadPropertyFromDb(item)}
+                      style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', background: '#13381A', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
+                    >
+                      <IconFolder /> In Analyse laden
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {/* ================================================================================== */}
+      {/* MODUL 1: ANALYSE TOOL */}
+      {/* ================================================================================== */}
       {navChoice === 'Analyse' && (
         <form onSubmit={handleCalculate}>
           <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
@@ -729,7 +1059,7 @@ export default function Home() {
 
                   <SubExpander title="Hausgeld-Aufteilung">
                     <div style={infoBoxStyle}>
-                      💡 <strong>Standard 75 / 25 % Verteilung:</strong> 75% umlegbar, 25% nicht umlegbar.
+                      Standard 75 / 25 % Verteilung: 75% umlegbar, 25% nicht umlegbar.
                     </div>
                     <StepperInput label="Nicht umlegbares Hausgeld (€/Monat)" value={formData.hausgeld_nicht_umlegbar} onChange={handleHausgeldNichtUmlegbarChange} step={5} isCurrency={true} />
                   </SubExpander>
@@ -813,7 +1143,7 @@ export default function Home() {
                   <div>
                     <StepperInput label="Eingesetztes Eigenkapital (€)" value={formData.ek_euro} onChange={(v) => updateField('ek_euro', v)} step={1000} isCurrency={true} />
                     <div style={infoBoxStyle}>
-                      💡 <strong>EK-Empfehlung:</strong> Wir empfehlen mind. Kaufnebenkosten (<strong>{formatEuroInt(summe_nk)} €</strong>) einzubringen.
+                      EK-Empfehlung: Wir empfehlen mind. Kaufnebenkosten ({formatEuroInt(summe_nk)} €) einzubringen.
                     </div>
                   </div>
                 </div>
@@ -862,14 +1192,14 @@ export default function Home() {
                         <StepperInput label={`Betrag (€) #${idx + 1}`} value={item.amount} onChange={(v) => handleCapexChange(idx, 'amount', v)} step={500} isCurrency={true} />
                         {capexList.length > 1 && (
                           <button type="button" onClick={() => removeCapexRow(idx)} style={{ background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '6px', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            🗑️
+                            <IconTrash />
                           </button>
                         )}
                       </div>
                     ))}
 
                     <button type="button" onClick={addCapexRow} style={{ marginTop: '6px', padding: '8px 12px', background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
-                      ＋ Weitere Sonderinvestition hinzufügen
+                      + Weitere Sonderinvestition hinzufügen
                     </button>
                   </div>
                 </div>
@@ -923,7 +1253,7 @@ export default function Home() {
               </Expander>
 
               <button type="submit" disabled={loading} style={{ padding: '16px', background: '#13381A', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1.05rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 14px rgba(19,56,26,0.25)' }}>
-                {loading ? 'Berechne Investment...' : '🚀 Investition analysieren'}
+                {loading ? 'Berechne Investment...' : 'Investition analysieren'}
               </button>
 
             </div>
@@ -931,11 +1261,10 @@ export default function Home() {
             {/* RECHTE SPALTE: DASHBOARD & RESULTATE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* TOP HEADER & TOOLBAR */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem' }}>
                 <div>
                   <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
-                    {formData.obj_name || 'TEST Wohnung'}
+                    {formData.obj_name || 'Muster Wohnung'}
                   </h1>
                   <div style={{ fontSize: '0.85rem', color: '#718096', fontWeight: '500' }}>
                     Kaufpreis: {formatEuroInt(formData.kaufpreis)} € | EK: {formatEuroInt(formData.ek_euro)} € ({formatPct(formData.kaufpreis > 0 ? (formData.ek_euro / formData.kaufpreis) * 100 : 0)} %)
@@ -985,47 +1314,24 @@ export default function Home() {
               </div>
 
               {saveSuccess && (
-                <div style={{
-                  padding: '12px',
-                  background: saveSuccess.startsWith('✅') ? '#E6FFFA' : '#FFF5F5',
-                  color: saveSuccess.startsWith('✅') ? '#234E52' : '#9B2C2C',
-                  borderRadius: '8px',
-                  fontSize: '0.85rem',
-                  border: `1px solid ${saveSuccess.startsWith('✅') ? '#B2F5EA' : '#FEB2B2'}`
-                }}>
+                <div style={{ padding: '12px', background: '#E6FFFA', color: '#234E52', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #B2F5EA' }}>
                   {saveSuccess}
                 </div>
               )}
 
               {calcError && (
                 <div style={{ padding: '14px 18px', background: '#FFF5F5', color: '#9B2C2C', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #FEB2B2' }}>
-                  <strong>⚠️ Fehler bei der Berechnung:</strong> {calcError}
+                  <strong>Fehler bei der Berechnung:</strong> {calcError}
                 </div>
               )}
 
-              {/* DIE 4 DYNAMISCHEN METRIC CARDS */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-                <MetricCard 
-                  title="CASHFLOW NETTO" 
-                  value={`${formatEuro(monthlyCashflow)} €/M`} 
-                  isNegative={monthlyCashflow < 0}
-                />
-                <MetricCard 
-                  title="BRUTTOMIETRENDITE" 
-                  value={`${formatPct(bruttoMietrendite)} %`} 
-                />
-                <MetricCard 
-                  title={`GESAMTGEWINN (${actualHorizonYears} J.)`} 
-                  value={`${formatEuroInt(result ? gesamtGewinnHorizon : 0)} €`} 
-                />
-                <MetricCard 
-                  title="EK-RENDITE P.A. (IRR)" 
-                  value={`${formatPct((result?.summary?.irr || 0) * 100)} %`} 
-                  highlight={true}
-                />
+                <MetricCard title="CASHFLOW NETTO" value={`${formatEuro(monthlyCashflow)} €/M`} isNegative={monthlyCashflow < 0} />
+                <MetricCard title="BRUTTOMIETRENDITE" value={`${formatPct(bruttoMietrendite)} %`} />
+                <MetricCard title={`GESAMTGEWINN (${actualHorizonYears} J.)`} value={`${formatEuroInt(result ? gesamtGewinnHorizon : 0)} €`} />
+                <MetricCard title="EK-RENDITE P.A. (IRR)" value={`${formatPct((result?.summary?.irr || 0) * 100)} %`} highlight={true} />
               </div>
 
-              {/* TAB-MENÜ EXECUTIVE VS LIQUIDITÄT */}
               <div style={{ borderBottom: '2px solid #E2D9CE', display: 'flex', gap: '2rem' }}>
                 <button
                   type="button"
@@ -1061,10 +1367,8 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* TAB 1: EXECUTIVE DASHBOARD */}
               {activeDashboardTab === 'Executive Dashboard' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
-                  
                   <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
                       Projektion & Wertentwicklung
@@ -1097,11 +1401,9 @@ export default function Home() {
                       hb={Math.max(0, (formData.kaufpreis + summe_nk) - formData.ek_euro - formData.kfw_amt)}
                     />
                   </div>
-
                 </div>
               )}
 
-              {/* TAB 2: LIQUIDITÄTSVERLAUF & TILGUNG */}
               {activeDashboardTab === 'Liquiditätsverlauf & Tilgung' && (
                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
                   <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '800', color: '#13381A' }}>
@@ -1138,7 +1440,6 @@ export default function Home() {
                       <thead>
                         <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE', color: '#4A5568' }}>
                           <th style={{ padding: '10px', textAlign: 'left' }}>Jahr</th>
-                          
                           {tableTheme === 'Mieten & Cashflow' && (
                             <>
                               <th style={{ padding: '10px' }}>Mietrendite (brutto)</th>
@@ -1148,7 +1449,6 @@ export default function Home() {
                               <th style={{ padding: '10px' }}>Cashflow (nach St.)</th>
                             </>
                           )}
-
                           {tableTheme === 'Kapitaldienst & Steuern' && (
                             <>
                               <th style={{ padding: '10px' }}>Zinsen</th>
@@ -1158,7 +1458,6 @@ export default function Home() {
                               <th style={{ padding: '10px' }}>Steuer / Erstattung</th>
                             </>
                           )}
-
                           {tableTheme === 'Vermögen & Bilanz' && (
                             <>
                               <th style={{ padding: '10px' }}>Immobilienwert</th>
@@ -1182,7 +1481,6 @@ export default function Home() {
                           return (
                             <tr key={idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
                               <td style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 'bold' }}>{yr}</td>
-
                               {tableTheme === 'Mieten & Cashflow' && (
                                 <>
                                   <td style={{ padding: '8px 10px' }}>{formatPct(mietrendite)} %</td>
@@ -1194,7 +1492,6 @@ export default function Home() {
                                   </td>
                                 </>
                               )}
-
                               {tableTheme === 'Kapitaldienst & Steuern' && (
                                 <>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Zinsen'])} €</td>
@@ -1208,7 +1505,6 @@ export default function Home() {
                                   </td>
                                 </>
                               )}
-
                               {tableTheme === 'Vermögen & Bilanz' && (
                                 <>
                                   <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Immobilienwert'])} €</td>
@@ -1220,66 +1516,9 @@ export default function Home() {
                             </tr>
                           );
                         })}
-
-                        {/* SUMMENZEILE */}
-                        <tr style={{ background: '#FAF8F5', fontWeight: 'bold', borderTop: '2px solid #13381A' }}>
-                          <td style={{ padding: '10px', textAlign: 'left' }}>Summe ({actualHorizonYears} J.)</td>
-                          {tableTheme === 'Mieten & Cashflow' && (
-                            <>
-                              <td style={{ padding: '10px' }}>
-                                {formatPct(slicedProjection.reduce((acc, curr) => acc + (((curr['Mieteinnahmen IST'] || 0) / (formData.kaufpreis || 1)) * 100), 0) / (actualHorizonYears || 1))} % (Ø)
-                              </td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Mieteinnahmen IST'] || 0), 0))} €</td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + ((curr['Effektive Miete'] || curr['Mieteinnahmen IST'] || 0) - (curr['Bewirtschaftungskosten'] || 0)), 0))} €</td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + ((curr['Cashflow Netto'] || 0) + (curr['Steuer'] || 0)), 0))} €</td>
-                              <td style={{ padding: '10px', color: cumulatedCashflowHorizon < 0 ? '#9B2C2C' : '#13381A' }}>{formatEuroInt(cumulatedCashflowHorizon)} €</td>
-                            </>
-                          )}
-
-                          {tableTheme === 'Kapitaldienst & Steuern' && (
-                            <>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Zinsen'] || 0), 0))} €</td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Tilgung'] || 0), 0))} €</td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['Zinsen'] || 0) + (curr['Tilgung'] || 0), 0))} €</td>
-                              <td style={{ padding: '10px' }}>{formatEuroInt(slicedProjection.reduce((acc, curr) => acc + (curr['AfA'] || 0), 0))} €</td>
-                              <td style={{ padding: '10px', color: slicedProjection.reduce((acc, curr) => acc + (curr['Steuer'] || 0), 0) < 0 ? '#38A169' : '#9B2C2C' }}>
-                                {(() => {
-                                  const sumTax = slicedProjection.reduce((acc, curr) => acc + (curr['Steuer'] || 0), 0);
-                                  return sumTax < 0 
-                                    ? `-${formatEuroInt(Math.abs(sumTax))} € (Gesamterstattung)` 
-                                    : `+${formatEuroInt(sumTax)} € (Gesamtsteuer)`;
-                                })()}
-                              </td>
-                            </>
-                          )}
-
-                          {tableTheme === 'Vermögen & Bilanz' && (
-                            <>
-                              <td style={{ padding: '10px' }}>–</td>
-                              <td style={{ padding: '10px' }}>–</td>
-                              <td style={{ padding: '10px', color: '#A37841' }}>{formatEuroInt(endNav)} €</td>
-                              <td style={{ padding: '10px' }}>–</td>
-                            </>
-                          )}
-                        </tr>
                       </tbody>
                     </table>
                   </div>
-
-                  <div style={{ marginTop: '1.5rem', background: '#FAF8F5', padding: '12px 16px', borderRadius: '8px', border: '1px solid #E2D9CE', fontSize: '0.78rem', color: '#555759', lineHeight: '1.5' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#13381A' }}>Erläuterung der Kennzahlen & Steuereffekte</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
-                        <strong>Dynamische Tilgung:</strong> Bei einem Annuitätendarlehen bleibt die Gesamtrate konstant. Mit sinkender Restschuld sinkt der Zinsanteil, wodurch die Tilgung von Jahr zu Jahr automatisch ansteigt.<br />
-                        <strong>Steuer / Erstattung:</strong> Rechnerisch negative Beträge (-) stellen eine Steuererstattung durch Verrechnung der Verluste aus Vermietung mit deiner Einkommensteuer dar.
-                      </div>
-                      <div>
-                        <strong>Reinertrag (NOI):</strong> Mietertrag nach Abzug von Verwaltung, Instandhaltung und Leerstand (vor Zinsen/Steuer).<br />
-                        <strong>Netto-EK (NAV):</strong> Dein kumulierter Netto-Vermögenswert im Objekt (Immobilienwert abzüglich Restschuld).
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               )}
 
@@ -1289,13 +1528,15 @@ export default function Home() {
         </form>
       )}
 
+      {/* ================================================================================== */}
       {/* MODUL 2: OBJEKT DATENBANK */}
+      {/* ================================================================================== */}
       {navChoice === 'Objekt Datenbank' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 style={{ margin: 0, color: '#13381A' }}>Objekt Datenbank & Pipeline</h2>
-            <button onClick={fetchDatabaseProperties} style={{ padding: '8px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              🔄 Aktualisieren
+            <button onClick={fetchDatabaseProperties} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              <IconRefresh /> Aktualisieren
             </button>
           </div>
 
@@ -1331,11 +1572,11 @@ export default function Home() {
                         {item.irr ? formatPct(item.irr * 100) + ' %' : '–'}
                       </td>
                       <td style={{ padding: '12px', display: 'flex', gap: '8px' }}>
-                        <button onClick={() => loadPropertyFromDb(item)} style={{ padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                          📂 In Analyse laden
+                        <button onClick={() => loadPropertyFromDb(item)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          <IconFolder /> In Analyse laden
                         </button>
                         <button onClick={() => deletePropertyFromDb(item.id)} style={{ padding: '6px 10px', background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                          🗑️ Löschen
+                          <IconTrash />
                         </button>
                       </td>
                     </tr>
@@ -1347,19 +1588,46 @@ export default function Home() {
         </div>
       )}
 
+      {/* ================================================================================== */}
       {/* MODUL 3: IMMOBILIENWISSEN */}
+      {/* ================================================================================== */}
       {navChoice === 'Immobilienwissen' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <h2>Immobilienwissen & KI-Assistent</h2>
-          <p style={{ color: '#555759' }}>Fachartikel, Kennzahlen und interaktiver KI-Support.</p>
+          <h2>Immobilienwissen & Leitfäden</h2>
+          <p style={{ color: '#555759' }}>Fachartikel zu AfA-Sonderformen, Annuitätenlogik und steuerlichen Verlustverrechnungen.</p>
         </div>
       )}
 
-      {/* MODUL 4: EINSTELLUNGEN */}
+      {/* ================================================================================== */}
+      {/* MODUL 4: EINSTELLUNGEN (ÜBER ZAHNRAD ERREICHBAR) */}
+      {/* ================================================================================== */}
       {navChoice === 'Einstellungen' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <h2>Einstellungen & Anlagestrategien</h2>
-          <p style={{ color: '#555759' }}>Konfiguration deiner Parameter-Standards und Profile.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+            <IconGear />
+            <h2 style={{ margin: 0, color: '#13381A' }}>System-Einstellungen</h2>
+          </div>
+          <p style={{ color: '#555759', marginBottom: '1.5rem' }}>
+            Konfiguriere deine globalen Parameter-Standards für zukünftige Objektanalysen.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', maxWidth: '500px' }}>
+            <div>
+              <label style={labelStyle}>Standard Grenzsteuersatz (%)</label>
+              <input type="number" defaultValue={42} style={inputTextStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Standard Maklerprovision (%)</label>
+              <input type="number" step="0.01" defaultValue={3.57} style={inputTextStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Standard Notar & Grundbuch (%)</label>
+              <input type="number" step="0.1" defaultValue={2.0} style={inputTextStyle} />
+            </div>
+            <button style={{ padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', width: 'fit-content' }}>
+              Einstellungen speichern
+            </button>
+          </div>
         </div>
       )}
 
@@ -1376,7 +1644,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '260px' }}>
-      
       <div style={{ position: 'relative', width: '200px', height: '200px' }}>
         <svg width="100%" height="100%" viewBox="0 0 42 42">
           <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E2D9CE" strokeWidth="4.5" />
@@ -1436,7 +1703,6 @@ function DonutChart({ totalInvestment, equity, kfw, hb }) {
           </div>
         )}
       </div>
-
     </div>
   );
 }

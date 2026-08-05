@@ -63,7 +63,6 @@ export default function Home() {
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
   const [backendStatus, setBackendStatus] = useState('sleeping');
 
-  // LADE PROFIL DIREKT AUS SUPABASE
   const fetchProfileFromSupabase = async (uid, email) => {
     const dbProfile = await loadUserProfileFromSupabase(uid);
     if (dbProfile) {
@@ -92,7 +91,6 @@ export default function Home() {
         tax_rate_pct: formatted.grenzsteuersatz || prev.tax_rate_pct
       }));
     } else {
-      // Neues Profil anlegen
       setUserProfile((prev) => ({ ...prev, onboarded: false }));
     }
   };
@@ -532,7 +530,6 @@ export default function Home() {
     );
   }
 
-  // FORCE ONBOARDING ERST-EINRICHTUNG WENN PROFIL NOCH NICHT ERSTELLT IST
   if (!userProfile.onboarded) {
     return (
       <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', fontFamily: 'sans-serif' }}>
@@ -564,16 +561,17 @@ export default function Home() {
       {navChoice === 'Startseite' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
+          {/* GRÜNER HEADER BANNER */}
           <div style={{ background: '#13381A', color: '#FAF8F5', padding: '2.5rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 25px rgba(19,56,26,0.2)' }}>
             <div style={{ maxWidth: '650px' }}>
               <div style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>
-                Zentrale Immobilien-Suite
+                Dein Investment-Dashboard
               </div>
               <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
                 Willkommen zurück, {greetingName}
               </h2>
               <p style={{ margin: 0, color: '#A0AEC0', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                Ihre professionelle Plattform für präzise Cashflow-Rechnungen, 50-Jahre-Prognosen, Abschreibungsmodelle und Portfolioverwaltung.
+                Kalkuliere renditestarke Immobilien-Deals, simuliere AfA-Steuervorteile und verwalte dein Bestandskonto an einem Ort.
               </p>
             </div>
 
@@ -598,6 +596,7 @@ export default function Home() {
             </button>
           </div>
 
+          {/* KARTEN-RASTER */}
           <div>
             <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#13381A', marginBottom: '1rem' }}>
               Funktionen & Analyse-Module
@@ -605,97 +604,98 @@ export default function Home() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
               
+              {/* KARTE 1: INVESTITIONS-ANALYSE */}
               <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(19,56,26,0.08)' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: '#13381A', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Haupt-Tool</span>
-                    <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: 'bold' }}>Aktiv</span>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: '800' }}>● Aktiv</span>
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Investitions-Analyse</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Umfassender Rechner für Cashflow, Annuitätendynamik, AfA-Modelle, Steuerschild und Netto-Eigenkapitalentwicklung.
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                    Berechne echten Netto-Cashflow, Eigenkapitalrendite und steuerliche AfA-Vorteile deiner Wunsch-Immobilie.
                   </p>
                 </div>
-                <button onClick={() => setNavChoice('Analyse')} style={{ marginTop: '1.5rem', padding: '10px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  Rechner öffnen
+                <button onClick={() => setNavChoice('Analyse')} style={{ marginTop: '1.5rem', padding: '11px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
+                  Rechner starten →
                 </button>
               </div>
 
+              {/* KARTE 2: OBJEKT-DATENBANK */}
               <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Verwaltung</span>
-                    <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: 'bold' }}>Aktiv</span>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: '800' }}>● Aktiv</span>
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Objekt-Datenbank</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Verwalte deine gespeicherten Immobilienkalkulationen, rufe frühere Berechnungen ab oder entferne alte Datensätze.
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                    Alle kalkulierten Objekte im Überblick. Vergleiche Kennzahlen, lade alte Deals und behalte die Übersicht.
                   </p>
                 </div>
-                <button onClick={() => setNavChoice('Objekt Datenbank')} style={{ marginTop: '1.5rem', padding: '10px', background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  Zur Datenbank
+                <button onClick={() => setNavChoice('Objekt Datenbank')} style={{ marginTop: '1.5rem', padding: '11px', background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
+                  Zur Datenbank →
                 </button>
               </div>
 
+              {/* KARTE 3: PORTFOLIO AGGREGATOR */}
               <div onClick={() => setDevNotice('Multi-Objekt Portfolio-Dashboard')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Erweiterung</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Portfolio Aggregator</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Kombiniert alle Objekte deiner Datenbank zu einer Gesamtbilanz. Ermittelt kumulierten Cashflow und Gesamt-LTV.
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                    Führe deine Objekte zu einer Gesamtbilanz zusammen. Sieh deinen monatlichen Gesamtcashflow und Vermögensaufbau.
                   </p>
                 </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
+              {/* KARTE 4: SZENARIO-VERGLEICH */}
               <div onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Simulation</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Szenario-Vergleich</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Analysiere 'What-If'-Szenarien: Zinserhöhungen, schwankende Leerstände oder alternative Eigenkapital-Einsätze.
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                    Stressteste deine Deals: Simuliere steigende Zinsen, Mietausfälle und unterschiedliche Eigenkapital-Einsätze.
                   </p>
                 </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
+              {/* KARTE 5: BANK-EXPOSÉ GENERATOR */}
               <div onClick={() => setDevNotice('Bank-Exposé PDF-Generator')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Export</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Bank-Exposé Generator</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Erstelle ein druckfertiges, strukturiertes PDF-Exposé für Bankgespräche mit allen betriebswirtschaftlichen Kennzahlen.
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                    Erstelle auf Knopfdruck ein Bank-Dossier als PDF – inklusive Cashflow-Prognose und Beleihungswert.
                   </p>
                 </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
+              {/* KARTE 6: KI-EXPOSÉ SCANNER */}
               <div onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Smart Import</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>KI-Exposé Scanner</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Füge Freitext aus Online-Portalen ein. Die KI extrahiert Kaufpreis, Quadratmeter und Mieteinzeldaten automatisch.
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                    Füge den Angebotstext aus ImmoScout & Co. ein. Die KI liest Kaufpreis, Miete und Baujahr automatisch aus.
                   </p>
                 </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
+                <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
             </div>
           </div>
 
+          {/* QUICK LOAD BEREICH */}
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#13381A', fontWeight: '800' }}>Deine gespeicherten Objekte (Quick Load)</h3>

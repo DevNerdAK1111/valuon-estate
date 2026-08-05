@@ -2,7 +2,8 @@
 import { IconGear, IconUser } from '../ui/Icons';
 
 export default function Header({ navChoice, setNavChoice, backendStatus, userEmail, onLogout }) {
-  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen', 'Profil', 'Einstellungen'];
+  // Profil & Einstellungen sind hier bewusst entfernt und nur über die rechten Buttons erreichbar
+  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen'];
 
   return (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -20,7 +21,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         </div>
       </div>
 
-      {/* NAVIGATION TABS */}
+      {/* NAVIGATION TABS (Nur Hauptbereiche) */}
       <nav style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.6)', padding: '5px', borderRadius: '30px', border: '1px solid #E2D9CE', backdropFilter: 'blur(8px)' }}>
         {navItems.map((item) => {
           const isActive = navChoice === item;
@@ -29,7 +30,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
               key={item}
               onClick={() => setNavChoice(item)}
               style={{
-                padding: '8px 18px',
+                padding: '8px 20px',
                 background: isActive ? '#13381A' : 'transparent',
                 color: isActive ? '#F7F4EC' : '#4A5568',
                 border: 'none',
@@ -47,7 +48,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         })}
       </nav>
 
-      {/* RECHTE TOOLBAR / STATUS & PROFIL */}
+      {/* RECHTE TOOLBAR / STATUS, EINSTELLUNGEN & PROFIL */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         
         {/* BACKEND STATUS BADGE */}

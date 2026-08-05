@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-// Relative Imports aus deinen Komponenten
+// Relative Imports
 import Header from '../components/layout/Header';
 import LandingPage from '../components/landing/LandingPage';
 import DevNoticeModal from '../components/ui/DevNoticeModal';
@@ -14,6 +14,7 @@ import OnboardingView from '../components/profile/OnboardingView';
 import { IconGear, IconFolder, IconLock, IconArrowRight } from '../components/ui/Icons';
 import { formatEuroInt } from '../utils/formatters';
 import { supabase } from '../lib/supabaseClient';
+import { loadUserProfileFromSupabase, saveUserProfileToSupabase } from '../lib/profileApi';
 
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
@@ -29,9 +30,9 @@ export default function Home() {
   const [showApp, setShowApp] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [userId, setUserId] = useState(null);
   const [navChoice, setNavChoice] = useState('Startseite');
 
-  // NEUTRALE ZUSTÄNDE FÜR NEUE BENUTZER (ONBOARDING-FLAG INKLUSIVE)
   const [userProfile, setUserProfile] = useState({
     profilname: '',
     vorname: '',
@@ -62,25 +63,64 @@ export default function Home() {
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
   const [backendStatus, setBackendStatus] = useState('sleeping');
 
+  // LADE PROFIL DIREKT AUS SUPABASE
+  const fetchProfileFromSupabase = async (uid, email) => {
+    const dbProfile = await loadUserProfileFromSupabase(uid);
+    if (dbProfile) {
+      const formatted = {
+        profilname: dbProfile.profilname || '',
+        vorname: dbProfile.vorname || '',
+        nachname: dbProfile.nachname || '',
+        geburtsdatum: dbProfile.geburtsdatum || '',
+        telefon: dbProfile.telefon || '',
+        strasse: dbProfile.strasse || '',
+        plz: dbProfile.plz || '',
+        ort: dbProfile.ort || '',
+        land: dbProfile.land || 'Deutschland',
+        bruttoEinkommen: dbProfile.brutto_einkommen || 65000,
+        steuerklasse: dbProfile.steuerklasse || '1',
+        familienstand: dbProfile.familienstand || 'Ledig',
+        kinderAnzahl: dbProfile.kinder_anzahl || 0,
+        kirchensteuer: !!dbProfile.kirchensteuer,
+        kirchensteuersatz: dbProfile.kirchensteuersatz || 9.0,
+        grenzsteuersatz: dbProfile.grenzsteuersatz || 42.0,
+        onboarded: dbProfile.onboarded
+      };
+      setUserProfile(formatted);
+      setFormData((prev) => ({
+        ...prev,
+        tax_rate_pct: formatted.grenzsteuersatz || prev.tax_rate_pct
+      }));
+    } else {
+      // Neues Profil anlegen
+      setUserProfile((prev) => ({ ...prev, onboarded: false }));
+    }
+  };
+
   useEffect(() => {
     pingBackend();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUserEmail(session.user.email);
+        setUserId(session.user.id);
         setAuthenticated(true);
         setShowApp(true);
+        fetchProfileFromSupabase(session.user.id, session.user.email);
       }
     });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUserEmail(session.user.email);
+        setUserId(session.user.id);
         setAuthenticated(true);
         setShowApp(true);
+        fetchProfileFromSupabase(session.user.id, session.user.email);
       } else {
         setAuthenticated(false);
         setShowApp(false);
+        setUserId(null);
       }
     });
 
@@ -97,7 +137,6 @@ export default function Home() {
       .catch(() => setBackendStatus('sleeping'));
   };
 
-  // NEUTRALE BASELINE-WERTE FÜR ANALYSE (KEINE DEVELOPER-DATEN MEHR)
   const [formData, setFormData] = useState({
     obj_name: '',
     objektart: 'Eigentumswohnung',
@@ -224,17 +263,23 @@ export default function Home() {
     }
   };
 
-  const handleSaveProfile = (updatedProfile) => {
+  const handleSaveProfile = async (updatedProfile) => {
     setUserProfile(updatedProfile);
+    if (userId) {
+      await saveUserProfileToSupabase(userId, userEmail, updatedProfile);
+    }
     setFormData((prev) => ({
       ...prev,
       tax_rate_pct: updatedProfile.grenzsteuersatz || prev.tax_rate_pct
     }));
   };
 
-  const handleCompleteOnboarding = (completedProfile) => {
+  const handleCompleteOnboarding = async (completedProfile) => {
     const updated = { ...completedProfile, onboarded: true };
     setUserProfile(updated);
+    if (userId) {
+      await saveUserProfileToSupabase(userId, userEmail, updated);
+    }
     setFormData((prev) => ({
       ...prev,
       tax_rate_pct: updated.grenzsteuersatz || prev.tax_rate_pct
@@ -246,7 +291,10 @@ export default function Home() {
     console.log('Passwort geändert für:', userEmail);
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    if (userId) {
+      await supabase.from('profiles').delete().eq('id', userId);
+    }
     alert('Account wurde erfolgreich gelöscht.');
     handleLogout();
   };
@@ -257,7 +305,6 @@ export default function Home() {
     setAuthenticated(false);
     setNavChoice('Startseite');
     setResult(null);
-    setUserProfile((prev) => ({ ...prev, onboarded: false }));
   };
 
   const loadPropertyFromDb = (item) => {

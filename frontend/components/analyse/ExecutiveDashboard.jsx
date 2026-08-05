@@ -1,5 +1,6 @@
 'use client';
 import ProjectionChart from '../charts/ProjectionChart';
+import DonutChart from '../charts/DonutChart';
 import { formatEuroInt } from '../../utils/formatters';
 
 export default function ExecutiveDashboard({
@@ -32,7 +33,7 @@ export default function ExecutiveDashboard({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* KOPFZEILE */}
+      {/* 1. KOPFZEILE */}
       <div style={{
         background: 'white',
         padding: '1.2rem 1.5rem',
@@ -81,7 +82,6 @@ export default function ExecutiveDashboard({
               flexShrink: 0
             }}
           >
-            {/* INLINE SAVE ICON */}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
@@ -120,7 +120,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* TABS */}
+      {/* 2. MENÜ-TABS */}
       <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
         {['Executive Dashboard', 'Liquiditätsverlauf (Tabelle)', 'Finanzierung & Tilgung', 'Steuern & AfA'].map((tab) => (
           <button
@@ -144,6 +144,40 @@ export default function ExecutiveDashboard({
         ))}
       </div>
 
+      {/* 3. BETRACHTUNGSHORIZONT (JETZT DIREKT UNTER DEM MENÜ) */}
+      {result && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[
+              { label: '10 Jahre', value: '10' },
+              { label: '15 Jahre', value: '15' },
+              { label: '20 Jahre', value: '20' },
+              { label: '30 Jahre', value: '30' },
+              { label: 'Bis Schuldenfrei', value: 'payoff' }
+            ].map((h) => (
+              <button
+                key={h.value}
+                type="button"
+                onClick={() => setProjectionHorizon(h.value)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2D9CE',
+                  background: projectionHorizon === h.value ? '#13381A' : '#FAF8F5',
+                  color: projectionHorizon === h.value ? 'white' : '#13381A',
+                  fontWeight: '700',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* LEERZUSTAND */}
       {!result && !calcError && (
         <div style={{
@@ -163,40 +197,9 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* ERGEBNISSE */}
+      {/* ERGEBNISSE & DASHBOARD INHALTE */}
       {result && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {[
-                { label: '10 Jahre', value: '10' },
-                { label: '15 Jahre', value: '15' },
-                { label: '20 Jahre', value: '20' },
-                { label: '30 Jahre', value: '30' },
-                { label: 'Bis Schuldenfrei', value: 'payoff' }
-              ].map((h) => (
-                <button
-                  key={h.value}
-                  type="button"
-                  onClick={() => setProjectionHorizon(h.value)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2D9CE',
-                    background: projectionHorizon === h.value ? '#13381A' : '#FAF8F5',
-                    color: projectionHorizon === h.value ? 'white' : '#13381A',
-                    fontWeight: '700',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {h.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <KeyMetrics 
             result={result}
             monthlyCashflow={monthlyCashflow}
@@ -208,11 +211,17 @@ export default function ExecutiveDashboard({
           />
 
           {activeDashboardTab === 'Executive Dashboard' && (
-            <ProjectionChart 
-              chartView={chartView}
-              setChartView={setChartView}
-              slicedProjection={slicedProjection}
-            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
+              <ProjectionChart 
+                chartView={chartView}
+                setChartView={setChartView}
+                slicedProjection={slicedProjection}
+              />
+              <DonutChart 
+                formData={formData}
+                summe_nk={summe_nk}
+              />
+            </div>
           )}
 
           {(activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' || activeDashboardTab === 'Finanzierung & Tilgung' || activeDashboardTab === 'Steuern & AfA') && (
@@ -296,13 +305,15 @@ function TableView({ activeDashboardTab, slicedProjection }) {
   if (data.length === 0) return null;
 
   const totals = data.reduce((acc, curr) => {
-    acc.miete += curr['Mieteinnahmen p.a.'] || curr['Kaltmiete'] || 0;
+    acc.miete += curr['Kaltmiete'] || curr['Mieteinnahmen p.a.'] || 0;
+    acc.kapitaldienst += (curr['Zinszahlung'] || curr['Zinsen'] || 0) + (curr['Tilgungszahlung'] || curr['Tilgung'] || 0);
+    acc.bewirtschaftung += curr['Bewirtschaftung'] || curr['Kosten'] || 0;
+    acc.steuer += curr['Steuerliche Auswirkung'] || curr['Steuern'] || 0;
+    acc.cfNetto += curr['Cashflow Netto'] || 0;
     acc.zins += curr['Zinszahlung'] || curr['Zinsen'] || 0;
     acc.tilg += curr['Tilgungszahlung'] || curr['Tilgung'] || 0;
-    acc.cfNetto += curr['Cashflow Netto'] || 0;
-    acc.steuer += curr['Steuerliche Auswirkung'] || curr['Steuern'] || 0;
     return acc;
-  }, { miete: 0, zins: 0, tilg: 0, cfNetto: 0, steuer: 0 });
+  }, { miete: 0, kapitaldienst: 0, bewirtschaftung: 0, steuer: 0, cfNetto: 0, zins: 0, tilg: 0 });
 
   return (
     <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2D9CE', padding: '1.5rem', overflowX: 'auto' }}>
@@ -343,14 +354,17 @@ function TableView({ activeDashboardTab, slicedProjection }) {
         <tbody>
           {data.map((row, idx) => {
             const year = row['Jahr'] || idx + 1;
-            const miete = row['Mieteinnahmen p.a.'] || row['Kaltmiete'] || 0;
-            const zins = row['Zinszahlung'] || row['Zinsen'] || 0;
-            const tilg = row['Tilgungszahlung'] || row['Tilgung'] || 0;
-            const cfNetto = row['Cashflow Netto'] || 0;
+            // KORREKTE SCHLÜSSEL-ZUORDNUNG AUS DEM BACKEND
+            const miete = row['Kaltmiete'] ?? row['Mieteinnahmen p.a.'] ?? 0;
+            const zins = row['Zinszahlung'] ?? row['Zinsen'] ?? 0;
+            const tilg = row['Tilgungszahlung'] ?? row['Tilgung'] ?? 0;
+            const kapitaldienst = zins + tilg;
+            const bewirtschaftung = row['Bewirtschaftung'] ?? row['Kosten'] ?? 0;
+            const cfNetto = row['Cashflow Netto'] ?? 0;
             const cfMonat = cfNetto / 12;
-            const steuer = row['Steuerliche Auswirkung'] || row['Steuern'] || 0;
-            const restschuld = row['Restschuld'] || 0;
-            const afa = row['AfA'] || row['AfA-Betrag'] || 0;
+            const steuer = row['Steuerliche Auswirkung'] ?? row['Steuern'] ?? 0;
+            const restschuld = row['Restschuld'] ?? 0;
+            const afa = row['AfA'] ?? row['AfA-Betrag'] ?? 0;
             const zstErtrag = row['Zu versteuernder Ertrag'] || (miete - zins - afa);
 
             const isSteuerRefund = steuer > 0;
@@ -363,8 +377,8 @@ function TableView({ activeDashboardTab, slicedProjection }) {
                 {activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' && (
                   <>
                     <td style={{ padding: '10px' }}>{formatEuroInt(miete)} €</td>
-                    <td style={{ padding: '10px' }}>-{formatEuroInt(zins + tilg)} €</td>
-                    <td style={{ padding: '10px' }}>-{formatEuroInt(row['Bewirtschaftung'] || 0)} €</td>
+                    <td style={{ padding: '10px' }}>-{formatEuroInt(kapitaldienst)} €</td>
+                    <td style={{ padding: '10px' }}>-{formatEuroInt(bewirtschaftung)} €</td>
                     <td style={{
                       padding: '10px',
                       fontWeight: '700',
@@ -411,18 +425,19 @@ function TableView({ activeDashboardTab, slicedProjection }) {
           })}
         </tbody>
 
+        {/* SCHLICHTE, SAUBERE SUMMENZEILE (OHNE GRÜNEN HIGHLIGHT-HINTERGRUND) */}
         <tfoot>
           <tr style={{ background: '#13381A', color: 'white', fontWeight: '800', borderTop: '2px solid #13381A' }}>
             <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({data.length} J.)</td>
             {activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' && (
               <>
                 <td style={{ padding: '12px' }}>{formatEuroInt(totals.miete)} €</td>
-                <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins + totals.tilg)} €</td>
-                <td style={{ padding: '12px' }}>-</td>
-                <td style={{ padding: '12px', color: totals.steuer >= 0 ? '#68D391' : '#FC8181' }}>
+                <td style={{ padding: '12px' }}>-{formatEuroInt(totals.kapitaldienst)} €</td>
+                <td style={{ padding: '12px' }}>-{formatEuroInt(totals.bewirtschaftung)} €</td>
+                <td style={{ padding: '12px' }}>
                   {totals.steuer < 0 ? '-' : ''}{formatEuroInt(Math.abs(totals.steuer))} €
                 </td>
-                <td style={{ padding: '12px', color: totals.cfNetto >= 0 ? '#68D391' : '#FC8181' }}>
+                <td style={{ padding: '12px' }}>
                   {totals.cfNetto >= 0 ? '+' : ''}{formatEuroInt(totals.cfNetto)} €
                 </td>
                 <td style={{ padding: '12px' }}>-</td>
@@ -430,7 +445,7 @@ function TableView({ activeDashboardTab, slicedProjection }) {
             )}
             {activeDashboardTab === 'Finanzierung & Tilgung' && (
               <>
-                <td style={{ padding: '12px' }}>-</td>
+                <th style={{ padding: '12px' }}>-</th>
                 <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins)} €</td>
                 <td style={{ padding: '12px' }}>+{formatEuroInt(totals.tilg)} €</td>
                 <td style={{ padding: '12px' }}>-</td>
@@ -443,7 +458,7 @@ function TableView({ activeDashboardTab, slicedProjection }) {
                 <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins)} €</td>
                 <td style={{ padding: '12px' }}>-</td>
                 <td style={{ padding: '12px' }}>-</td>
-                <td style={{ padding: '12px', color: totals.steuer >= 0 ? '#68D391' : '#FC8181' }}>
+                <td style={{ padding: '12px' }}>
                   {totals.steuer < 0 ? '-' : ''}{formatEuroInt(Math.abs(totals.steuer))} €
                 </td>
               </>

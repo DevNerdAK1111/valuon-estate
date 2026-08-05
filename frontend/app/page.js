@@ -12,6 +12,7 @@ import ProfileView from '../components/profile/ProfileView';
 
 import { IconGear, IconFolder, IconLock, IconArrowRight } from '../components/ui/Icons';
 import { formatEuroInt } from '../utils/formatters';
+import { supabase } from '../lib/supabaseClient';
 
 const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
 
@@ -60,6 +61,31 @@ export default function Home() {
 
   useEffect(() => {
     pingBackend();
+
+    // Check: Ist der Nutzer bereits eingeloggt (z.B. nach Mail-Klick)?
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUserEmail(session.user.email);
+        setAuthenticated(true);
+        setShowApp(true);
+      }
+    });
+
+    // Listener für Auth-Status-Änderungen (Login/Logout/E-Mail-Bestätigung)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUserEmail(session.user.email);
+        setAuthenticated(true);
+        setShowApp(true);
+      } else {
+        setAuthenticated(false);
+        setShowApp(false);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const pingBackend = () => {
@@ -213,7 +239,8 @@ export default function Home() {
     handleLogout();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setShowApp(false);
     setAuthenticated(false);
     setNavChoice('Startseite');

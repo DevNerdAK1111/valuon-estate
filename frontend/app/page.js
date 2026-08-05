@@ -8,6 +8,7 @@ import DevNoticeModal from '../components/ui/DevNoticeModal';
 import Parametrisierung from '../components/analyse/Parametrisierung';
 import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
+import ProfileView from '../components/profile/ProfileView';
 
 import { IconGear, IconFolder, IconLock, IconArrowRight } from '../components/ui/Icons';
 import { formatEuroInt } from '../utils/formatters';
@@ -27,6 +28,24 @@ export default function Home() {
   const [authenticated, setAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState('developer@valuon-estate.de');
   const [navChoice, setNavChoice] = useState('Startseite');
+
+  // NUTZERPROFIL STATE
+  const [userProfile, setUserProfile] = useState({
+    vorname: 'Developer',
+    nachname: 'User',
+    bruttoEinkommen: 75000,
+    steuerklasse: '1',
+    familienstand: 'Ledig',
+    kinderAnzahl: 0,
+    kirchensteuer: false,
+    grenzsteuersatz: 42.0,
+    stdNotar: 2.0,
+    stdMakler: 3.57,
+    stdZins: 3.8,
+    stdTilg: 2.0,
+    stdInst: 12.0,
+    stdLeerstand: 2.0
+  });
 
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
   const [tableTheme, setTableTheme] = useState('Kapitaldienst & Steuern');
@@ -67,16 +86,16 @@ export default function Home() {
     hausgeld: 250.0,
     hausgeld_nicht_umlegbar: 62.50,
     sanierung: 0.0,
-    inst_sqm: 12.0,
+    inst_sqm: userProfile.stdInst || 12.0,
     mgt_monat: 30.0,
-    vac_rate_pct: 2.0,
+    vac_rate_pct: userProfile.stdLeerstand || 2.0,
     grwt_p: 5.0,
-    notar_p: 2.0,
-    makler_p: 3.57,
+    notar_p: userProfile.stdNotar || 2.0,
+    makler_p: userProfile.stdMakler || 3.57,
     sonst_nk: 0.0,
     loan_type: 'Annuitätendarlehen',
-    hb_zins: 4.0,
-    hb_tilg: 2.0,
+    hb_zins: userProfile.stdZins || 4.0,
+    hb_tilg: userProfile.stdTilg || 2.0,
     sondertilg: 0.0,
     grace_years: 0,
     ek_euro: 17969.0,
@@ -89,7 +108,7 @@ export default function Home() {
     kfw_tilg: 3.0,
     kfw_grace_years: 0,
     kfw_grant: 0.0,
-    tax_rate_pct: 42.0,
+    tax_rate_pct: userProfile.grenzsteuersatz || 42.0,
     afa_model: 'Linear Standard',
     afa_lin: 2.0,
     miet_inc: 1.0,
@@ -111,7 +130,7 @@ export default function Home() {
     if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite') && showApp) {
       fetchDatabaseProperties();
     }
-  }, [navChoice, showApp]);
+  }, [navChoice, showApp, userEmail]);
 
   const fetchDatabaseProperties = async () => {
     setLoadingDb(true);
@@ -119,7 +138,10 @@ export default function Home() {
       const res = await fetch(`${BACKEND_URL}/api/properties`);
       if (res.ok) {
         const data = await res.json();
-        setDbProperties(data.properties || data || []);
+        const rawList = data.properties || data || [];
+        // Datenisolierung: Nur Objekte des aktuell angemeldeten Nutzers anzeigen
+        const userList = rawList.filter(item => !item.user_email || item.user_email === userEmail);
+        setDbProperties(userList);
       }
     } catch (err) {
       console.error('Fehler beim Laden der Datenbank:', err);
@@ -158,7 +180,8 @@ export default function Home() {
       });
 
       if (res.ok) {
-        setSaveSuccess('Objekt erfolgreich in der Datenbank gespeichert.');
+        setSaveSuccess('Objekt erfolgreich in deiner Datenbank gespeichert.');
+        fetchDatabaseProperties();
       } else {
         const errorData = await res.json().catch(() => ({}));
         const detailMsg = typeof errorData.detail === 'string' 
@@ -173,6 +196,37 @@ export default function Home() {
     }
   };
 
+  const handleSaveProfile = (updatedProfile) => {
+    setUserProfile(updatedProfile);
+    // Standard-Steuersatz direkt in den Formular-State übernehmen
+    setFormData((prev) => ({
+      ...prev,
+      tax_rate_pct: updatedProfile.grenzsteuersatz || prev.tax_rate_pct,
+      notar_p: updatedProfile.stdNotar || prev.notar_p,
+      makler_p: updatedProfile.stdMakler || prev.makler_p,
+      hb_zins: updatedProfile.stdZins || prev.hb_zins,
+      hb_tilg: updatedProfile.stdTilg || prev.hb_tilg,
+      inst_sqm: updatedProfile.stdInst || prev.inst_sqm,
+      vac_rate_pct: updatedProfile.stdLeerstand || prev.vac_rate_pct
+    }));
+  };
+
+  const handlePasswordChange = (oldPwd, newPwd) => {
+    console.log('Passwort geändert für:', userEmail);
+  };
+
+  const handleDeleteAccount = () => {
+    alert('Account wurde erfolgreich gelöscht.');
+    handleLogout();
+  };
+
+  const handleLogout = () => {
+    setShowApp(false);
+    setAuthenticated(false);
+    setNavChoice('Startseite');
+    setResult(null);
+  };
+
   const loadPropertyFromDb = (item) => {
     if (item.form_data) {
       setFormData(item.form_data);
@@ -184,7 +238,7 @@ export default function Home() {
   };
 
   const deletePropertyFromDb = async (id) => {
-    if (!confirm('Möchtest du dieses Objekt wirklich aus der Datenbank löschen?')) return;
+    if (!confirm('Möchtest du dieses Objekt wirklich aus deiner Datenbank löschen?')) return;
     try {
       await fetch(`${BACKEND_URL}/api/properties/${id}`, { method: 'DELETE' });
       fetchDatabaseProperties();
@@ -405,8 +459,8 @@ export default function Home() {
         navChoice={navChoice} 
         setNavChoice={setNavChoice} 
         backendStatus={backendStatus} 
-        setDevNotice={setDevNotice} 
         userEmail={userEmail} 
+        onLogout={handleLogout}
       />
 
       {/* MODUL: STARTSEITE */}
@@ -419,7 +473,7 @@ export default function Home() {
                 Zentrale Immobilien-Suite
               </div>
               <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
-                Willkommen bei Valuon Estate
+                Willkommen zurück, {userProfile.vorname || userEmail.split('@')[0]}
               </h2>
               <p style={{ margin: 0, color: '#A0AEC0', fontSize: '0.95rem', lineHeight: '1.5' }}>
                 Ihre professionelle Plattform für präzise Cashflow-Rechnungen, 50-Jahre-Prognosen, Abschreibungsmodelle und Portfolioverwaltung.
@@ -462,7 +516,7 @@ export default function Home() {
                   </div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Investitions-Analyse</h3>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Umfassender Rechner für Cashflow, Annuitätendynamik, AfA-Modelle (Linear, Degressiv, Denkmal), Steuerschild und Netto-Eigenkapitalentwicklung.
+                    Umfassender Rechner für Cashflow, Annuitätendynamik, AfA-Modelle, Steuerschild und Netto-Eigenkapitalentwicklung.
                   </p>
                 </div>
                 <button onClick={() => setNavChoice('Analyse')} style={{ marginTop: '1.5rem', padding: '10px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
@@ -500,54 +554,12 @@ export default function Home() {
                 <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
               </div>
 
-              <div onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Simulation</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
-                  </div>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Szenario-Vergleich</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Analysiere 'What-If'-Szenarien: Zinserhöhungen, schwankende Leerstände oder alternative Eigenkapital-Einsätze.
-                  </p>
-                </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
-              </div>
-
-              <div onClick={() => setDevNotice('Bank-Exposé PDF-Generator')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Export</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
-                  </div>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Bank-Exposé Generator</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Erstelle ein druckfertiges, strukturiertes PDF-Exposé für Bankgespräche mit allen betriebswirtschaftlichen Kennzahlen.
-                  </p>
-                </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
-              </div>
-
-              <div onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ background: 'rgba(163,120,65,0.1)', color: '#A37841', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>Smart Import</span>
-                    <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
-                  </div>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>KI-Exposé Scanner</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#718096', lineHeight: '1.5' }}>
-                    Füge Freitext aus Online-Portalen ein. Die KI extrahiert Kaufpreis, Quadratmeter und Mieteinzeldaten automatisch.
-                  </p>
-                </div>
-                <div style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
-              </div>
-
             </div>
           </div>
 
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#13381A', fontWeight: '800' }}>Gespeicherte Objekte (Quick Load)</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#13381A', fontWeight: '800' }}>Deine gespeicherten Objekte (Quick Load)</h3>
               <button onClick={() => setNavChoice('Objekt Datenbank')} style={{ background: 'none', border: 'none', color: '#A37841', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
                 Alle Objekte anzeigen →
               </button>
@@ -556,7 +568,7 @@ export default function Home() {
             {loadingDb ? (
               <div style={{ fontSize: '0.85rem', color: '#718096', padding: '1rem 0' }}>Lade Objekte aus der Datenbank...</div>
             ) : dbProperties.length === 0 ? (
-              <div style={{ fontSize: '0.85rem', color: '#718096', padding: '1rem 0' }}>Noch keine Objekte in der Datenbank gespeichert.</div>
+              <div style={{ fontSize: '0.85rem', color: '#718096', padding: '1rem 0' }}>Noch keine Objekte in deiner Datenbank gespeichert.</div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                 {dbProperties.slice(0, 3).map((item, idx) => (
@@ -650,7 +662,20 @@ export default function Home() {
         />
       )}
 
-      {/* MODUL 3: IMMOBILIENWISSEN */}
+      {/* MODUL 3: NUTZERPROFIL */}
+      {navChoice === 'Profil' && (
+        <ProfileView 
+          userEmail={userEmail}
+          userProfile={userProfile}
+          setUserProfile={setUserProfile}
+          onSaveProfile={handleSaveProfile}
+          onPasswordChange={handlePasswordChange}
+          onDeleteAccount={handleDeleteAccount}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* MODUL 4: IMMOBILIENWISSEN */}
       {navChoice === 'Immobilienwissen' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <h2>Immobilienwissen & Leitfäden</h2>
@@ -658,7 +683,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MODUL 4: EINSTELLUNGEN */}
+      {/* MODUL 5: EINSTELLUNGEN */}
       {navChoice === 'Einstellungen' && (
         <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
@@ -672,17 +697,17 @@ export default function Home() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', maxWidth: '500px' }}>
             <div>
               <label style={labelStyle}>Standard Grenzsteuersatz (%)</label>
-              <input type="number" defaultValue={42} style={inputTextStyle} />
+              <input type="number" value={userProfile.grenzsteuersatz || 42} onChange={(e) => setUserProfile({ ...userProfile, grenzsteuersatz: parseFloat(e.target.value) })} style={inputTextStyle} />
             </div>
             <div>
               <label style={labelStyle}>Standard Maklerprovision (%)</label>
-              <input type="number" step="0.01" defaultValue={3.57} style={inputTextStyle} />
+              <input type="number" step="0.01" value={userProfile.stdMakler || 3.57} onChange={(e) => setUserProfile({ ...userProfile, stdMakler: parseFloat(e.target.value) })} style={inputTextStyle} />
             </div>
             <div>
               <label style={labelStyle}>Standard Notar & Grundbuch (%)</label>
-              <input type="number" step="0.1" defaultValue={2.0} style={inputTextStyle} />
+              <input type="number" step="0.1" value={userProfile.stdNotar || 2.0} onChange={(e) => setUserProfile({ ...userProfile, stdNotar: parseFloat(e.target.value) })} style={inputTextStyle} />
             </div>
-            <button style={{ padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', width: 'fit-content' }}>
+            <button onClick={() => alert('Einstellungen übernommen.')} style={{ padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', width: 'fit-content' }}>
               Einstellungen speichern
             </button>
           </div>

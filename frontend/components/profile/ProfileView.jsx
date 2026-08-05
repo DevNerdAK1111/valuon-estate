@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import StepperInput from '../ui/StepperInput';
-import { formatEuroInt } from '../../utils/formatters';
 
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568', marginBottom: '4px', height: '18px' };
 const inputTextStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
@@ -248,6 +247,7 @@ export default function ProfileView({
             />
           </div>
 
+          {/* EXAKTE KIRCHENSTEUER-STEUERUNG */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Kirchensteuerpflichtig?</label>
@@ -257,18 +257,45 @@ export default function ProfileView({
                 style={inputTextStyle}
               >
                 <option value="nein">Nein (0%)</option>
-                <option value="ja">Ja (8-9%)</option>
+                <option value="ja">Ja</option>
               </select>
             </div>
 
-            <StepperInput
-              label="Individueller Grenzsteuersatz (%)"
-              value={userProfile.grenzsteuersatz || 42.0}
-              onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
-              step={0.5}
-              isPercent={true}
-            />
+            {userProfile.kirchensteuer ? (
+              <div>
+                <label style={labelStyle}>Kirchensteuersatz (Bundesland)</label>
+                <select
+                  value={userProfile.kirchensteuersatz || 9.0}
+                  onChange={(e) => handleProfileChange('kirchensteuersatz', parseFloat(e.target.value))}
+                  style={inputTextStyle}
+                >
+                  <option value={8.0}>8 % (Bayern & Baden-Württemberg)</option>
+                  <option value={9.0}>9 % (Übrige Bundesländer)</option>
+                </select>
+              </div>
+            ) : (
+              <StepperInput
+                label="Individueller Grenzsteuersatz (%)"
+                value={userProfile.grenzsteuersatz || 42.0}
+                onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
+                step={0.5}
+                isPercent={true}
+              />
+            )}
           </div>
+
+          {userProfile.kirchensteuer && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
+              <StepperInput
+                label="Individueller Grenzsteuersatz (%)"
+                value={userProfile.grenzsteuersatz || 42.0}
+                onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
+                step={0.5}
+                isPercent={true}
+              />
+              <div />
+            </div>
+          )}
 
           {saveStatus && (
             <div style={{ padding: '10px 14px', background: '#E6FFFA', color: '#234E52', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold' }}>

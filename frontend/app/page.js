@@ -26,6 +26,55 @@ const grunderwerbsteuerSätze = {
   'Thüringen': 6.5
 };
 
+const defaultFormData = {
+  obj_name: '',
+  objektart: 'Eigentumswohnung',
+  bundesland: 'Niedersachsen',
+  stadt: '',
+  stadtteil: '',
+  kaufpreis: 0.0,
+  qm: 0.0,
+  baujahr: 2000,
+  kaltmiete_monat: 0.0,
+  ist_sqm: 0.0,
+  target_monat: 0.0,
+  target_sqm: 0.0,
+  adj_year: 1,
+  hausgeld: 0.0,
+  hausgeld_nicht_umlegbar: 0.0,
+  sanierung: 0.0,
+  inst_sqm: 12.0,
+  mgt_monat: 30.0,
+  vac_rate_pct: 2.0,
+  grwt_p: 5.0,
+  notar_p: 2.0,
+  makler_p: 3.57,
+  sonst_nk: 0.0,
+  loan_type: 'Annuitätendarlehen',
+  hb_zins: 3.8,
+  hb_tilg: 2.0,
+  sondertilg: 0.0,
+  grace_years: 0,
+  ek_euro: 0.0,
+  zinsbindung: 10,
+  folge_zins: 3.8,
+  folge_mode: 'Rate konstant halten (Annuität)',
+  folge_tilg: 2.0,
+  kfw_amt: 0.0,
+  kfw_zins: 2.1,
+  kfw_tilg: 3.0,
+  kfw_grace_years: 0,
+  kfw_grant: 0.0,
+  tax_rate_pct: 42.0,
+  afa_model: 'Linear Standard',
+  afa_lin: 2.0,
+  miet_inc: 1.0,
+  miet_inc_start_year: 1,
+  cost_inc: 2.0,
+  val_inc: 1.0,
+  exit_cost: 0.0
+};
+
 export default function Home() {
   const [showApp, setShowApp] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
@@ -62,6 +111,18 @@ export default function Home() {
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
   const [backendStatus, setBackendStatus] = useState('sleeping');
+
+  const [formData, setFormData] = useState(defaultFormData);
+  // CAPEX STARTET JETZT SAUBER LEER
+  const [capexList, setCapexList] = useState([]);
+  
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [calcError, setCalcError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(null);
+  const [dbProperties, setDbProperties] = useState([]);
+  const [loadingDb, setLoadingDb] = useState(false);
 
   const fetchProfileFromSupabase = async (uid, email) => {
     const dbProfile = await loadUserProfileFromSupabase(uid);
@@ -134,63 +195,6 @@ export default function Home() {
       .then((res) => { if (res.ok) setBackendStatus('ready'); else setBackendStatus('sleeping'); })
       .catch(() => setBackendStatus('sleeping'));
   };
-
-  const [formData, setFormData] = useState({
-    obj_name: '',
-    objektart: 'Eigentumswohnung',
-    bundesland: 'Niedersachsen',
-    stadt: '',
-    stadtteil: '',
-    kaufpreis: 0.0,
-    qm: 0.0,
-    baujahr: 2000,
-    kaltmiete_monat: 0.0,
-    ist_sqm: 0.0,
-    target_monat: 0.0,
-    target_sqm: 0.0,
-    adj_year: 1,
-    hausgeld: 0.0,
-    hausgeld_nicht_umlegbar: 0.0,
-    sanierung: 0.0,
-    inst_sqm: 12.0,
-    mgt_monat: 30.0,
-    vac_rate_pct: 2.0,
-    grwt_p: 5.0,
-    notar_p: 2.0,
-    makler_p: 3.57,
-    sonst_nk: 0.0,
-    loan_type: 'Annuitätendarlehen',
-    hb_zins: 3.8,
-    hb_tilg: 2.0,
-    sondertilg: 0.0,
-    grace_years: 0,
-    ek_euro: 0.0,
-    zinsbindung: 10,
-    folge_zins: 3.8,
-    folge_mode: 'Rate konstant halten (Annuität)',
-    folge_tilg: 2.0,
-    kfw_amt: 0.0,
-    kfw_zins: 2.1,
-    kfw_tilg: 3.0,
-    kfw_grace_years: 0,
-    kfw_grant: 0.0,
-    tax_rate_pct: userProfile.grenzsteuersatz || 42.0,
-    afa_model: 'Linear Standard',
-    afa_lin: 2.0,
-    miet_inc: 1.0,
-    cost_inc: 2.0,
-    val_inc: 1.0,
-    exit_cost: 0.0
-  });
-
-  const [capexList, setCapexList] = useState([{ year: 3, amount: 0 }]);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [calcError, setCalcError] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(null);
-  const [dbProperties, setDbProperties] = useState([]);
-  const [loadingDb, setLoadingDb] = useState(false);
 
   useEffect(() => {
     if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite') && showApp) {
@@ -326,6 +330,20 @@ export default function Home() {
     }
   };
 
+  // FORMULAR ZURÜCKSETZEN (RESET)
+  const handleReset = () => {
+    setFormData({
+      ...defaultFormData,
+      tax_rate_pct: userProfile.grenzsteuersatz || 42.0
+    });
+    setCapexList([]);
+    setResult(null);
+    setCalcError(null);
+    setSaveSuccess(null);
+    setIsTargetCustomized(false);
+    setIsHausgeldCustomized(false);
+  };
+
   const handleQmChange = (newQm) => {
     pingBackend();
     const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
@@ -398,12 +416,9 @@ export default function Home() {
   };
 
   const removeCapexRow = (index) => {
-    if (capexList.length > 1) {
-      setCapexList(capexList.filter((_, i) => i !== index));
-    }
+    setCapexList(capexList.filter((_, i) => i !== index));
   };
 
-  // DYNAMISCHE SCHÄTZUNGEN FÜR INSTANDHALTUNG & VERWALTUNG BEI BAUJAHR / OBJEKTART-ÄNDERUNG
   const updateField = (field, value) => {
     pingBackend();
     let updated = { ...formData, [field]: value };
@@ -416,7 +431,6 @@ export default function Home() {
     const currentObjektart = field === 'objektart' ? value : formData.objektart;
 
     if (field === 'baujahr' || field === 'objektart') {
-      // Instandhaltungs-Schätzung (€/m²/Jahr)
       if (currentBaujahr < 1980) updated.inst_sqm = 16.0;
       else if (currentBaujahr <= 2005) updated.inst_sqm = 13.0;
       else updated.inst_sqm = 10.0;
@@ -424,7 +438,6 @@ export default function Home() {
       if (currentObjektart === 'Mehrfamilienhaus') updated.inst_sqm += 2.0;
       else if (currentObjektart === 'Einfamilienhaus') updated.inst_sqm -= 1.0;
 
-      // Verwaltungs-Schätzung (€/Monat)
       if (currentBaujahr < 1980) updated.mgt_monat = 35.0;
       else if (currentBaujahr <= 2005) updated.mgt_monat = 30.0;
       else updated.mgt_monat = 25.0;
@@ -446,12 +459,16 @@ export default function Home() {
   const makler_euro = (formData.kaufpreis * formData.makler_p) / 100;
   const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
 
-  // VOLLSTÄNDIGE BACKEND-BERECHNUNG (ALLE PARAMETER INKL. KFW UND ANSCHLUSS)
+  // AUTOMATISCHES SMOOTH SCROLLEN NACH OBEN BEIM BERECHNEN
   const handleCalculate = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
     setCalcError(null);
     setSaveSuccess(null);
+
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     try {
       const payload = {
@@ -474,6 +491,7 @@ export default function Home() {
         vac_rate: formData.vac_rate_pct / 100,
         tax_rate: formData.tax_rate_pct / 100,
         miet_inc: formData.miet_inc / 100,
+        miet_inc_start_year: Number(formData.miet_inc_start_year || 1),
         cost_inc: formData.cost_inc / 100,
         val_inc: formData.val_inc / 100,
         exit_cost: formData.exit_cost / 100,
@@ -725,7 +743,7 @@ export default function Home() {
                 {dbProperties.slice(0, 3).map((item, idx) => (
                   <div key={item.id || idx} style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '8px', padding: '1rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: '800', color: '#13381A', fontSize: '0.95rem', marginBottom: '4px' }}>
+                      <div style={{ fontWeight: '800', color: '#13381A', fontSize: '0.95rem', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {item.name || item.obj_name || 'Unbenanntes Objekt'}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: '#718096' }}>
@@ -772,6 +790,7 @@ export default function Home() {
               removeCapexRow={removeCapexRow}
               addCapexRow={addCapexRow}
               loading={loading}
+              handleReset={handleReset}
             />
 
             <ExecutiveDashboard 

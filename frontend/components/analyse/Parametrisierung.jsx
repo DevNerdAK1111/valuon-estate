@@ -27,11 +27,14 @@ export default function Parametrisierung({
   handleCapexChange,
   removeCapexRow,
   addCapexRow,
-  loading
+  loading,
+  handleReset
 }) {
-  // KLAPP-ZUSTÄNDE FÜR ANSCHLUSSFINANZIERUNG UND KFW
+  // KLAPP-ZUSTÄNDE
   const [showAnschluss, setShowAnschluss] = useState(false);
   const [showKfw, setShowKfw] = useState(false);
+  const [showNichtUmlegbar, setShowNichtUmlegbar] = useState(false);
+  const [showMietDelay, setShowMietDelay] = useState(false);
 
   const sonstNkEuro = Number(formData.sonst_nk || 0);
   const totalNkEuro = grwt_euro + notar_euro + makler_euro + sonstNkEuro;
@@ -39,12 +42,16 @@ export default function Parametrisierung({
   
   const ekEuro = Number(formData.ek_euro || 0);
   const ekDiff = ekEuro - totalNkEuro;
-  const isNkCovered = ekEuro >= totalNkEuro;
+  // PRÜFUNG: AUCH BEI EXAKTER DECKUNG (0 € DIFFERENZ) GRÜN
+  const isNkCovered = ekEuro >= (totalNkEuro - 0.01);
+
+  // DYNAMISCHE PRÜFUNG, OB ZIELMIETE ABWEICHT
+  const isTargetDifferent = Math.abs((formData.target_monat || 0) - (formData.kaltmiete_monat || 0)) > 0.5;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* KATEGORIE 1: OBJEKTDATEN */}
+      {/* 1. OBJEKTDATEN */}
       <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
         <div style={sectionTitleStyle}>1. Objektdaten</div>
         
@@ -159,13 +166,13 @@ export default function Parametrisierung({
         </div>
       </div>
 
-      {/* KATEGORIE 2: FINANZIERUNG UND NEBENKOSTEN */}
+      {/* 2. FINANZIERUNG UND NEBENKOSTEN */}
       <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
         <div style={sectionTitleStyle}>2. Finanzierung & Nebenkosten</div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          {/* A) KAUFNEBENKOSTEN */}
+          {/* KAUFNEBENKOSTEN */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
             Kaufnebenkosten
           </div>
@@ -220,7 +227,7 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* B) EIGENKAPITAL & DECKUNG */}
+          {/* EIGENKAPITAL & DECKUNG */}
           <StepperInput
             label="Eigenkapitaleinsatz (€)"
             value={formData.ek_euro}
@@ -240,8 +247,8 @@ export default function Parametrisierung({
           }}>
             {isNkCovered ? (
               <>
-                <strong>✓ Kaufnebenkosten abgedeckt:</strong> Dein EK ({Math.round(ekEuro).toLocaleString('de-DE')} €) deckt die Nebenkosten ({Math.round(totalNkEuro).toLocaleString('de-DE')} €) vollständig. 
-                {ekDiff > 0 ? ` Restliche ${Math.round(ekDiff).toLocaleString('de-DE')} € fließen in die Kaufpreis-Tilgung.` : ''}
+                <strong>✓ Kaufnebenkosten abgedeckt:</strong> Dein EK ({Math.round(ekEuro).toLocaleString('de-DE')} €) deckt die Nebenkosten ({Math.round(totalNkEuro).toLocaleString('de-DE')} €) vollständig ab. 
+                {ekDiff > 0.01 ? ` Restliche ${Math.round(ekDiff).toLocaleString('de-DE')} € fließen in die Kaufpreis-Tilgung.` : ' (0 € Rest-EK in Tilgung).'}
               </>
             ) : (
               <>
@@ -252,7 +259,7 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* C) HAUPTDARLEHEN */}
+          {/* HAUPTDARLEHEN */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
             Hauptdarlehen (Bank)
           </div>
@@ -309,7 +316,7 @@ export default function Parametrisierung({
             step={1}
           />
 
-          {/* D) ANSCHLUSSFINANZIERUNG (EINGEKLAPPT) */}
+          {/* ANSCHLUSSFINANZIERUNG (EINGEKLAPPT) */}
           <div style={{ marginTop: '4px' }}>
             <button
               type="button"
@@ -354,7 +361,7 @@ export default function Parametrisierung({
             )}
           </div>
 
-          {/* E) KFW-FÖRDERUNG & ERGÄNZUNGSDARLEHEN (EINGEKLAPPT) */}
+          {/* KFW-FÖRDERUNG (EINGEKLAPPT) */}
           <div>
             <button
               type="button"
@@ -414,26 +421,44 @@ export default function Parametrisierung({
         </div>
       </div>
 
-      {/* KATEGORIE 3: BEWIRTSCHAFTUNG */}
+      {/* 3. BEWIRTSCHAFTUNG */}
       <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
         <div style={sectionTitleStyle}>3. Bewirtschaftung</div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <StepperInput
-              label="Hausgeld monatlich (€)"
-              value={formData.hausgeld}
-              onChange={(v) => handleHausgeldChange(v)}
-              step={10}
-              isCurrency={true}
-            />
-            <StepperInput
-              label="Davon nicht umlegbar (€)"
-              value={formData.hausgeld_nicht_umlegbar}
-              onChange={(v) => handleHausgeldNichtUmlegbarChange(v)}
-              step={5}
-              isCurrency={true}
-            />
+          
+          <StepperInput
+            label="Hausgeld monatlich (€)"
+            value={formData.hausgeld}
+            onChange={(v) => handleHausgeldChange(v)}
+            step={10}
+            isCurrency={true}
+            tooltip="Gesamtes monatliches Hausgeld laut Wirtschaftsplan (inkl. Instandhaltungsrücklage & Verwaltergebühr)"
+          />
+
+          {/* EINGEKLAPPTER NICHT-UMLEGBARER ANTEIL */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowNichtUmlegbar(!showNichtUmlegbar)}
+              style={{ ...collapseBtnStyle, background: '#FFFFFF', border: '1px dashed #CBD5E0' }}
+            >
+              <span>{showNichtUmlegbar ? '▼' : '►'} Nicht umlegbaren Anteil anpassen</span>
+              <span style={{ color: '#718096', fontSize: '0.75rem' }}>Standard: 25% vom Hausgeld</span>
+            </button>
+
+            {showNichtUmlegbar && (
+              <div style={{ marginTop: '10px' }}>
+                <StepperInput
+                  label="Davon nicht umlegbar mt. (€)"
+                  value={formData.hausgeld_nicht_umlegbar}
+                  onChange={(v) => handleHausgeldNichtUmlegbarChange(v)}
+                  step={5}
+                  isCurrency={true}
+                  tooltip="Echte Eigentümer-Kosten (Verwaltergebühr + Zuführung Instandhaltungsrücklage). Kann nicht auf den Mieter umgelegt werden."
+                />
+              </div>
+            )}
           </div>
 
           {/* INSTANDHALTUNG MIT ERKLAERUNG */}
@@ -442,7 +467,7 @@ export default function Parametrisierung({
             value={formData.inst_sqm}
             onChange={(v) => updateField('inst_sqm', v)}
             step={1}
-            tooltip={`Geschätzter Richtwert für Baujahr ${formData.baujahr} (${formData.objektart}). Empfehlung nach II. BV: <1980 ca. 15-18€, 1980-2000 ca. 12-15€, >2000 ca. 9-12€/m² p.a.`}
+            tooltip={`Geschätzter Richtwert für Baujahr ${formData.baujahr} (${formData.objektart}). Empfehlung nach II. BV / Petersscher Formel: <1980 ca. 15-18€, 1980-2000 ca. 12-15€, >2000 ca. 9-12€/m² p.a.`}
           />
 
           {/* VERWALTUNGSKOSTEN MIT ERKLAERUNG */}
@@ -463,7 +488,7 @@ export default function Parametrisierung({
             isPercent={true}
           />
 
-          {/* CAPEX GEPLANTE SANIERUNGEN */}
+          {/* CAPEX GEPLANTE SANIERUNGEN (STARTET LEER) */}
           <div>
             <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A', marginBottom: '8px' }}>
               Geplante Groß-Sanierungen (CapEx)
@@ -495,7 +520,7 @@ export default function Parametrisierung({
             <button
               type="button"
               onClick={addCapexRow}
-              style={{ padding: '6px 12px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
+              style={{ padding: '8px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
             >
               + Weitere Sanierung hinzufügen
             </button>
@@ -503,13 +528,13 @@ export default function Parametrisierung({
         </div>
       </div>
 
-      {/* KATEGORIE 4: STEUERN & ENTWICKLUNG */}
+      {/* 4. STEUERN & ENTWICKLUNG */}
       <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
         <div style={sectionTitleStyle}>4. Steuern & Entwicklung</div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          {/* A) STEUERN */}
+          {/* STEUERN */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <label style={labelStyle}>Grenzsteuersatz (%)</label>
@@ -566,7 +591,7 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* B) ZIEL-MIETE & MAKRO-ENTWICKLUNG */}
+          {/* ZIEL-MIETE & MAKRO-ENTWICKLUNG */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
             ZIEL-Miete & Makro-Entwicklung
           </div>
@@ -587,30 +612,59 @@ export default function Parametrisierung({
             />
           </div>
 
+          {/* NUR EINBLENDEN, WENN ZIELMIETE VON IST-MIETE ABWEICHT */}
+          {isTargetDifferent && (
+            <StepperInput
+              label="Anpassung Zielmiete ab Jahr"
+              value={formData.adj_year}
+              onChange={(v) => updateField('adj_year', v)}
+              step={1}
+              tooltip="Jahr, ab dem die Mietanpassung auf die Zielmiete realisiert wird"
+            />
+          )}
+
+          {/* MIETSTEIGERUNG */}
           <StepperInput
-            label="Anpassung Zielmiete ab Jahr"
-            value={formData.adj_year}
-            onChange={(v) => updateField('adj_year', v)}
-            step={1}
-            tooltip="Jahr, ab dem die Mietanpassung auf die Zielmiete realisiert wird"
+            label="Mietsteigerung p.a. (%)"
+            value={formData.miet_inc}
+            onChange={(v) => updateField('miet_inc', v)}
+            step={0.25}
+            isPercent={true}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <StepperInput
-              label="Mietsteigerung p.a. (%)"
-              value={formData.miet_inc}
-              onChange={(v) => updateField('miet_inc', v)}
-              step={0.25}
-              isPercent={true}
-            />
-            <StepperInput
-              label="Kostensteigerung p.a. (%)"
-              value={formData.cost_inc}
-              onChange={(v) => updateField('cost_inc', v)}
-              step={0.25}
-              isPercent={true}
-            />
+          {/* VERZÖGERTER MIETSTEIGERUNGS-START (EINGEKLAPPT) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowMietDelay(!showMietDelay)}
+              style={{ ...collapseBtnStyle, background: '#FFFFFF', border: '1px dashed #CBD5E0' }}
+            >
+              <span>{showMietDelay ? '▼' : '►'} Mietsteigerung erst ab Jahr X</span>
+              <span style={{ color: '#718096', fontSize: '0.75rem' }}>Standard: sofort</span>
+            </button>
+
+            {showMietDelay && (
+              <div style={{ marginTop: '10px' }}>
+                <StepperInput
+                  label="Mietsteigerung erst ab Jahr"
+                  value={formData.miet_inc_start_year || 1}
+                  onChange={(v) => updateField('miet_inc_start_year', v)}
+                  step={1}
+                  tooltip="Jahr, ab dem die jährliche prozentuale Mietsteigerung greift (z.B. nach Sanierung)"
+                />
+              </div>
+            )}
           </div>
+
+          {/* KOSTENSTEIGERUNG DIREKT UNTER DER MIETSTEIGERUNG */}
+          <StepperInput
+            label="Kostensteigerung p.a. (%)"
+            value={formData.cost_inc}
+            onChange={(v) => updateField('cost_inc', v)}
+            step={0.25}
+            isPercent={true}
+            tooltip="Jährliche Inflation für Hausgeld, Instandhaltung und Verwaltung"
+          />
 
           <StepperInput
             label="Wertsteigerung p.a. (%)"
@@ -622,7 +676,7 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* C) EXIT / VERKAUF */}
+          {/* EXIT / VERKAUF */}
           <StepperInput
             label="Verkaufsnebenkosten / Exit (%)"
             value={formData.exit_cost}
@@ -634,25 +688,45 @@ export default function Parametrisierung({
         </div>
       </div>
 
-      {/* SUBMIT BUTTON */}
-      <button
-        type="submit"
-        disabled={loading}
-        style={{
-          width: '100%',
-          padding: '16px',
-          background: '#13381A',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '1.1rem',
-          fontWeight: '900',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          boxShadow: '0 4px 14px rgba(19,56,26,0.25)'
-        }}
-      >
-        {loading ? 'Berechne Investment...' : 'Investition analysieren'}
-      </button>
+      {/* BUTTONS: SUBMIT & RESET */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '16px',
+            background: '#13381A',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            fontSize: '1.1rem',
+            fontWeight: '900',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 14px rgba(19,56,26,0.25)'
+          }}
+        >
+          {loading ? 'Berechne Investment...' : 'Investition analysieren'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleReset}
+          style={{
+            width: '100%',
+            padding: '10px',
+            background: '#FAF8F5',
+            color: '#718096',
+            border: '1px solid #E2D9CE',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontWeight: '700',
+            cursor: 'pointer'
+          }}
+        >
+          Eingaben zurücksetzen
+        </button>
+      </div>
 
     </div>
   );

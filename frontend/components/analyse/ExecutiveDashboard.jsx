@@ -1,11 +1,9 @@
 'use client';
-import MetricCard from '../ui/MetricCard';
-import DonutChart from '../charts/DonutChart';
-import ProjectionChart from '../charts/ProjectionChart';
-import { formatEuro, formatEuroInt, formatPct } from '../../utils/formatters';
-
-const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568' };
-const inputTextStyle = { width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box' };
+import KeyMetrics from './KeyMetrics';
+import ProjectionChart from './ProjectionChart';
+import TableView from './TableView';
+import { IconSave } from '../ui/Icons';
+import { formatEuroInt } from '../../utils/formatters';
 
 export default function ExecutiveDashboard({
   formData,
@@ -31,273 +29,206 @@ export default function ExecutiveDashboard({
   cumulatedCashflowHorizon,
   endNav
 }) {
+  const propertyTitle = formData.obj_name || 'Neues Investment-Objekt';
+  const locationText = [formData.stadt, formData.stadtteil].filter(Boolean).join(' • ') || 'Kein Standort angegeben';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* HEADER & HORIZON SELECTOR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid #E2D9CE', paddingBottom: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#13381A', margin: '0 0 4px 0', letterSpacing: '-0.8px' }}>
-            {formData.obj_name || 'Muster Wohnung'}
-          </h1>
-          <div style={{ fontSize: '0.85rem', color: '#718096', fontWeight: '500' }}>
-            Kaufpreis: {formatEuroInt(formData.kaufpreis)} € | EK: {formatEuroInt(formData.ek_euro)} € ({formatPct(formData.kaufpreis > 0 ? (formData.ek_euro / formData.kaufpreis) * 100 : 0)} %)
+      {/* KOPFZEILE MIT OBJ-NAME (EINZEILIG TRIMMED) UND DATENBANK-SPEICHERN BUTTON */}
+      <div style={{
+        background: 'white',
+        padding: '1.2rem 1.5rem',
+        borderRadius: '12px',
+        border: '1px solid #E2D9CE',
+        display: 'flex',
+        justify: 'space-between',
+        alignItems: 'center',
+        gap: '1rem'
+      }}>
+        <div style={{ overflow: 'hidden', minWidth: 0 }}>
+          <h2 style={{
+            fontSize: '1.35rem',
+            fontWeight: '900',
+            color: '#13381A',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyTitle}
+          </h2>
+          <div style={{ fontSize: '0.8rem', color: '#718096', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {locationText} • {formatEuroInt(formData.kaufpreis)} € • {formData.qm} m²
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div>
-            <label style={{ ...labelStyle, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Projektionshorizont:</label>
-            <select
-              value={projectionHorizon}
-              onChange={(e) => setProjectionHorizon(e.target.value)}
-              style={{ ...inputTextStyle, background: '#FAF8F5', fontWeight: 'bold', padding: '6px 12px' }}
-            >
-              <option value="10">10 Jahre (Standard)</option>
-              <option value="15">15 Jahre</option>
-              <option value="20">20 Jahre</option>
-              <option value="25">25 Jahre</option>
-              <option value="30">30 Jahre</option>
-              <option value="payoff">Bis Darlehen vollständig getilgt ist</option>
-            </select>
-          </div>
-
-          {result && result.summary && (
-            <button
-              type="button"
-              onClick={handleSaveToDatabase}
-              disabled={saving}
-              style={{
-                padding: '10px 18px',
-                background: '#13381A',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: '800',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 10px rgba(19,56,26,0.2)',
-                height: '36px',
-                alignSelf: 'flex-end'
-              }}
-            >
-              {saving ? 'Speichere...' : 'In Datenbank speichern'}
-            </button>
-          )}
-        </div>
+        {/* SPEICHERN-BUTTON: FLEXIBLES LAYOUT FÜR KORREKTE SCHRIFTANZEIGE */}
+        {result && (
+          <button
+            type="button"
+            onClick={handleSaveToDatabase}
+            disabled={saving}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              background: '#13381A',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '800',
+              fontSize: '0.85rem',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+              flexShrink: 0
+            }}
+          >
+            <IconSave />
+            <span>{saving ? 'Speichert...' : 'In Datenbank speichern'}</span>
+          </button>
+        )}
       </div>
 
       {saveSuccess && (
-        <div style={{ padding: '12px', background: '#E6FFFA', color: '#234E52', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid #B2F5EA' }}>
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          fontSize: '0.85rem',
+          fontWeight: '700',
+          background: saveSuccess.includes('Fehler') ? '#FFF5F5' : '#F0FFF4',
+          border: saveSuccess.includes('Fehler') ? '1px solid #FEB2B2' : '1px solid #C6F6D5',
+          color: saveSuccess.includes('Fehler') ? '#9B2C2C' : '#22543D'
+        }}>
           {saveSuccess}
         </div>
       )}
 
       {calcError && (
-        <div style={{ padding: '14px 18px', background: '#FFF5F5', color: '#9B2C2C', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #FEB2B2' }}>
-          <strong>Fehler bei der Berechnung:</strong> {calcError}
+        <div style={{
+          padding: '16px',
+          borderRadius: '8px',
+          background: '#FFF5F5',
+          border: '1px solid #FEB2B2',
+          color: '#9B2C2C',
+          fontSize: '0.9rem',
+          fontWeight: '700'
+        }}>
+          Fehler bei der Analyse: {calcError}
         </div>
       )}
 
-      {/* METRIC CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-        <MetricCard title="CASHFLOW NETTO" value={`${formatEuro(monthlyCashflow)} €/M`} isNegative={monthlyCashflow < 0} />
-        <MetricCard title="BRUTTOMIETRENDITE" value={`${formatPct(bruttoMietrendite)} %`} />
-        <MetricCard title={`GESAMTGEWINN (${actualHorizonYears} J.)`} value={`${formatEuroInt(result ? gesamtGewinnHorizon : 0)} €`} />
-        <MetricCard title="EK-RENDITE P.A. (IRR)" value={`${formatPct((result?.summary?.irr || 0) * 100)} %`} highlight={true} />
+      {/* TAB-NAVIGATION DES DASHBOARDS */}
+      <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
+        {['Executive Dashboard', 'Liquiditätsverlauf (Tabelle)', 'Finanzierung & Tilgung', 'Steuern & AfA'].map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveDashboardTab(tab)}
+            style={{
+              padding: '10px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeDashboardTab === tab ? '3px solid #13381A' : '3px solid transparent',
+              color: activeDashboardTab === tab ? '#13381A' : '#718096',
+              fontWeight: activeDashboardTab === tab ? '800' : '600',
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              marginBottom: '-2px'
+            }}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {/* TAB SWITCHER */}
-      <div style={{ borderBottom: '2px solid #E2D9CE', display: 'flex', gap: '2rem' }}>
-        <button
-          type="button"
-          onClick={() => setActiveDashboardTab('Executive Dashboard')}
-          style={{
-            background: 'none',
-            border: 'none',
-            paddingBottom: '10px',
-            fontSize: '0.95rem',
-            fontWeight: '800',
-            color: activeDashboardTab === 'Executive Dashboard' ? '#13381A' : '#718096',
-            borderBottom: activeDashboardTab === 'Executive Dashboard' ? '3px solid #13381A' : 'none',
-            cursor: 'pointer'
-          }}
-        >
-          Executive Dashboard
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveDashboardTab('Liquiditätsverlauf & Tilgung')}
-          style={{
-            background: 'none',
-            border: 'none',
-            paddingBottom: '10px',
-            fontSize: '0.95rem',
-            fontWeight: '800',
-            color: activeDashboardTab === 'Liquiditätsverlauf & Tilgung' ? '#13381A' : '#718096',
-            borderBottom: activeDashboardTab === 'Liquiditätsverlauf & Tilgung' ? '3px solid #13381A' : 'none',
-            cursor: 'pointer'
-          }}
-        >
-          Liquiditätsverlauf & Tilgung
-        </button>
-      </div>
-
-      {/* TAB 1: EXECUTIVE DASHBOARD */}
-      {activeDashboardTab === 'Executive Dashboard' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
-              Projektion & Wertentwicklung
-            </h3>
-            
-            <div style={{ marginBottom: '1.2rem' }}>
-              <label style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginBottom: '4px' }}>Grafik-Ansicht wählen:</label>
-              <select 
-                value={chartView} 
-                onChange={(e) => setChartView(e.target.value)} 
-                style={{ ...inputTextStyle, background: '#FAF8F5', fontWeight: '600' }}
-              >
-                <option value="1. Vermögensstruktur & NAV (Netto-Eigenkapital)">1. Vermögensstruktur & NAV (Netto-Eigenkapital)</option>
-                <option value="2. Cashflow & Mieteinnahmen">2. Cashflow & Mieteinnahmen</option>
-              </select>
-            </div>
-
-            <ProjectionChart projection={slicedProjection} kaufpreis={formData.kaufpreis} view={chartView} />
-          </div>
-
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
-              Kapitalstruktur (Initial)
-            </h3>
-
-            <DonutChart 
-              totalInvestment={result?.summary?.total_investment || (formData.kaufpreis + summe_nk)}
-              equity={formData.ek_euro}
-              kfw={formData.kfw_amt}
-              hb={Math.max(0, (formData.kaufpreis + summe_nk) - formData.ek_euro - formData.kfw_amt)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: LIQUIDITÄT & TILGUNG */}
-      {activeDashboardTab === 'Liquiditätsverlauf & Tilgung' && (
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '800', color: '#13381A' }}>
-            Liquiditätsverlauf, steuerliche Abschreibung & Kapitalentwicklung
+      {/* LEERZUSTAND VOR DER ERSTEN BERECHNUNG */}
+      {!result && !calcError && (
+        <div style={{
+          background: 'white',
+          padding: '3rem 2rem',
+          borderRadius: '12px',
+          border: '1px solid #E2D9CE',
+          textAlign: 'center',
+          color: '#718096'
+        }}>
+          <h3 style={{ color: '#13381A', margin: '0 0 8px 0', fontSize: '1.2rem', fontWeight: '800' }}>
+            Keine Berechnungsdaten vorhanden
           </h3>
-          <p style={{ margin: '0 0 1.2rem 0', fontSize: '0.85rem', color: '#718096' }}>
-            Wähle einen Themenbereich, um alle Kennzahlen übersichtlich zu betrachten.
+          <p style={{ margin: 0, fontSize: '0.9rem' }}>
+            Passe deine Objektparameter in der linken Maske an und klicke auf <strong>„Investition analysieren“</strong>, um Auswertungen und Prognosen zu erzeugen.
           </p>
-
-          <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.2rem', borderBottom: '1px solid #E2D9CE', paddingBottom: '8px' }}>
-            {['Mieten & Cashflow', 'Kapitaldienst & Steuern', 'Vermögen & Bilanz'].map((theme) => (
-              <button
-                key={theme}
-                type="button"
-                onClick={() => setTableTheme(theme)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '0.85rem',
-                  fontWeight: '800',
-                  color: tableTheme === theme ? '#A37841' : '#718096',
-                  cursor: 'pointer',
-                  borderBottom: tableTheme === theme ? '2px solid #A37841' : 'none',
-                  paddingBottom: '4px'
-                }}
-              >
-                {theme}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ overflowX: 'auto', maxHeight: '500px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-              <thead>
-                <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE', color: '#4A5568' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Jahr</th>
-                  {tableTheme === 'Mieten & Cashflow' && (
-                    <>
-                      <th style={{ padding: '10px' }}>Mietrendite (brutto)</th>
-                      <th style={{ padding: '10px' }}>Kaltmiete (brutto)</th>
-                      <th style={{ padding: '10px' }}>Reinertrag (NOI)</th>
-                      <th style={{ padding: '10px' }}>Cashflow (vor St.)</th>
-                      <th style={{ padding: '10px' }}>Cashflow (nach St.)</th>
-                    </>
-                  )}
-                  {tableTheme === 'Kapitaldienst & Steuern' && (
-                    <>
-                      <th style={{ padding: '10px' }}>Zinsen</th>
-                      <th style={{ padding: '10px' }}>Tilgung (dynamisch)</th>
-                      <th style={{ padding: '10px' }}>Kapitaldienst</th>
-                      <th style={{ padding: '10px' }}>AfA</th>
-                      <th style={{ padding: '10px' }}>Steuer / Erstattung</th>
-                    </>
-                  )}
-                  {tableTheme === 'Vermögen & Bilanz' && (
-                    <>
-                      <th style={{ padding: '10px' }}>Immobilienwert</th>
-                      <th style={{ padding: '10px' }}>Restschuld</th>
-                      <th style={{ padding: '10px' }}>Netto-EK (NAV)</th>
-                      <th style={{ padding: '10px' }}>LTV (%)</th>
-                    </>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {slicedProjection.map((row, idx) => {
-                  const yr = row['Jahr'] || idx + 1;
-                  const mietrendite = formData.kaufpreis > 0 ? ((row['Mieteinnahmen IST'] || 0) / formData.kaufpreis) * 100 : 0;
-                  const noi = (row['Effektive Miete'] || row['Mieteinnahmen IST'] || 0) - (row['Bewirtschaftungskosten'] || 0);
-                  const cfVorSteuer = (row['Cashflow Netto'] || 0) + (row['Steuer'] || 0);
-                  const nav = (row['Immobilienwert'] || 0) - (row['Restschuld'] || 0);
-                  const ltv = row['Immobilienwert'] > 0 ? ((row['Restschuld'] || 0) / row['Immobilienwert']) * 100 : 0;
-                  const taxVal = row['Steuer'] || 0;
-
-                  return (
-                    <tr key={idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
-                      <td style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 'bold' }}>{yr}</td>
-                      {tableTheme === 'Mieten & Cashflow' && (
-                        <>
-                          <td style={{ padding: '8px 10px' }}>{formatPct(mietrendite)} %</td>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Mieteinnahmen IST'])} €</td>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt(noi)} €</td>
-                          <td style={{ padding: '8px 10px', color: cfVorSteuer < 0 ? '#9B2C2C' : 'inherit' }}>{formatEuroInt(cfVorSteuer)} €</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 'bold', color: row['Cashflow Netto'] < 0 ? '#9B2C2C' : '#13381A' }}>
-                            {formatEuroInt(row['Cashflow Netto'])} €
-                          </td>
-                        </>
-                      )}
-                      {tableTheme === 'Kapitaldienst & Steuern' && (
-                        <>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Zinsen'])} €</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 'bold', color: '#13381A' }}>{formatEuroInt(row['Tilgung'])} €</td>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt((row['Zinsen'] || 0) + (row['Tilgung'] || 0))} €</td>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['AfA'])} €</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 'bold', color: taxVal < 0 ? '#38A169' : (taxVal > 0 ? '#9B2C2C' : 'inherit') }}>
-                            {taxVal < 0 
-                              ? `-${formatEuroInt(Math.abs(taxVal))} € (Erstattung)` 
-                              : (taxVal > 0 ? `+${formatEuroInt(taxVal)} €` : '0 €')}
-                          </td>
-                        </>
-                      )}
-                      {tableTheme === 'Vermögen & Bilanz' && (
-                        <>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Immobilienwert'])} €</td>
-                          <td style={{ padding: '8px 10px' }}>{formatEuroInt(row['Restschuld'])} €</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 'bold', color: '#A37841' }}>{formatEuroInt(nav)} €</td>
-                          <td style={{ padding: '8px 10px' }}>{formatPct(ltv)} %</td>
-                        </>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
+      )}
+
+      {/* DASHBOARD INHALTE WENN ERGEBNIS DA IST */}
+      {result && (
+        <>
+          {/* HORIZONT-FILTER (10 JAHRE, 20 JAHRE, BIS TILGUNG) */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[
+                { label: '10 Jahre', value: '10' },
+                { label: '15 Jahre', value: '15' },
+                { label: '20 Jahre', value: '20' },
+                { label: '30 Jahre', value: '30' },
+                { label: 'Bis Schuldenfrei', value: 'payoff' }
+              ].map((h) => (
+                <button
+                  key={h.value}
+                  type="button"
+                  onClick={() => setProjectionHorizon(h.value)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: '1px solid #E2D9CE',
+                    background: projectionHorizon === h.value ? '#13381A' : '#FAF8F5',
+                    color: projectionHorizon === h.value ? 'white' : '#13381A',
+                    fontWeight: '700',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {h.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* KENNZAHLEN-BOXEN (KEY METRICS) */}
+          <KeyMetrics 
+            result={result}
+            monthlyCashflow={monthlyCashflow}
+            bruttoMietrendite={bruttoMietrendite}
+            actualHorizonYears={actualHorizonYears}
+            gesamtGewinnHorizon={gesamtGewinnHorizon}
+            cumulatedCashflowHorizon={cumulatedCashflowHorizon}
+            endNav={endNav}
+          />
+
+          {/* TAB 1: EXECUTIVE DASHBOARD (GRAFIKEN) */}
+          {activeDashboardTab === 'Executive Dashboard' && (
+            <ProjectionChart 
+              chartView={chartView}
+              setChartView={setChartView}
+              slicedProjection={slicedProjection}
+            />
+          )}
+
+          {/* TAB 2 & STEUERN: TABELLEN-ANSICHT */}
+          {(activeDashboardTab === 'Liquiditätsverlauf (Tabelle)' || activeDashboardTab === 'Finanzierung & Tilgung' || activeDashboardTab === 'Steuern & AfA') && (
+            <TableView 
+              activeDashboardTab={activeDashboardTab}
+              slicedProjection={slicedProjection}
+              tableTheme={tableTheme}
+              setTableTheme={setTableTheme}
+              formData={formData}
+              summe_nk={summe_nk}
+            />
+          )}
+        </>
       )}
 
     </div>

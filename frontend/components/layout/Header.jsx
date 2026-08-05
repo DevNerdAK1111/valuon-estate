@@ -1,9 +1,10 @@
 'use client';
 import { IconGear, IconUser } from '../ui/Icons';
 
-export default function Header({ navChoice, setNavChoice, backendStatus, userEmail, onLogout }) {
-  // Profil & Einstellungen sind hier bewusst entfernt und nur über die rechten Buttons erreichbar
+export default function Header({ navChoice, setNavChoice, backendStatus, userEmail, userProfile, onLogout }) {
   const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen'];
+
+  const displayName = userProfile?.profilname || userProfile?.vorname || (userEmail ? userEmail.split('@')[0] : 'Konto');
 
   return (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -21,7 +22,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         </div>
       </div>
 
-      {/* NAVIGATION TABS (Nur Hauptbereiche) */}
+      {/* NAVIGATION TABS */}
       <nav style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.6)', padding: '5px', borderRadius: '30px', border: '1px solid #E2D9CE', backdropFilter: 'blur(8px)' }}>
         {navItems.map((item) => {
           const isActive = navChoice === item;
@@ -143,7 +144,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
             <IconUser />
           </div>
           <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {userEmail ? userEmail.split('@')[0] : 'Konto'}
+            {displayName}
           </span>
         </div>
 

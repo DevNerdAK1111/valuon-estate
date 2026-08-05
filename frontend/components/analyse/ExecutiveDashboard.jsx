@@ -33,7 +33,7 @@ export default function ExecutiveDashboard({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* 1. KOPFZEILE (NAME & SPEICHERN) */}
+      {/* 1. KOPFZEILE (OBJEKTNAME & SPEICHERN) */}
       <div style={{
         background: 'white',
         padding: '1.2rem 1.5rem',
@@ -120,7 +120,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* 2. BETRACHTUNGSHORIZONT (JETZT DIREKT UNTER DEM NAMEN) */}
+      {/* 2. BETRACHTUNGSHORIZONT (DIREKT UNTER DEM NAMEN) */}
       {result && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
@@ -154,7 +154,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* 3. MENÜ-TABS (UNTER DEM HORIZONT) */}
+      {/* 3. MENÜ-TABS */}
       <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
         {['Executive Dashboard', 'Liquiditätsverlauf (Tabelle)', 'Finanzierung & Tilgung', 'Steuern & AfA'].map((tab) => (
           <button
@@ -300,18 +300,25 @@ function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonY
   );
 }
 
-function TableView({ activeDashboardTab, slicedProjection }) {
+function TableView({ activeDashboardTab, slicedProjection, formData }) {
   const data = slicedProjection || [];
   if (data.length === 0) return null;
 
   const totals = data.reduce((acc, curr) => {
-    acc.miete += curr['Mieteinnahmen'] || curr['Kaltmiete'] || curr['Mieteinnahmen p.a.'] || 0;
-    acc.kapitaldienst += (curr['Zinszahlung'] || curr['Zinsen'] || 0) + (curr['Tilgungszahlung'] || curr['Tilgung'] || 0);
-    acc.bewirtschaftung += curr['Bewirtschaftung'] || curr['Kosten'] || curr['Bewirtschaftungskosten'] || 0;
-    acc.steuer += curr['Steuerliche Auswirkung'] || curr['Steuern'] || 0;
-    acc.cfNetto += curr['Cashflow Netto'] || 0;
-    acc.zins += curr['Zinszahlung'] || curr['Zinsen'] || 0;
-    acc.tilg += curr['Tilgungszahlung'] || curr['Tilgung'] || 0;
+    const m = curr['Mieteinnahmen'] ?? curr['Kaltmiete'] ?? curr['Mieteinnahmen p.a.'] ?? curr['miete'] ?? curr['Kaltmiete p.a.'] ?? 0;
+    const z = curr['Zinszahlung'] ?? curr['Zinsen'] ?? curr['zinsen'] ?? 0;
+    const t = curr['Tilgungszahlung'] ?? curr['Tilgung'] ?? curr['tilgung'] ?? 0;
+    const b = curr['Bewirtschaftung'] ?? curr['Kosten'] ?? curr['Bewirtschaftungskosten'] ?? curr['bewirtschaftung'] ?? 0;
+    const s = curr['Steuerliche Auswirkung'] ?? curr['Steuern'] ?? curr['steuern'] ?? 0;
+    const cf = curr['Cashflow Netto'] ?? curr['cashflow_netto'] ?? 0;
+
+    acc.miete += m;
+    acc.kapitaldienst += (z + t);
+    acc.bewirtschaftung += b;
+    acc.steuer += s;
+    acc.cfNetto += cf;
+    acc.zins += z;
+    acc.tilg += t;
     return acc;
   }, { miete: 0, kapitaldienst: 0, bewirtschaftung: 0, steuer: 0, cfNetto: 0, zins: 0, tilg: 0 });
 
@@ -354,18 +361,19 @@ function TableView({ activeDashboardTab, slicedProjection }) {
         <tbody>
           {data.map((row, idx) => {
             const year = row['Jahr'] || idx + 1;
-            // ROBUSTERER FALLBACK FÜR ALLE MÖGLICHEN BACKEND-SCHLÜSSEL
-            const miete = row['Mieteinnahmen'] ?? row['Kaltmiete'] ?? row['Mieteinnahmen p.a.'] ?? 0;
-            const zins = row['Zinszahlung'] ?? row['Zinsen'] ?? 0;
-            const tilg = row['Tilgungszahlung'] ?? row['Tilgung'] ?? 0;
+            
+            // ÜBERPRODUKTIVE FALLBACK-SCHLÜSSELEUCHE FÜR ALLE BACKEND-VARIANTEN
+            const miete = row['Mieteinnahmen'] ?? row['Kaltmiete'] ?? row['Mieteinnahmen p.a.'] ?? row['miete'] ?? row['Kaltmiete p.a.'] ?? (Number(formData?.kaltmiete_monat || 0) * 12);
+            const zins = row['Zinszahlung'] ?? row['Zinsen'] ?? row['zinsen'] ?? 0;
+            const tilg = row['Tilgungszahlung'] ?? row['Tilgung'] ?? row['tilgung'] ?? 0;
             const kapitaldienst = zins + tilg;
-            const bewirtschaftung = row['Bewirtschaftung'] ?? row['Kosten'] ?? row['Bewirtschaftungskosten'] ?? 0;
-            const cfNetto = row['Cashflow Netto'] ?? 0;
+            const bewirtschaftung = row['Bewirtschaftung'] ?? row['Kosten'] ?? row['Bewirtschaftungskosten'] ?? row['bewirtschaftung'] ?? 0;
+            const cfNetto = row['Cashflow Netto'] ?? row['cashflow_netto'] ?? 0;
             const cfMonat = cfNetto / 12;
-            const steuer = row['Steuerliche Auswirkung'] ?? row['Steuern'] ?? 0;
-            const restschuld = row['Restschuld'] ?? 0;
-            const afa = row['AfA'] ?? row['AfA-Betrag'] ?? 0;
-            const zstErtrag = row['Zu versteuernder Ertrag'] || (miete - zins - afa);
+            const steuer = row['Steuerliche Auswirkung'] ?? row['Steuern'] ?? row['steuern'] ?? 0;
+            const restschuld = row['Restschuld'] ?? row['restschuld'] ?? 0;
+            const afa = row['AfA'] ?? row['AfA-Betrag'] ?? row['afa'] ?? 0;
+            const zstErtrag = row['Zu versteuernder Ertrag'] ?? row['zu_versteuernder_ertrag'] ?? (miete - zins - afa);
 
             const isSteuerRefund = steuer > 0;
             const isSteuerPayment = steuer < 0;
@@ -400,8 +408,8 @@ function TableView({ activeDashboardTab, slicedProjection }) {
                     <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(restschuld)} €</td>
                     <td style={{ padding: '10px', color: '#9B2C2C' }}>-{formatEuroInt(zins)} €</td>
                     <td style={{ padding: '10px', color: '#276749' }}>+{formatEuroInt(tilg)} €</td>
-                    <td style={{ padding: '10px' }}>{formatEuroInt(row['Sondertilgung'] || 0)} €</td>
-                    <td style={{ padding: '10px', fontWeight: '800', color: '#276749' }}>+{formatEuroInt(tilg + (row['Sondertilgung'] || 0))} €</td>
+                    <td style={{ padding: '10px' }}>{formatEuroInt(row['Sondertilgung'] || row['sondertilgung'] || 0)} €</td>
+                    <td style={{ padding: '10px', fontWeight: '800', color: '#276749' }}>+{formatEuroInt(tilg + (row['Sondertilgung'] || row['sondertilgung'] || 0))} €</td>
                   </>
                 )}
 
@@ -425,7 +433,6 @@ function TableView({ activeDashboardTab, slicedProjection }) {
           })}
         </tbody>
 
-        {/* SCHLICHTE, SAUBERE SUMMENZEILE (OHNE GRÜNEN HIGHLIGHT-HINTERGRUND) */}
         <tfoot>
           <tr style={{ background: '#13381A', color: 'white', fontWeight: '800', borderTop: '2px solid #13381A' }}>
             <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({data.length} J.)</td>

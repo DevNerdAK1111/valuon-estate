@@ -33,7 +33,7 @@ export default function ExecutiveDashboard({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* 1. KOPFZEILE */}
+      {/* 1. KOPFZEILE (NAME & SPEICHERN) */}
       <div style={{
         background: 'white',
         padding: '1.2rem 1.5rem',
@@ -120,31 +120,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* 2. MENÜ-TABS */}
-      <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
-        {['Executive Dashboard', 'Liquiditätsverlauf (Tabelle)', 'Finanzierung & Tilgung', 'Steuern & AfA'].map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveDashboardTab(tab)}
-            style={{
-              padding: '10px 0',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeDashboardTab === tab ? '3px solid #13381A' : '3px solid transparent',
-              color: activeDashboardTab === tab ? '#13381A' : '#718096',
-              fontWeight: activeDashboardTab === tab ? '800' : '600',
-              fontSize: '0.95rem',
-              cursor: 'pointer',
-              marginBottom: '-2px'
-            }}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* 3. BETRACHTUNGSHORIZONT (JETZT DIREKT UNTER DEM MENÜ) */}
+      {/* 2. BETRACHTUNGSHORIZONT (JETZT DIREKT UNTER DEM NAMEN) */}
       {result && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
@@ -177,6 +153,30 @@ export default function ExecutiveDashboard({
           </div>
         </div>
       )}
+
+      {/* 3. MENÜ-TABS (UNTER DEM HORIZONT) */}
+      <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
+        {['Executive Dashboard', 'Liquiditätsverlauf (Tabelle)', 'Finanzierung & Tilgung', 'Steuern & AfA'].map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveDashboardTab(tab)}
+            style={{
+              padding: '10px 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeDashboardTab === tab ? '3px solid #13381A' : '3px solid transparent',
+              color: activeDashboardTab === tab ? '#13381A' : '#718096',
+              fontWeight: activeDashboardTab === tab ? '800' : '600',
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              marginBottom: '-2px'
+            }}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
       {/* LEERZUSTAND */}
       {!result && !calcError && (
@@ -305,9 +305,9 @@ function TableView({ activeDashboardTab, slicedProjection }) {
   if (data.length === 0) return null;
 
   const totals = data.reduce((acc, curr) => {
-    acc.miete += curr['Kaltmiete'] || curr['Mieteinnahmen p.a.'] || 0;
+    acc.miete += curr['Mieteinnahmen'] || curr['Kaltmiete'] || curr['Mieteinnahmen p.a.'] || 0;
     acc.kapitaldienst += (curr['Zinszahlung'] || curr['Zinsen'] || 0) + (curr['Tilgungszahlung'] || curr['Tilgung'] || 0);
-    acc.bewirtschaftung += curr['Bewirtschaftung'] || curr['Kosten'] || 0;
+    acc.bewirtschaftung += curr['Bewirtschaftung'] || curr['Kosten'] || curr['Bewirtschaftungskosten'] || 0;
     acc.steuer += curr['Steuerliche Auswirkung'] || curr['Steuern'] || 0;
     acc.cfNetto += curr['Cashflow Netto'] || 0;
     acc.zins += curr['Zinszahlung'] || curr['Zinsen'] || 0;
@@ -354,12 +354,12 @@ function TableView({ activeDashboardTab, slicedProjection }) {
         <tbody>
           {data.map((row, idx) => {
             const year = row['Jahr'] || idx + 1;
-            // KORREKTE SCHLÜSSEL-ZUORDNUNG AUS DEM BACKEND
-            const miete = row['Kaltmiete'] ?? row['Mieteinnahmen p.a.'] ?? 0;
+            // ROBUSTERER FALLBACK FÜR ALLE MÖGLICHEN BACKEND-SCHLÜSSEL
+            const miete = row['Mieteinnahmen'] ?? row['Kaltmiete'] ?? row['Mieteinnahmen p.a.'] ?? 0;
             const zins = row['Zinszahlung'] ?? row['Zinsen'] ?? 0;
             const tilg = row['Tilgungszahlung'] ?? row['Tilgung'] ?? 0;
             const kapitaldienst = zins + tilg;
-            const bewirtschaftung = row['Bewirtschaftung'] ?? row['Kosten'] ?? 0;
+            const bewirtschaftung = row['Bewirtschaftung'] ?? row['Kosten'] ?? row['Bewirtschaftungskosten'] ?? 0;
             const cfNetto = row['Cashflow Netto'] ?? 0;
             const cfMonat = cfNetto / 12;
             const steuer = row['Steuerliche Auswirkung'] ?? row['Steuern'] ?? 0;
@@ -445,7 +445,7 @@ function TableView({ activeDashboardTab, slicedProjection }) {
             )}
             {activeDashboardTab === 'Finanzierung & Tilgung' && (
               <>
-                <th style={{ padding: '12px' }}>-</th>
+                <td style={{ padding: '12px' }}>-</td>
                 <td style={{ padding: '12px' }}>-{formatEuroInt(totals.zins)} €</td>
                 <td style={{ padding: '12px' }}>+{formatEuroInt(totals.tilg)} €</td>
                 <td style={{ padding: '12px' }}>-</td>

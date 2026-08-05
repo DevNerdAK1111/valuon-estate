@@ -33,7 +33,7 @@ export default function ExecutiveDashboard({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* KOPFZEILE MIT OBJ-NAME (EINZEILIG TRIMMED) UND DATENBANK-SPEICHERN BUTTON */}
+      {/* KOPFZEILE MIT OBJ-NAME UND BUTTON */}
       <div style={{
         background: 'white',
         padding: '1.2rem 1.5rem',
@@ -61,7 +61,6 @@ export default function ExecutiveDashboard({
           </div>
         </div>
 
-        {/* SPEICHERN-BUTTON: FLEXIBLES LAYOUT */}
         {result && (
           <button
             type="button"
@@ -293,11 +292,10 @@ function KeyMetrics({ result, monthlyCashflow, bruttoMietrendite, actualHorizonY
   );
 }
 
-{/* UNTERKOMPONENTE: TABLE VIEW INKLUSIVE SUMMENZEILEN & ACCURATE STEUERLOGIK */}
+{/* UNTERKOMPONENTE: TABLE VIEW */}
 function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk }) {
   if (!slicedProjection || slicedProjection.length === 0) return null;
 
-  // BERECHNUNG DER SUMMEN FÜR DIE SUMMENZEILE
   const totals = slicedProjection.reduce((acc, curr) => {
     acc.miete += curr['Mieteinnahmen p.a.'] || curr['Kaltmiete'] || 0;
     acc.zins += curr['Zinszahlung'] || curr['Zinsen'] || 0;
@@ -356,9 +354,6 @@ function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk })
             const afa = row['AfA'] || row['AfA-Betrag'] || 0;
             const zstErtrag = row['Zu versteuernder Ertrag'] || (miete - zins - afa);
 
-            // STEUER-FORMATIERUNG (PUNKT 11):
-            // Erstattung (>0): Grüner Text, KEIN Vorzeichen (z.B. 450 €)
-            // Zahlung (<0): Roter Text, MIT Minuszeichen (z.B. -320 €)
             const isSteuerRefund = steuer > 0;
             const isSteuerPayment = steuer < 0;
 
@@ -417,7 +412,6 @@ function TableView({ activeDashboardTab, slicedProjection, formData, summe_nk })
           })}
         </tbody>
 
-        {/* SUMMENZEILE FÜR GESAMTEN HORIZONT */}
         <tfoot>
           <tr style={{ background: '#13381A', color: 'white', fontWeight: '800', borderTop: '2px solid #13381A' }}>
             <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({slicedProjection.length} J.)</td>

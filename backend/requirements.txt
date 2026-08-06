@@ -8,3 +8,4 @@ supabase
 google-generativeai
 requests
 plotly
+beautifulsoup4

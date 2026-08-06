@@ -35,8 +35,6 @@ export default function ExecutiveDashboard({
   saving,
   activeDashboardTab,
   setActiveDashboardTab,
-  chartView,
-  setChartView,
   slicedProjection,
   summe_nk
 }) {
@@ -46,7 +44,7 @@ export default function ExecutiveDashboard({
   return (
     <div id="executive-dashboard-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', scrollMarginTop: '1.5rem' }}>
       
-      {/* KOPFZEILE & BETRACHTUNGSHORIZONT */}
+      {/* KOPFZEILE & SPEICHER-BUTTON */}
       <div style={{ background: 'white', padding: '1.2rem 1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#13381A', margin: 0 }}>{propertyTitle}</h2>
@@ -136,7 +134,7 @@ export default function ExecutiveDashboard({
       {/* DASHBOARD INHALTE */}
       {result && activeDashboardTab === 'Executive Dashboard' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
-          <ProjectionChart chartView={chartView} setChartView={setChartView} slicedProjection={slicedProjection} />
+          <ProjectionChart slicedProjection={slicedProjection} formData={formData} />
           <DonutChart formData={formData} summe_nk={summe_nk} />
         </div>
       )}

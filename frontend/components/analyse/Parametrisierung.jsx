@@ -119,9 +119,10 @@ export default function Parametrisierung({
   const displayNotarEuro = calcNotar;
   const displayMaklerEuro = calcMakler;
 
-  // Gerundeter Vergleich für 100% exakte Deckung
+  // EXAKTER EIGENKAPITAL-VERGLEICH (AB 1 € UNTERSCHIED ROT)
   const ekEuro = Number(formData?.ek_euro || 0);
-  const isEkCoveringNk = Math.round(ekEuro) >= Math.round(displayNkTotal) - 1;
+  const roundedNkTotal = Math.round(displayNkTotal);
+  const isEkCoveringNk = Math.round(ekEuro) >= roundedNkTotal;
 
   const bundeslaenderMap = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
   const bundeslaenderList = Object.keys(bundeslaenderMap);
@@ -416,7 +417,6 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* HAUSGELD GESAMT DIREKT IM HAUPTBEREICH */}
         <StepperInput
           label="Hausgeld gesamt (€ / Mo)"
           value={formData?.hausgeld || 0}
@@ -425,7 +425,6 @@ export default function Parametrisierung({
           isCurrency={true}
         />
 
-        {/* EINKLAPPBARER UNTERBEREICH FÜR NICHT UMLEGBAREN ANTEIL & DETAILS */}
         <SubContainerCard
           title="Nicht umlegbarer Anteil & Details"
           isOpen={openSubSections.hausgeld}
@@ -449,36 +448,24 @@ export default function Parametrisierung({
           </div>
         </SubContainerCard>
 
-        {/* INSTANDHALTUNG & VERWALTUNG MIT ? INFO-SYMBOLEN */}
+        {/* INSTANDHALTUNG & VERWALTUNG OHNE UNTERE DOPPEL-TEXTE */}
         <div style={grid2Style}>
-          <div>
-            <StepperInput
-              label="Instandhaltung (€ / m² / J.)"
-              value={formData?.inst_sqm || 12}
-              onChange={(v) => onFieldChange('inst_sqm', v)}
-              step={1}
-              tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
-            />
-            <div style={{ fontSize: '0.7rem', color: '#718096', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '13px', height: '13px', borderRadius: '50%', background: '#E2D9CE', color: '#13381A', fontSize: '0.65rem', fontWeight: '800' }}>?</span>
-              <span>Orientiert sich am Baujahr & Objektart</span>
-            </div>
-          </div>
+          <StepperInput
+            label="Instandhaltung (€ / m² p.a.)"
+            value={formData?.inst_sqm || 12}
+            onChange={(v) => onFieldChange('inst_sqm', v)}
+            step={1}
+            tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
+          />
 
-          <div>
-            <StepperInput
-              label="Verwaltung (€ / Mo)"
-              value={formData?.mgt_monat || 30}
-              onChange={(v) => onFieldChange('mgt_monat', v)}
-              step={5}
-              isCurrency={true}
-              tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
-            />
-            <div style={{ fontSize: '0.7rem', color: '#718096', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '13px', height: '13px', borderRadius: '50%', background: '#E2D9CE', color: '#13381A', fontSize: '0.65rem', fontWeight: '800' }}>?</span>
-              <span>Orientiert sich am Baujahr & Objektart</span>
-            </div>
-          </div>
+          <StepperInput
+            label="Verwaltung (€ / Mo)"
+            value={formData?.mgt_monat || 30}
+            onChange={(v) => onFieldChange('mgt_monat', v)}
+            step={5}
+            isCurrency={true}
+            tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
+          />
         </div>
 
         <div style={grid2Style}>
@@ -498,7 +485,6 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* NEUE EINGABEFELDER FÜR EINZELNE KAUFNEBENKOSTEN */}
         <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '0.25rem 0' }} />
 
         <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
@@ -539,7 +525,6 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* DYNAMISCHE INFOBOX FÜR NEBENKOSTEN */}
         <div style={infoBoxStyle}>
           <div style={{ fontWeight: '800', fontSize: '0.95rem', marginBottom: '8px', borderBottom: '1px solid #E2D9CE', paddingBottom: '4px' }}>
             Kaufnebenkosten Gesamt: {formatEuroInt(displayNkTotal)} €
@@ -567,6 +552,7 @@ export default function Parametrisierung({
           isCurrency={true}
         />
 
+        {/* KORRIGIERTE EIGENKAPITAL-BOX OHNE [STATUS] UND MIT FINANZIERUNGS-HINWEIS */}
         <div style={{
           padding: '10px 12px',
           borderRadius: '8px',
@@ -579,17 +565,17 @@ export default function Parametrisierung({
           alignItems: 'flex-start',
           gap: '8px'
         }}>
-          <span style={{ fontWeight: '900' }}>[STATUS]</span>
+          <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>{isEkCoveringNk ? '✓' : '⚠'}</span>
           <div>
             <div>
               {isEkCoveringNk
-                ? `Eigenkapital deckt die Nebenkosten (${formatEuroInt(displayNkTotal)} €) vollständig.`
-                : `Eigenkapital deckt die Nebenkosten (${formatEuroInt(displayNkTotal)} €) noch nicht vollständig.`}
+                ? `Eigenkapital deckt die Kaufnebenkosten (${formatEuroInt(displayNkTotal)} €) vollständig ab.`
+                : `Eigenkapital deckt die Kaufnebenkosten (${formatEuroInt(displayNkTotal)} €) nicht vollständig ab.`}
             </div>
             <div style={{ fontWeight: 'normal', fontSize: '0.75rem', marginTop: '4px', opacity: 0.9 }}>
               {isEkCoveringNk
-                ? 'Gute Voraussetzung für eine klassische 100%-Finanzierung durch die Bank.'
-                : 'Hinweis: Bei einer 110%-Finanzierung finanziert die Bank auch Kaufnebenkosten mit. Das erfordert sehr gute Bonität.'}
+                ? 'Gute Voraussetzung für eine klassische 100%-Finanzierung des Kaufpreises durch die Bank.'
+                : 'Hinweis: Müsste die Bank Kaufnebenkosten mitfinanzieren (> 100 % Beleihung), verlangen Kreditinstitute in der Regel Risikoaufschläge beim Sollzins sowie strengere Bonitätsanforderungen.'}
             </div>
           </div>
         </div>
@@ -648,7 +634,6 @@ export default function Parametrisierung({
           isCurrency={true}
         />
 
-        {/* UNTERBEREICH 1: ANSCHLUSSFINANZIERUNG */}
         <SubContainerCard
           title="Anschlussfinanzierung (nach Zinsbindung)"
           isOpen={openSubSections.folgefinanzierung}
@@ -686,7 +671,6 @@ export default function Parametrisierung({
           )}
         </SubContainerCard>
 
-        {/* UNTERBEREICH 2: KFW DARLEHEN & ZUSCHÜSSE */}
         <SubContainerCard
           title="KfW-Darlehen & Zuschüsse"
           isOpen={openSubSections.kfw}

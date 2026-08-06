@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -198,7 +198,7 @@ async def get_properties():
 
 
 @app.patch("/api/properties/{property_id}")
-async def update_property_status(property_id: int, payload: PropertyStatusUpdatePayload):
+async def update_property_status(property_id: Union[int, str], payload: PropertyStatusUpdatePayload):
     try:
         res_data = update_property_status_in_db(property_id, payload.status)
         return {"status": "updated", "data": res_data}
@@ -207,7 +207,7 @@ async def update_property_status(property_id: int, payload: PropertyStatusUpdate
 
 
 @app.delete("/api/properties/{property_id}")
-async def delete_property(property_id: int):
+async def delete_property(property_id: Union[int, str]):
     try:
         res_data = delete_property_from_db(property_id)
         return {"status": "deleted", "data": res_data}

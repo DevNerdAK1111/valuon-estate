@@ -1,6 +1,5 @@
 import { formatEuroInt } from './formatters';
 
-// HELPER: NEWTON-RAPHSON MODELL FÜR PRÄZISE EK-RENDITE (IRR)
 export function calculateIRR(cfs, guess = 0.1) {
   const maxIter = 100;
   const precision = 1e-7;
@@ -23,7 +22,6 @@ export function calculateIRR(cfs, guess = 0.1) {
   return rate;
 }
 
-// ZENTRALE INVESTITIONS-ENGINE (SINGLE SOURCE OF TRUTH)
 export function calculateInvestmentModel(formData, projectionHorizon = '10', rawBackendResult = null) {
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const qm = Number(formData?.qm || 0);
@@ -78,9 +76,9 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
   const afaModel = formData?.afa_model || 'Linear Standard';
   let afaRateBase = Number(formData?.afa_lin ?? 2.0) / 100;
 
-  // § 7b EStG REGELN: BAUKOSTENOBERGRENZE (5.200 € / m²) UND MAX. BEMESSUNGSGRUNDLAGE (4.000 € / m²)
   const istSonderAfaBerechtigt = gebaeudeWertProQm > 0 && gebaeudeWertProQm <= 5200;
   const sonderAfaBemessungsgrundlage = Math.min(gebaeudeWert, 4000 * qm);
+  const sanierungKosten = Number(formData?.sanierung || 0);
 
   // 4. BEWIRTSCHAFTUNG INITIAL
   const baseIstMo = Number(formData?.kaltmiete_monat || 0);
@@ -123,7 +121,6 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
   for (let year = 1; year <= 30; year++) {
     const rawRow = rawArray[year - 1] || {};
 
-    // Miete
     const mietIncP = Number(formData?.miet_inc ?? 1.0) / 100;
     const adjYear = Number(formData?.adj_year || 1);
     let baseMieteMo = year >= adjYear ? targetMo : baseIstMo;
@@ -133,12 +130,10 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
       mietePa = Number(rawRow['Kaltmiete p.a.'] ?? rawRow.kaltmiete_pa ?? rawRow.miete_pa);
     }
 
-    // OpEx
     const vacPa = mietePa * vacRateP;
     const opexPa = (hausgeldNichtUmlegbarMo + mgtMonat) * 12 + (instSqmPa * qm) + vacPa;
     const noiPa = mietePa - opexPa;
 
-    // Kapitaldienst
     let currentZinsP = year <= zinsbindung ? hbZinsP : folgeZinsP;
     let zinsHaupt = restschuldHaupt * currentZinsP;
     let tilgHaupt = 0;
@@ -167,15 +162,14 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
     restschuldKfw = Math.max(0, restschuldKfw - tilgKfw);
     const restschuldEnd = restschuldHaupt + restschuldKfw;
 
-    // CapEx
     const capexList = formData?.capexList || [];
     let capexYear = 0;
     capexList.forEach(item => {
       if (Number(item.year || item.jahr) === year) capexYear += Number(item.amount || item.betrag || 0);
     });
-    if (year === 1) capexYear += Number(formData?.sanierung || 0);
+    if (year === 1) capexYear += sanierungKosten;
 
-    // DYNAMISCHE AFA-BERECHNUNG MIT EXAKTEN PARAGRAPHEN-REGELN
+    // DYNAMISCHE AFA BERECHNUNG
     let afaEuro = 0;
 
     if (afaModel === 'Linear Neubau') {
@@ -186,31 +180,34 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
     } else if (afaModel === 'Kombination: Degressiv + Sonder-AfA') {
       const degressivEuro = currentGebaeudeBuchwert * 0.05;
       let sonderAfaEuro = 0;
-      
-      // Sonder-AfA nur in den ersten 4 Jahren und nur unter der Baukostenobergrenze von 5.200 € / m²
       if (year <= 4 && istSonderAfaBerechtigt) {
         sonderAfaEuro = sonderAfaBemessungsgrundlage * 0.05;
       }
-
       afaEuro = degressivEuro + sonderAfaEuro;
       currentGebaeudeBuchwert = Math.max(0, currentGebaeudeBuchwert - afaEuro);
     } else if (afaModel === 'Denkmalgeschützt') {
-      const rate = year <= 8 ? 0.09 : (year <= 12 ? 0.07 : 0.0);
-      afaEuro = gebaeudeWert * rate;
+      // ALTBESTAND: LINEARE STANDARD-AFA (2,0 % P.A.)
+      const altbestandAfa = gebaeudeWert * 0.02;
+      
+      // SANIERUNGSAUFWAND: 9,0 % (JAHRE 1-8), 7,0 % (JAHRE 9-12) (§ 7h / § 7i EStG)
+      let denkmalAfa = 0;
+      if (year <= 8) {
+        denkmalAfa = sanierungKosten * 0.09;
+      } else if (year <= 12) {
+        denkmalAfa = sanierungKosten * 0.07;
+      }
+
+      afaEuro = altbestandAfa + denkmalAfa;
     } else {
-      // Linear Standard
       afaEuro = gebaeudeWert * afaRateBase;
     }
 
-    // Steuer
     const zuVersteuerndesEinkommen = noiPa - zinsTotal - afaEuro;
     const steuerErgebnis = zuVersteuerndesEinkommen * taxRateP;
 
-    // Cashflows
     const cashflowVorSteuerPa = mietePa - opexPa - kapitaldienstPa - capexYear;
     const cashflowNachSteuerPa = cashflowVorSteuerPa - steuerErgebnis;
 
-    // Immobilienwert & NAV
     const valIncP = Number(formData?.val_inc ?? 1.0) / 100;
     const immobilienwert = kaufpreis * Math.pow(1 + valIncP, year);
     const netEquity = Math.max(0, immobilienwert - restschuldEnd);
@@ -251,7 +248,6 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
     });
   }
 
-  // 6. SLICED HORIZONT METRIKEN
   const slicedProjection = projection.slice(0, horizonYears);
 
   const totalNetCashflowNachSteuer = slicedProjection.reduce((sum, r) => sum + r.cashflowNachSteuer, 0);

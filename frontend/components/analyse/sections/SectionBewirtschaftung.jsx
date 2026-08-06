@@ -107,14 +107,14 @@ export default function SectionBewirtschaftung({
         </div>
       </SubContainerCard>
 
-      {/* SAUBERE BEZEICHNUNGEN OHNE ZEILENUMBRUCH */}
+      {/* ERWEITERTES TOOLTIP FÜR INSTANDHALTUNG */}
       <div style={grid2Style}>
         <StepperInput
-          label="Instandhaltung (€ / m² / J.)"
+          label="Instandhaltung (€ / m²)"
           value={formData?.inst_sqm || 12}
           onChange={(v) => onFieldChange('inst_sqm', v)}
           step={1}
-          tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
+          tooltip="Jährliche Angabe p.a. – orientiert sich standardmäßig am Baujahr und der Objektart."
         />
 
         <StepperInput
@@ -123,7 +123,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('mgt_monat', v)}
           step={5}
           isCurrency={true}
-          tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
+          tooltip="Monatliche Angabe – orientiert sich standardmäßig am Baujahr und der Objektart."
         />
       </div>
 

@@ -34,7 +34,6 @@ export default function Parametrisierung({
   handleReset,
   setFormData
 }) {
-  // State für die 4 Hauptbereiche
   const [openSections, setOpenSections] = useState({
     basisdaten: true,
     bewirtschaftung: true,
@@ -42,12 +41,13 @@ export default function Parametrisierung({
     steuer: true
   });
 
-  // State für die einklappbaren Unterbereiche
   const [openSubSections, setOpenSubSections] = useState({
     folgefinanzierung: false,
     kfw: false,
     capex: false
   });
+
+  const [isTargetCustomized, setIsTargetCustomized] = useState(false);
 
   const toggleSection = (key) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -70,7 +70,7 @@ export default function Parametrisierung({
 
   const allSectionsOpen = Object.values(openSections).every(Boolean);
 
-  // Dynamische Kaufnebenkosten-Berechnung als Fallback gegen 0-Anzeigen
+  // Kaufnebenkosten Fallback-Berechnung
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const grwtP = Number(formData?.grwt_p || 5.0);
   const notarP = Number(formData?.notar_p || 2.0);
@@ -87,11 +87,10 @@ export default function Parametrisierung({
   const displayNotarEuro = notar_euro || calcNotar;
   const displayMaklerEuro = makler_euro || calcMakler;
 
-  // Farblogik Eigenkapital (Grün bei EK >= Nebenkosten)
+  // Gerundeter Vergleich für 100% exakte Deckung
   const ekEuro = Number(formData?.ek_euro || 0);
-  const isEkCoveringNk = ekEuro >= displayNkTotal;
+  const isEkCoveringNk = Math.round(ekEuro) >= Math.round(displayNkTotal) - 1;
 
-  // Liste Bundesländer
   const bundeslaenderList = (grunderwerbsteuerSätze && Object.keys(grunderwerbsteuerSätze).length > 0)
     ? Object.keys(grunderwerbsteuerSätze)
     : BUNDESLAENDER_DEFAULT;
@@ -103,6 +102,49 @@ export default function Parametrisierung({
       setFormData(prev => ({ ...prev, [field]: value }));
     }
     if (pingBackend) pingBackend();
+  };
+
+  // BIDIREKTIONALE MIET-BERECHNUNGEN & AUTO-SYNC ZU ZIEL-MIETE
+  const handleLocalIstMonat = (val) => {
+    const qm = Number(formData?.qm || 0);
+    const sqmVal = qm > 0 ? val / qm : 0;
+    
+    onFieldChange('kaltmiete_monat', val);
+    onFieldChange('ist_sqm', sqmVal);
+
+    if (!isTargetCustomized) {
+      onFieldChange('target_monat', val);
+      onFieldChange('target_sqm', sqmVal);
+    }
+  };
+
+  const handleLocalIstSqm = (val) => {
+    const qm = Number(formData?.qm || 0);
+    const monatVal = val * qm;
+
+    onFieldChange('ist_sqm', val);
+    onFieldChange('kaltmiete_monat', monatVal);
+
+    if (!isTargetCustomized) {
+      onFieldChange('target_monat', monatVal);
+      onFieldChange('target_sqm', val);
+    }
+  };
+
+  const handleLocalZielMonat = (val) => {
+    setIsTargetCustomized(true);
+    const qm = Number(formData?.qm || 0);
+    const sqmVal = qm > 0 ? val / qm : 0;
+    onFieldChange('target_monat', val);
+    onFieldChange('target_sqm', sqmVal);
+  };
+
+  const handleLocalZielSqm = (val) => {
+    setIsTargetCustomized(true);
+    const qm = Number(formData?.qm || 0);
+    const monatVal = val * qm;
+    onFieldChange('target_sqm', val);
+    onFieldChange('target_monat', monatVal);
   };
 
   return (
@@ -148,7 +190,10 @@ export default function Parametrisierung({
         {handleReset && (
           <button
             type="button"
-            onClick={handleReset}
+            onClick={() => {
+              setIsTargetCustomized(false);
+              handleReset();
+            }}
             style={{
               padding: '0.6rem 1.25rem',
               background: '#FFF5F5',
@@ -182,41 +227,40 @@ export default function Parametrisierung({
           />
         </div>
 
-        <div style={grid2Style}>
-          <div>
-            <label style={labelStyle}>Objektart</label>
-            <div style={selectContainerStyle}>
-              <select
-                value={formData?.objektart || 'Eigentumswohnung'}
-                onChange={(e) => onFieldChange('objektart', e.target.value)}
-                style={selectStyle}
-              >
-                <option value="Eigentumswohnung">Eigentumswohnung</option>
-                <option value="Einfamilienhaus">Einfamilienhaus</option>
-                <option value="Zweifamilienhaus">Zweifamilienhaus</option>
-                <option value="Reihenhaus / Doppelhaushälfte">Reihenhaus / Doppelhaushälfte</option>
-                <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
-                <option value="Wohn- und Geschäftshaus">Wohn- und Geschäftshaus</option>
-                <option value="Mikroapartment / Studentisches Wohnen">Mikroapartment / Studentisches Wohnen</option>
-                <option value="Pflege- / Seniorenimmobilie">Pflege- / Seniorenimmobilie</option>
-                <option value="Gewerbeimmobilie / Sonstiges">Gewerbeimmobilie / Sonstiges</option>
-              </select>
-            </div>
+        {/* OBJEKTART & BUNDESLAND UNTEREINANDER FÜR VOLLE LESBARKEIT */}
+        <div>
+          <label style={labelStyle}>Objektart</label>
+          <div style={selectContainerStyle}>
+            <select
+              value={formData?.objektart || 'Eigentumswohnung'}
+              onChange={(e) => onFieldChange('objektart', e.target.value)}
+              style={selectStyle}
+            >
+              <option value="Eigentumswohnung">Eigentumswohnung</option>
+              <option value="Einfamilienhaus">Einfamilienhaus</option>
+              <option value="Zweifamilienhaus">Zweifamilienhaus</option>
+              <option value="Reihenhaus / Doppelhaushälfte">Reihenhaus / Doppelhaushälfte</option>
+              <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
+              <option value="Wohn- und Geschäftshaus">Wohn- und Geschäftshaus</option>
+              <option value="Mikroapartment / Studentisches Wohnen">Mikroapartment / Studentisches Wohnen</option>
+              <option value="Pflege- / Seniorenimmobilie">Pflege- / Seniorenimmobilie</option>
+              <option value="Gewerbeimmobilie / Sonstiges">Gewerbeimmobilie / Sonstiges</option>
+            </select>
           </div>
+        </div>
 
-          <div>
-            <label style={labelStyle}>Bundesland</label>
-            <div style={selectContainerStyle}>
-              <select
-                value={formData?.bundesland || 'Niedersachsen'}
-                onChange={(e) => onFieldChange('bundesland', e.target.value)}
-                style={selectStyle}
-              >
-                {bundeslaenderList.map((bl) => (
-                  <option key={bl} value={bl}>{bl}</option>
-                ))}
-              </select>
-            </div>
+        <div>
+          <label style={labelStyle}>Bundesland</label>
+          <div style={selectContainerStyle}>
+            <select
+              value={formData?.bundesland || 'Niedersachsen'}
+              onChange={(e) => onFieldChange('bundesland', e.target.value)}
+              style={selectStyle}
+            >
+              {bundeslaenderList.map((bl) => (
+                <option key={bl} value={bl}>{bl}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -259,12 +303,18 @@ export default function Parametrisierung({
             step={5}
             isSqm={true}
           />
-          <StepperInput
-            label="Baujahr"
-            value={formData?.baujahr || 2000}
-            onChange={(v) => onFieldChange('baujahr', Math.round(v))}
-            step={1}
-          />
+          
+          {/* BAUJAHR ALS REINES GANZZAHL-FELD */}
+          <div>
+            <label style={labelStyle}>Baujahr</label>
+            <input
+              type="number"
+              step="1"
+              value={formData?.baujahr || 2000}
+              onChange={(e) => onFieldChange('baujahr', parseInt(e.target.value, 10) || 2000)}
+              style={inputStyle}
+            />
+          </div>
         </div>
       </MainCard>
 
@@ -278,40 +328,46 @@ export default function Parametrisierung({
           <StepperInput
             label="Ist-Kaltmiete (€ / Mo)"
             value={formData?.kaltmiete_monat || 0}
-            onChange={(v) => handleIstMonatChange ? handleIstMonatChange(v) : onFieldChange('kaltmiete_monat', v)}
+            onChange={handleLocalIstMonat}
             step={25}
             isCurrency={true}
           />
           <StepperInput
             label="Ist-Miete (€ / m²)"
             value={formData?.ist_sqm || 0}
-            onChange={(v) => handleIstSqmChange ? handleIstSqmChange(v) : onFieldChange('ist_sqm', v)}
+            onChange={handleLocalIstSqm}
             step={0.5}
           />
         </div>
 
         <div style={grid2Style}>
           <StepperInput
-            label="Target-Miete (€ / Mo)"
+            label="Ziel-Kaltmiete (€ / Mo)"
             value={formData?.target_monat || 0}
-            onChange={(v) => handleTargetMonatChange ? handleTargetMonatChange(v) : onFieldChange('target_monat', v)}
+            onChange={handleLocalZielMonat}
             step={25}
             isCurrency={true}
           />
           <StepperInput
-            label="Target-Miete (€ / m²)"
+            label="Ziel-Miete (€ / m²)"
             value={formData?.target_sqm || 0}
-            onChange={(v) => handleTargetSqmChange ? handleTargetSqmChange(v) : onFieldChange('target_sqm', v)}
+            onChange={handleLocalZielSqm}
             step={0.5}
           />
         </div>
 
-        <StepperInput
-          label="Anpassung ab Jahr"
-          value={formData?.adj_year || 1}
-          onChange={(v) => onFieldChange('adj_year', v)}
-          step={1}
-        />
+        {/* ANPASSUNG AB JAHR ALS REINES GANZZAHL-FELD */}
+        <div>
+          <label style={labelStyle}>Anpassung ab Jahr</label>
+          <input
+            type="number"
+            step="1"
+            min="1"
+            value={formData?.adj_year || 1}
+            onChange={(e) => onFieldChange('adj_year', parseInt(e.target.value, 10) || 1)}
+            style={inputStyle}
+          />
+        </div>
 
         <div style={grid2Style}>
           <StepperInput
@@ -363,12 +419,16 @@ export default function Parametrisierung({
           />
         </div>
 
+        {/* NEBENKOSTEN UNTEREINANDER GESTAPELT */}
         <div style={infoBoxStyle}>
-          <div style={{ fontWeight: '800', marginBottom: '4px' }}>
+          <div style={{ fontWeight: '800', fontSize: '0.95rem', marginBottom: '8px', borderBottom: '1px solid #E2D9CE', paddingBottom: '4px' }}>
             Kaufnebenkosten Gesamt: {formatEuroInt(displayNkTotal)} €
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#4A5568' }}>
-            GrESt: {grwtP}% ({formatEuroInt(displayGrwtEuro)} €) • Notar: {notarP}% ({formatEuroInt(displayNotarEuro)} €) • Makler: {maklerP}% ({formatEuroInt(displayMaklerEuro)} €)
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8rem', color: '#4A5568' }}>
+            <div>• <strong>Grunderwerbsteuer ({grwtP}%):</strong> {formatEuroInt(displayGrwtEuro)} €</div>
+            <div>• <strong>Notar & Grundbuch ({notarP}%):</strong> {formatEuroInt(displayNotarEuro)} €</div>
+            <div>• <strong>Maklercourtage ({maklerP}%):</strong> {formatEuroInt(displayMaklerEuro)} €</div>
+            {sonstNk > 0 && <div>• <strong>Sonstige Nebenkosten:</strong> {formatEuroInt(sonstNk)} €</div>}
           </div>
         </div>
       </MainCard>
@@ -387,7 +447,7 @@ export default function Parametrisierung({
           isCurrency={true}
         />
 
-        {/* NEBENKOSTEN-DECKUNG ANZEIGE */}
+        {/* NEBENKOSTEN-DECKUNG MIT INFOBOX ZU FINANZIERUNGSGRAD */}
         <div style={{
           padding: '10px 12px',
           borderRadius: '8px',
@@ -397,15 +457,22 @@ export default function Parametrisierung({
           border: isEkCoveringNk ? '1px solid #C6F6D5' : '1px solid #FEB2B2',
           color: isEkCoveringNk ? '#22543D' : '#9B2C2C',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           gap: '8px'
         }}>
-          <span>{isEkCoveringNk ? '✓' : '⚠'}</span>
-          <span>
-            {isEkCoveringNk
-              ? `Eigenkapital deckt die Nebenkosten (${formatEuroInt(displayNkTotal)} €) vollständig.`
-              : `Eigenkapital deckt die Nebenkosten (${formatEuroInt(displayNkTotal)} €) noch nicht vollständig.`}
-          </span>
+          <span style={{ fontSize: '1rem' }}>{isEkCoveringNk ? '✓' : '⚠'}</span>
+          <div>
+            <div>
+              {isEkCoveringNk
+                ? `Eigenkapital deckt die Nebenkosten (${formatEuroInt(displayNkTotal)} €) vollständig.`
+                : `Eigenkapital deckt die Nebenkosten (${formatEuroInt(displayNkTotal)} €) noch nicht vollständig.`}
+            </div>
+            <div style={{ fontWeight: 'normal', fontSize: '0.75rem', marginTop: '4px', opacity: 0.9 }}>
+              {isEkCoveringNk
+                ? 'Gute Voraussetzung für eine klassische 100%-Finanzierung durch die Bank.'
+                : 'Hinweis: Bei einer 110%-Finanzierung finanziert die Bank auch Kaufnebenkosten mit. Das erfordert sehr gute Bonität.'}
+            </div>
+          </div>
         </div>
 
         <div>
@@ -416,7 +483,7 @@ export default function Parametrisierung({
               onChange={(e) => onFieldChange('loan_type', e.target.value)}
               style={selectStyle}
             >
-              <option value="Annuitätendarlehen">Annuitätendarlehen (Zins + Tilgung konstant)</option>
+              <option value="Annuitätendarlehen">Annuitätendarlehen (Konstante Monatsrate)</option>
               <option value="Endfälliges Darlehen">Endfälliges Darlehen (Nur Zinszahlung)</option>
             </select>
           </div>
@@ -441,11 +508,10 @@ export default function Parametrisierung({
 
         <div style={grid2Style}>
           <StepperInput
-            label="Sondertilgung (€ / J.)"
-            value={formData?.sondertilg || 0}
-            onChange={(v) => onFieldChange('sondertilg', v)}
-            step={500}
-            isCurrency={true}
+            label="Tilgungsfreie Jahre"
+            value={formData?.grace_years || 0}
+            onChange={(v) => onFieldChange('grace_years', v)}
+            step={1}
           />
           <StepperInput
             label="Zinsbindung (Jahre)"
@@ -454,6 +520,14 @@ export default function Parametrisierung({
             step={1}
           />
         </div>
+
+        <StepperInput
+          label="Sondertilgung (€ / J.)"
+          value={formData?.sondertilg || 0}
+          onChange={(v) => onFieldChange('sondertilg', v)}
+          step={500}
+          isCurrency={true}
+        />
 
         {/* UNTERBEREICH 1: ANSCHLUSSFINANZIERUNG */}
         <SubContainerCard
@@ -522,23 +596,31 @@ export default function Parametrisierung({
               isPercent={true}
             />
           </div>
-          <StepperInput
-            label="KfW Tilgungszuschuss (€)"
-            value={formData?.kfw_grant || 0}
-            onChange={(v) => onFieldChange('kfw_grant', v)}
-            step={1000}
-            isCurrency={true}
-          />
+          <div style={grid2Style}>
+            <StepperInput
+              label="KfW Tilgungsfreie Jahre"
+              value={formData?.kfw_grace_years || 0}
+              onChange={(v) => onFieldChange('kfw_grace_years', v)}
+              step={1}
+            />
+            <StepperInput
+              label="KfW Tilgungszuschuss (€)"
+              value={formData?.kfw_grant || 0}
+              onChange={(v) => onFieldChange('kfw_grant', v)}
+              step={1000}
+              isCurrency={true}
+            />
+          </div>
         </SubContainerCard>
       </MainCard>
 
-      {/* HAUPTBEREICH 4: STEUERN, MAKRO & EXIT (RESTORED SLIDER & STYLING FROM SCREENSHOT) */}
+      {/* HAUPTBEREICH 4: STEUERN, MAKRO & EXIT */}
       <MainCard
         title="4. Steuern, Makro & Exit"
         isOpen={openSections.steuer}
         onToggle={() => toggleSection('steuer')}
       >
-        {/* GRENZSTEUERSATZ RANGE SLIDER (EXAKT AUS DEM SCREENSHOT) */}
+        {/* GRENZSTEUERSATZ SLIDER */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
             <label style={labelStyle}>Grenzsteuersatz (%)</label>
@@ -613,21 +695,32 @@ export default function Parametrisierung({
           isPercent={true}
         />
 
-        {/* UNTERBEREICH 3: CAPEX PLANUNG */}
+        {/* UNTERBEREICH 3: CAPEX PLANUNG MIT KLAREN SPALTENBESCHRIFTUNGEN */}
         <SubContainerCard
           title="CapEx & Instandhaltungs-Fahrplan"
           isOpen={openSubSections.capex}
           onToggle={() => toggleSubSection('capex')}
         >
+          <p style={{ margin: '0 0 8px 0', fontSize: '0.75rem', color: '#718096', lineHeight: '1.4' }}>
+            Plane größere einmalige Instandhaltungen (z. B. Dachsanierung, Heizungstausch) für bestimmte Jahre im Voraus ein.
+          </p>
+
           {capexList && capexList.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 36px', gap: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#4A5568' }}>
+                <span>Instandhaltungsjahr</span>
+                <span>Betrag (€)</span>
+                <span></span>
+              </div>
+
               {capexList.map((row, idx) => (
                 <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 36px', gap: '8px', alignItems: 'center' }}>
                   <input
                     type="number"
+                    min="1"
                     value={row.year || row.jahr || 1}
                     onChange={(e) => handleCapexChange && handleCapexChange(idx, 'year', parseInt(e.target.value, 10))}
-                    placeholder="Jahr"
+                    placeholder="z. B. Jahr 3"
                     style={inputStyle}
                   />
                   <input
@@ -712,7 +805,7 @@ export default function Parametrisierung({
 }
 
 // -----------------------------------------------------------------------------
-// HELPER COMPONENTS & STYLES (MATCHING ORIGINAL DESIGN)
+// HELPER COMPONENTS & STYLES
 // -----------------------------------------------------------------------------
 
 function MainCard({ title, isOpen, onToggle, children }) {

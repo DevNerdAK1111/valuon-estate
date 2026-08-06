@@ -172,7 +172,6 @@ async def save_property(payload: PropertyDatabasePayload):
             "obj_name": payload.obj_name or payload.name or "Unbenanntes Objekt",
             "objektart": payload.objektart,
             "stadt": payload.stadt,
-            "stadtteil": payload.stadtteil,
             "bundesland": payload.bundesland,
             "kaufpreis": payload.kaufpreis,
             "qm": payload.qm,

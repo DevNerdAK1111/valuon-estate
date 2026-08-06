@@ -7,10 +7,10 @@ import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { formatEuroInt } from '../../utils/formatters';
 
 const KPI_OPTIONS = [
-  { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
+  { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Progn. Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
   { id: 'brutto', label: 'Brutto-Mietrendite (Ø p.a.)', getValue: (m) => `${m.kpis.avgBruttoRendite.toFixed(2)} %`, getSub: () => 'Ø Miete p.a. / Kaufpreis', color: '#13381A' },
-  { id: 'irr', label: 'Eigenkapitalrendite (IRR)', getValue: (m) => `${m.kpis.validIrr.toFixed(2)} %`, getSub: (m) => `Effektive EK-Verzinsung bei Exit (${m.kpis.horizonYears} J.)`, color: '#A37841' },
-  { id: 'gewinn', label: 'Gesamtgewinn (Horizon)', getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: () => 'Kum. Cashflow + NAV Zuwachs', isPos: (m) => m.kpis.gesamtGewinn >= 0 },
+  { id: 'irr', label: 'Progn. EK-Rendite (IRR)', getValue: (m) => `${m.kpis.validIrr.toFixed(2)} %`, getSub: (m) => `Erwartete EK-Verzinsung bei Exit (${m.kpis.horizonYears} J.)`, color: '#A37841' },
+  { id: 'gewinn', label: 'Progn. Gesamtgewinn', getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: (m) => `Erwarteter Kum. Cashflow + NAV (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.gesamtGewinn >= 0 },
   { id: 'faktor', label: 'Kaufpreisfaktor', getValue: (m) => `${m.kpis.kaufpreisfaktor.toFixed(1)}x`, getSub: () => 'Kaufpreis / Jahreskaltmiete', color: '#13381A' },
   { id: 'nettoFaktor', label: 'Netto-Kaufpreisfaktor', getValue: (m) => `${m.kpis.nettoKaufpreisfaktor.toFixed(1)}x`, getSub: () => 'Gesamtkosten / Nettomiete (NOI)', color: '#13381A' },
   { id: 'nettoRendite', label: 'Netto-Mietrendite (Jahr 1)', getValue: (m) => `${m.kpis.nettoMietrenditeInitial.toFixed(2)} %`, getSub: () => 'Nettomiete / Gesamtkosten', color: '#13381A' },
@@ -223,6 +223,22 @@ export default function ExecutiveDashboard({
       {/* TAB 2: JAHRESPROGNOSE & DETAILANALYSE */}
       {result && activeDashboardTab === 'Jahresprognose & Detailanalyse' && (
         <TableView slicedProjection={model.slicedProjection} totals={model.totals} />
+      )}
+
+      {/* RECHTLICHER HINWEIS / DISCLAIMER */}
+      {result && (
+        <div style={{
+          marginTop: '0.5rem',
+          padding: '0.85rem 1.25rem',
+          background: '#FAF8F5',
+          border: '1px solid #E2D9CE',
+          borderRadius: '8px',
+          fontSize: '0.72rem',
+          color: '#718096',
+          lineHeight: '1.4'
+        }}>
+          <strong>Hinweis zu den Modellrechnungen:</strong> Alle berechneten Kennzahlen (z. B. Cashflows, IRR, Renditen und Gesamtgewinne) sind zukunftsgerichtete Prognosen auf Basis deiner Parameter und mathematischer Standard-Investitionsmodelle. Sie dienen als Orientierungshilfe und stellen keine Garantie, Finanz- oder Steuerberatung dar.
+        </div>
       )}
 
     </div>

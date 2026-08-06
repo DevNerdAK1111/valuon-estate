@@ -23,13 +23,19 @@ export default function DatabaseView({
 
   const displayedProperties = activeTab === 'pipeline' ? pipelineItems : bestandItems;
 
-  const handleStatusChange = async (id, newStatus) => {
-    setUpdatingId(id);
+  const handleStatusChange = async (property, newStatus) => {
+    const propId = property.id || property._id;
+    if (!propId) {
+      alert('Fehler: Keine gültige Objekt-ID gefunden.');
+      return;
+    }
+
+    setUpdatingId(propId);
     try {
-      await updatePropertyStatusApi(id, newStatus);
-      fetchDatabaseProperties();
+      await updatePropertyStatusApi(propId, newStatus);
+      await fetchDatabaseProperties();
     } catch (err) {
-      alert('Fehler beim Aktualisieren des Status.');
+      alert(`Fehler beim Aktualisieren des Status: ${err.message || 'Unbekannter Fehler'}`);
     } finally {
       setUpdatingId(null);
     }
@@ -108,44 +114,49 @@ export default function DatabaseView({
               </tr>
             </thead>
             <tbody>
-              {displayedProperties.map((item, idx) => (
-                <tr key={item.id || idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#13381A' }}>{item.name || item.obj_name || item.form_data?.obj_name}</td>
-                  <td style={{ padding: '12px' }}>{item.objektart || item.form_data?.objektart}</td>
-                  <td style={{ padding: '12px' }}>{item.stadt || item.form_data?.stadt}</td>
-                  <td style={{ padding: '12px' }}>{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>
-                  <td style={{ padding: '12px' }}>{item.qm || item.form_data?.qm} m²</td>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#A37841' }}>
-                    {item.irr ? formatPct(item.irr * 100) + ' %' : '–'}
-                  </td>
-                  <td style={{ padding: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button onClick={() => loadPropertyFromDb(item)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                      <IconFolder /> In Analyse laden
-                    </button>
+              {displayedProperties.map((item, idx) => {
+                const itemId = item.id || item._id;
+                return (
+                  <tr key={itemId || idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
+                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#13381A' }}>{item.name || item.obj_name || item.form_data?.obj_name}</td>
+                    <td style={{ padding: '12px' }}>{item.objektart || item.form_data?.objektart}</td>
+                    <td style={{ padding: '12px' }}>{item.stadt || item.form_data?.stadt}</td>
+                    <td style={{ padding: '12px' }}>{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>
+                    <td style={{ padding: '12px' }}>{item.qm || item.form_data?.qm} m²</td>
+                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#A37841' }}>
+                      {item.irr ? formatPct(item.irr * 100) + ' %' : '–'}
+                    </td>
+                    <td style={{ padding: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button onClick={() => loadPropertyFromDb(item)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        <IconFolder /> In Analyse laden
+                      </button>
 
-                    <button
-                      onClick={() => handleStatusChange(item.id, activeTab === 'pipeline' ? 'bestand' : 'pipeline')}
-                      disabled={updatingId === item.id}
-                      style={{
-                        padding: '6px 10px',
-                        background: '#FAF8F5',
-                        color: '#13381A',
-                        border: '1px solid #13381A',
-                        borderRadius: '4px',
-                        cursor: updatingId === item.id ? 'not-allowed' : 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {activeTab === 'pipeline' ? 'In Bestand' : 'In Pipeline'}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item, activeTab === 'pipeline' ? 'bestand' : 'pipeline')}
+                        disabled={updatingId === itemId}
+                        style={{
+                          padding: '6px 10px',
+                          background: '#FAF8F5',
+                          color: '#13381A',
+                          border: '1px solid #13381A',
+                          borderRadius: '4px',
+                          cursor: updatingId === itemId ? 'not-allowed' : 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          opacity: updatingId === itemId ? 0.6 : 1
+                        }}
+                      >
+                        {updatingId === itemId ? 'Speichert...' : (activeTab === 'pipeline' ? 'In Bestand' : 'In Pipeline')}
+                      </button>
 
-                    <button onClick={() => deletePropertyFromDb(item.id)} style={{ padding: '6px 10px', background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                      <IconTrash />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      <button onClick={() => deletePropertyFromDb(itemId)} style={{ padding: '6px 10px', background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        <IconTrash />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

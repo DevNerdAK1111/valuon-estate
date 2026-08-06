@@ -24,7 +24,6 @@ export default function SectionSteuern({
 }) {
   const currentModel = formData?.afa_model || 'Linear Standard';
 
-  // HANDLER FÜR AUTOMATISCHE PROZENTSATZ-ANPASSUNG
   const handleAfaModelChange = (model) => {
     onFieldChange('afa_model', model);
     if (model === 'Linear Standard') onFieldChange('afa_lin', 2.0);
@@ -36,7 +35,6 @@ export default function SectionSteuern({
 
   const isAfaRateFixed = currentModel !== 'Linear Standard';
 
-  // PRÜFUNGEN FÜR FORMULAR-WARNHINWEISE
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const qm = Number(formData?.qm || 0);
   const gebaeudeAnteilP = Number(formData?.gebaeude_anteil_pct ?? 80) / 100;
@@ -44,7 +42,8 @@ export default function SectionSteuern({
   const gebaeudeWertProQm = qm > 0 ? gebaeudeWert / qm : 0;
   const isSonderAfaExceeded = gebaeudeWertProQm > 5200;
 
-  const sanierungKosten = Number(formData?.sanierung || 0);
+  const denkmalSanierungEuro = Number(formData?.denkmal_sanierung_euro ?? formData?.sanierung ?? 0);
+  const denkmalFertigstellungJahr = Number(formData?.denkmal_fertigstellung_jahr ?? 1);
 
   return (
     <MainCard title="4. Steuern, Makro & Exit" isOpen={isOpen} onToggle={onToggle}>
@@ -140,6 +139,33 @@ export default function SectionSteuern({
         </div>
       )}
 
+      {/* DYNAMISCHE DEDIZIERTE FELDER FÜR DENKMAL-AFA (§ 7h / § 7i) */}
+      {currentModel === 'Denkmalgeschützt' && (
+        <div style={grid2Style}>
+          <StepperInput
+            label="Bescheinigter Sanierungsaufwand (€)"
+            value={formData?.denkmal_sanierung_euro ?? formData?.sanierung ?? 0}
+            onChange={(v) => onFieldChange('denkmal_sanierung_euro', v)}
+            step={5000}
+            isCurrency={true}
+            tooltip="Nur der durch die Denkmalschutzbehörde offiziell bescheinigte Sanierungsanteil darf nach § 7h/7i EStG erhöht abgeschrieben werden."
+          />
+
+          <div>
+            <label style={labelStyle}>Fertigstellung im Jahr</label>
+            <input
+              type="number"
+              min="1"
+              max="30"
+              step="1"
+              value={formData?.denkmal_fertigstellung_jahr ?? 1}
+              onChange={(e) => onFieldChange('denkmal_fertigstellung_jahr', parseInt(e.target.value, 10) || 1)}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+      )}
+
       {/* HINWEISKASTEN SONDER-AFA (§ 7b EStG) */}
       {currentModel === 'Kombination: Degressiv + Sonder-AfA' && (
         <div style={{
@@ -174,29 +200,30 @@ export default function SectionSteuern({
       {/* HINWEISKASTEN DENKMAL-AFA (§ 7h / § 7i EStG) */}
       {currentModel === 'Denkmalgeschützt' && (
         <div style={{
-          background: sanierungKosten === 0 ? '#FFF5F5' : '#FAF8F5',
-          border: sanierungKosten === 0 ? '1px solid #FEB2B2' : '1px solid #E2D9CE',
+          background: denkmalSanierungEuro === 0 ? '#FFF5F5' : '#FAF8F5',
+          border: denkmalSanierungEuro === 0 ? '1px solid #FEB2B2' : '1px solid #E2D9CE',
           borderRadius: '8px',
           padding: '12px 14px',
           fontSize: '0.8rem',
-          color: sanierungKosten === 0 ? '#9B2C2C' : '#13381A'
+          color: denkmalSanierungEuro === 0 ? '#9B2C2C' : '#13381A'
         }}>
           <div style={{ fontWeight: '800', marginBottom: '4px' }}>
             Denkmal-AfA (§ 7h / § 7i EStG) Parameter-Check:
           </div>
           <div style={{ lineHeight: '1.4' }}>
-            • <strong>Sanierungsaufwand (Jahre 1–8):</strong> 9,0 % p.a.<br />
-            • <strong>Sanierungsaufwand (Jahre 9–12):</strong> 7,0 % p.a.<br />
-            • <strong>Altbestand-Gebäudeanteil:</strong> Lineare Standard-AfA (2,0 % p.a.)
+            • <strong>Bescheinigter Sanierungsaufwand:</strong> {formatEuroInt(denkmalSanierungEuro)} €<br />
+            • <strong>AfA-Start (Fertigstellung):</strong> Ab Jahr {denkmalFertigstellungJahr}<br />
+            • <strong>Erhöhte Abschreibung:</strong> 9,0 % p.a. (8 Jahre) / 7,0 % p.a. (4 Jahre)<br />
+            • <strong>Altbestand ({formatEuroInt(gebaeudeWert)} €):</strong> Lineare Standard-AfA (2,0 % p.a.)
           </div>
 
-          {sanierungKosten === 0 ? (
+          {denkmalSanierungEuro === 0 ? (
             <div style={{ marginTop: '8px', fontWeight: '800', borderTop: '1px solid #FEB2B2', paddingTop: '6px' }}>
-              [Achtung] Unter "Sanierung / Umbau (€)" sind aktuell 0 € eingetragen. Die erhöhte Denkmal-AfA gilt gesetzlich ausschließlich auf die bescheinigten Sanierungskosten, nicht auf den ursprünglichen Altbestand-Kaufpreis!
+              [Achtung] Es sind 0 € bescheinigter Sanierungsaufwand eingetragen. Die Denkmal-AfA gilt gesetzlich nur auf den bescheinigten Sanierungsanteil.
             </div>
           ) : (
             <div style={{ marginTop: '8px', color: '#276749', fontWeight: '700', borderTop: '1px solid #E2D9CE', paddingTop: '6px' }}>
-              Die Denkmal-AfA wird auf die angegebenen Sanierungskosten von {formatEuroInt(sanierungKosten)} € angewendet.
+              Die Denkmal-AfA wird ab Jahr {denkmalFertigstellungJahr} auf den bescheinigten Sanierungsaufwand von {formatEuroInt(denkmalSanierungEuro)} € angewendet.
             </div>
           )}
         </div>

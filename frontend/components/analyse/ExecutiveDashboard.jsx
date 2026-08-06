@@ -6,6 +6,21 @@ import TableView from './TableView';
 import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { formatEuroInt } from '../../utils/formatters';
 
+// ALLE VERFÜGBAREN KPIS FÜR DIE TOP-KARTEN AUSWAHL
+const KPI_OPTIONS = [
+  { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
+  { id: 'brutto', label: 'Brutto-Mietrendite (Ø p.a.)', getValue: (m) => `${m.kpis.avgBruttoRendite.toFixed(2)} %`, getSub: () => 'Ø Miete p.a. / Kaufpreis', color: '#13381A' },
+  { id: 'irr', label: 'Eigenkapitalrendite (IRR)', getValue: (m) => `${m.kpis.validIrr.toFixed(2)} %`, getSub: (m) => `Effektive EK-Verzinsung bei Exit (${m.kpis.horizonYears} J.)`, color: '#A37841' },
+  { id: 'gewinn', label: `Gesamtgewinn (Horizon)`, getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: () => 'Kum. Cashflow + NAV Zuwachs', isPos: (m) => m.kpis.gesamtGewinn >= 0 },
+  { id: 'faktor', label: 'Kaufpreisfaktor', getValue: (m) => `${m.kpis.kaufpreisfaktor.toFixed(1)}x`, getSub: () => 'Kaufpreis / Jahreskaltmiete', color: '#13381A' },
+  { id: 'nettoFaktor', label: 'Netto-Kaufpreisfaktor', getValue: (m) => `${m.kpis.nettoKaufpreisfaktor.toFixed(1)}x`, getSub: () => 'Gesamtkosten / Nettomiete (NOI)', color: '#13381A' },
+  { id: 'nettoRendite', label: 'Netto-Mietrendite (Jahr 1)', getValue: (m) => `${m.kpis.nettoMietrenditeInitial.toFixed(2)} %`, getSub: () => 'Nettomiete / Gesamtkosten', color: '#13381A' },
+  { id: 'coc', label: 'Cash-on-Cash Return (J1)', getValue: (m) => `${m.kpis.cashOnCashReturn.toFixed(2)} %`, getSub: () => 'Operativer Ertrag / Eigenkapital', color: '#A37841' },
+  { id: 'beMiete', label: 'Break-Even-Miete (Mo)', getValue: (m) => `${formatEuroInt(m.kpis.breakEvenMieteMo)} €`, getSub: (m) => `${m.kpis.breakEvenMieteSqmMo.toFixed(2)} € / m² kritische Miete`, color: '#4A5568' },
+  { id: 'dscr', label: 'DSCR (Deckungsbeitrag)', getValue: (m) => `${m.kpis.dscrInitial.toFixed(2)}x`, getSub: () => 'Nettomiete / Kapitaldienst Bank', color: '#13381A' },
+  { id: 'ltv', label: 'Beleihungsauslauf (LTV)', getValue: (m) => `${m.finanzierung.ltv.toFixed(1)} %`, getSub: () => 'Fremdkapital / Kaufpreis', color: '#9B2C2C' }
+];
+
 export default function ExecutiveDashboard({
   formData,
   result,
@@ -18,15 +33,22 @@ export default function ExecutiveDashboard({
   summe_nk
 }) {
   const [showExtendedMatrix, setShowExtendedMatrix] = useState(false);
+  const [isCustomizingKpis, setIsCustomizingKpis] = useState(false);
+  const [selectedKpiIds, setSelectedKpiIds] = useState(['cf', 'brutto', 'irr', 'gewinn']);
 
   const propertyTitle = formData?.obj_name || 'Neues Investment-Objekt';
   const locationText = [formData?.stadt, formData?.stadtteil].filter(Boolean).join(' • ') || 'Kein Standort angegeben';
 
-  // ZENTRALE INVESTITIONS-BERECHNUNG (SINGLE SOURCE OF TRUTH)
   const model = calculateInvestmentModel(formData, projectionHorizon, result);
 
+  const handleKpiSelect = (slotIndex, newId) => {
+    const updated = [...selectedKpiIds];
+    updated[slotIndex] = newId;
+    setSelectedKpiIds(updated);
+  };
+
   return (
-    <div id="executive-dashboard-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', scrollMarginTop: '1.5rem' }}>
+    <div id="executive-dashboard-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
       
       {/* KOPFZEILE */}
       <div style={{ background: 'white', padding: '1.2rem 1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -83,12 +105,66 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* KPI KARTEN */}
+      {/* KPI KARTEN MIT MODULARER ANPASSUNG */}
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <KeyMetrics kpis={model.kpis} />
           
-          {/* SCHALTER FÜR ERWEITERTE KENNZAHLEN-MATRIX */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Wichtigste Kennzahlen
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsCustomizingKpis(!isCustomizingKpis)}
+              style={{ background: 'none', border: 'none', color: '#13381A', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {isCustomizingKpis ? 'Auswahl schließen' : 'Karten anpassen'}
+            </button>
+          </div>
+
+          {/* KARTEN ANPASSUNGS-PANEL */}
+          {isCustomizingKpis && (
+            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+              {selectedKpiIds.map((currentId, slotIdx) => (
+                <div key={slotIdx}>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '800', color: '#13381A', marginBottom: '4px' }}>
+                    Karte {slotIdx + 1}
+                  </label>
+                  <select
+                    value={currentId}
+                    onChange={(e) => handleKpiSelect(slotIdx, e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #CBD5E0', fontSize: '0.78rem', fontWeight: '600', color: '#2D3748', background: 'white' }}
+                  >
+                    {KPI_OPTIONS.map((opt) => (
+                      <option key={opt.id} value={opt.id}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* RENDERING DER 4 AUSGEWÄHLTEN KARTEN */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            {selectedKpiIds.map((kpiId, idx) => {
+              const config = KPI_OPTIONS.find(o => o.id === kpiId) || KPI_OPTIONS[0];
+              const valueStr = config.getValue(model);
+              const subStr = config.getSub(model);
+              const cardColor = config.isPos ? (config.isPos(model) ? '#276749' : '#9B2C2C') : config.color;
+
+              return (
+                <div key={idx} style={kpiCardStyle}>
+                  <div style={kpiTitleStyle}>{config.label}</div>
+                  <div style={{ ...kpiValueStyle, color: cardColor }}>
+                    {valueStr}
+                  </div>
+                  <div style={kpiSubtextStyle}>{subStr}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* TOGGLE FÜR ERWEITERTE MATRIX */}
           <button
             type="button"
             onClick={() => setShowExtendedMatrix(!showExtendedMatrix)}
@@ -100,7 +176,8 @@ export default function ExecutiveDashboard({
               fontWeight: '800',
               fontSize: '0.8rem',
               cursor: 'pointer',
-              textDecoration: 'underline'
+              textDecoration: 'underline',
+              marginTop: '0.25rem'
             }}
           >
             {showExtendedMatrix ? 'Erweiterte Metriken ausblenden' : 'Alle Bank- & Rendite-Metriken einblenden'}
@@ -112,45 +189,43 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* TAB NAVIGATION */}
+      {/* TAB NAVIGATION (KONSOLIDIERT AUF 2 REITER) */}
       <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
-        {['Executive Dashboard', 'Cashflow & Liquidität', 'Finanzierung & Steuern'].map((tab) => (
+        {[
+          { id: 'Executive Dashboard', label: 'Executive Dashboard' },
+          { id: 'Jahresprognose & Detailanalyse', label: 'Jahresprognose & Detailanalyse' }
+        ].map((tab) => (
           <button
-            key={tab}
+            key={tab.id}
             type="button"
-            onClick={() => setActiveDashboardTab(tab)}
+            onClick={() => setActiveDashboardTab(tab.id)}
             style={{
               padding: '10px 0',
               background: 'none',
               border: 'none',
-              borderBottom: activeDashboardTab === tab ? '3px solid #13381A' : '3px solid transparent',
-              color: activeDashboardTab === tab ? '#13381A' : '#718096',
-              fontWeight: activeDashboardTab === tab ? '800' : '600',
+              borderBottom: activeDashboardTab === tab.id ? '3px solid #13381A' : '3px solid transparent',
+              color: activeDashboardTab === tab.id ? '#13381A' : '#718096',
+              fontWeight: activeDashboardTab === tab.id ? '800' : '600',
               fontSize: '0.95rem',
               cursor: 'pointer',
               marginBottom: '-2px'
             }}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* DASHBOARD TAB 1: EXECUTIVE DASHBOARD */}
-      {result && activeDashboardTab === 'Executive Dashboard' && (
+      {/* TAB 1: EXECUTIVE DASHBOARD */}
+      {result && (activeDashboardTab === 'Executive Dashboard' || !activeDashboardTab || activeDashboardTab === 'Cashflow & Liquidität' || activeDashboardTab === 'Finanzierung & Steuern') && activeDashboardTab !== 'Jahresprognose & Detailanalyse' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
           <ProjectionChart slicedProjection={model.slicedProjection} />
           <DonutChart formData={formData} summe_nk={summe_nk} />
         </div>
       )}
 
-      {/* DASHBOARD TAB 2: CASHFLOW & LIQUIDITÄT (MIT DER NEUEN TABELLE) */}
-      {result && activeDashboardTab === 'Cashflow & Liquidität' && (
-        <TableView slicedProjection={model.slicedProjection} />
-      )}
-
-      {/* DASHBOARD TAB 3: FINANZIERUNG & STEUERN */}
-      {result && activeDashboardTab === 'Finanzierung & Steuern' && (
+      {/* TAB 2: JAHRESPROGNOSE & DETAILANALYSE */}
+      {result && activeDashboardTab === 'Jahresprognose & Detailanalyse' && (
         <TableView slicedProjection={model.slicedProjection} />
       )}
 
@@ -159,52 +234,7 @@ export default function ExecutiveDashboard({
 }
 
 // -----------------------------------------------------------------------------
-// TOP 4 KPI KARTEN
-// -----------------------------------------------------------------------------
-function KeyMetrics({ kpis }) {
-  const { avgMonthlyCashflow, isCfPositive, avgBruttoRendite, validIrr, gesamtGewinn, horizonYears } = kpis;
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-      
-      <div style={kpiCardStyle}>
-        <div style={kpiTitleStyle}>Netto-Cashflow (Ø / Mo)</div>
-        <div style={{ ...kpiValueStyle, color: isCfPositive ? '#276749' : '#9B2C2C' }}>
-          {isCfPositive ? '+' : ''}{formatEuroInt(avgMonthlyCashflow)} € / Mo.
-        </div>
-        <div style={kpiSubtextStyle}>Durchschnitt pro Monat nach Steuer über {horizonYears} J.</div>
-      </div>
-
-      <div style={kpiCardStyle}>
-        <div style={kpiTitleStyle}>Brutto-Mietrendite (Ø p.a.)</div>
-        <div style={{ ...kpiValueStyle, color: '#13381A' }}>
-          {avgBruttoRendite.toFixed(2)} %
-        </div>
-        <div style={kpiSubtextStyle}>Durchschnittliche Miete p.a. / Kaufpreis</div>
-      </div>
-
-      <div style={kpiCardStyle}>
-        <div style={kpiTitleStyle}>Eigenkapitalrendite (IRR)</div>
-        <div style={{ ...kpiValueStyle, color: '#A37841' }}>
-          {validIrr.toFixed(2)} %
-        </div>
-        <div style={kpiSubtextStyle}>Effektive EK-Verzinsung bei Exit nach {horizonYears} J.</div>
-      </div>
-
-      <div style={kpiCardStyle}>
-        <div style={kpiTitleStyle}>Gesamtgewinn ({horizonYears} J.)</div>
-        <div style={{ ...kpiValueStyle, color: gesamtGewinn >= 0 ? '#276749' : '#9B2C2C' }}>
-          {gesamtGewinn >= 0 ? '+' : ''}{formatEuroInt(gesamtGewinn)} €
-        </div>
-        <div style={kpiSubtextStyle}>Kumulierter Cashflow + Netto-EK-Zuwachs</div>
-      </div>
-
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// ERWEITERTE KENNZAHLEN-MATRIX (AUFKLAPPBARER QUICK-CHECK)
+// ERWEITERTE KENNZAHLEN-MATRIX (SAUBERE ABSTÄNDE UND BEREINIGTER INHALT)
 // -----------------------------------------------------------------------------
 function ExtendedMetricsMatrix({ model }) {
   const { kpis, finanzierung, stammDaten } = model;
@@ -224,20 +254,20 @@ function ExtendedMetricsMatrix({ model }) {
       <div>
         <div style={matrixHeaderStyle}>Rendite & Vervielfältiger</div>
         <div style={matrixRowStyle}>
-          <span>Kaufpreisfaktor:</span>
-          <strong>{kpis.kaufpreisfaktor.toFixed(1)}x</strong>
+          <span style={matrixLabelStyle}>Kaufpreisfaktor:</span>
+          <strong style={matrixValueStyle}>{kpis.kaufpreisfaktor.toFixed(1)}x</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Netto-Kaufpreisfaktor:</span>
-          <strong>{kpis.nettoKaufpreisfaktor.toFixed(1)}x</strong>
+          <span style={matrixLabelStyle}>Netto-Kaufpreisfaktor:</span>
+          <strong style={matrixValueStyle}>{kpis.nettoKaufpreisfaktor.toFixed(1)}x</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Netto-Mietrendite (Jahr 1):</span>
-          <strong>{kpis.nettoMietrenditeInitial.toFixed(2)} %</strong>
+          <span style={matrixLabelStyle}>Netto-Mietrendite (J1):</span>
+          <strong style={matrixValueStyle}>{kpis.nettoMietrenditeInitial.toFixed(2)} %</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Cash-on-Cash Return (Jahr 1):</span>
-          <strong>{kpis.cashOnCashReturn.toFixed(2)} %</strong>
+          <span style={matrixLabelStyle}>Cash-on-Cash Return (J1):</span>
+          <strong style={matrixValueStyle}>{kpis.cashOnCashReturn.toFixed(2)} %</strong>
         </div>
       </div>
 
@@ -245,20 +275,20 @@ function ExtendedMetricsMatrix({ model }) {
       <div>
         <div style={matrixHeaderStyle}>Bank & Risikoprofil</div>
         <div style={matrixRowStyle}>
-          <span>Beleihungsauslauf (LTV):</span>
-          <strong>{finanzierung.ltv.toFixed(1)} %</strong>
+          <span style={matrixLabelStyle}>Beleihungsauslauf (LTV):</span>
+          <strong style={matrixValueStyle}>{finanzierung.ltv.toFixed(1)} %</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Eigenkapital-Quote:</span>
-          <strong>{finanzierung.ekQuote.toFixed(1)} %</strong>
+          <span style={matrixLabelStyle}>Eigenkapital-Quote:</span>
+          <strong style={matrixValueStyle}>{finanzierung.ekQuote.toFixed(1)} %</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>DSCR (Deckungsbeitrag):</span>
-          <strong>{kpis.dscrInitial.toFixed(2)}x</strong>
+          <span style={matrixLabelStyle}>DSCR (Deckung):</span>
+          <strong style={matrixValueStyle}>{kpis.dscrInitial.toFixed(2)}x</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Kritische Miete (Break-Even):</span>
-          <strong>{formatEuroInt(kpis.breakEvenMieteMo)} € / Mo ({kpis.breakEvenMieteSqmMo.toFixed(2)} €/m²)</strong>
+          <span style={matrixLabelStyle}>Break-Even-Miete:</span>
+          <strong style={matrixValueStyle}>{formatEuroInt(kpis.breakEvenMieteMo)} € / Mo ({kpis.breakEvenMieteSqmMo.toFixed(2)} €/m²)</strong>
         </div>
       </div>
 
@@ -266,16 +296,16 @@ function ExtendedMetricsMatrix({ model }) {
       <div>
         <div style={matrixHeaderStyle}>Substanz & m²-Kennzahlen</div>
         <div style={matrixRowStyle}>
-          <span>Kaufpreis pro m²:</span>
-          <strong>{formatEuroInt(stammDaten.kaufpreisProQm)} € / m²</strong>
+          <span style={matrixLabelStyle}>Kaufpreis pro m²:</span>
+          <strong style={matrixValueStyle}>{formatEuroInt(stammDaten.kaufpreisProQm)} € / m²</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Gesamtkosten pro m²:</span>
-          <strong>{formatEuroInt(stammDaten.gesamtKostenProQm)} € / m²</strong>
+          <span style={matrixLabelStyle}>Gesamtkosten pro m²:</span>
+          <strong style={matrixValueStyle}>{formatEuroInt(stammDaten.gesamtKostenProQm)} € / m²</strong>
         </div>
         <div style={matrixRowStyle}>
-          <span>Gesamtdarlehen Bank:</span>
-          <strong>{formatEuroInt(finanzierung.gesamtDarlehen)} €</strong>
+          <span style={matrixLabelStyle}>Eigenkapital-Einsatz:</span>
+          <strong style={matrixValueStyle}>{formatEuroInt(finanzierung.ekEuro)} €</strong>
         </div>
       </div>
 
@@ -323,7 +353,7 @@ const matrixHeaderStyle = {
   fontSize: '0.85rem',
   fontWeight: '800',
   color: '#13381A',
-  borderBottom: '1px solid #E2D9CE',
+  borderBottom: '2px solid #E2D9CE',
   paddingBottom: '6px',
   marginBottom: '8px'
 };
@@ -331,7 +361,21 @@ const matrixHeaderStyle = {
 const matrixRowStyle = {
   display: 'flex',
   justify: 'space-between',
+  alignItems: 'center',
+  padding: '5px 0',
+  borderBottom: '1px solid #F0EBE1'
+};
+
+const matrixLabelStyle = {
   fontSize: '0.78rem',
-  color: '#4A5568',
-  padding: '4px 0'
+  color: '#718096',
+  fontWeight: '600'
+};
+
+const matrixValueStyle = {
+  fontSize: '0.82rem',
+  color: '#13381A',
+  fontWeight: '800',
+  marginLeft: '12px',
+  textAlign: 'right'
 };

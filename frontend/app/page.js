@@ -252,10 +252,10 @@ export default function Home() {
   const greetingName = userProfile.profilname || userProfile.vorname || (userEmail ? userEmail.split('@')[0] : 'Investor');
 
   if (!showApp) return <LandingPage setShowApp={setShowApp} setAuthenticated={setAuthenticated} userEmail={userEmail} setUserEmail={setUserEmail} />;
-  if (!userProfile.onboarded) return <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A' }}><OnboardingView userEmail={userEmail} userProfile={userProfile} setUserProfile={setUserProfile} onCompleteOnboarding={handleCompleteOnboarding} /></main>;
+  if (!userProfile.onboarded) return <main style={{ minHeight: '100vh', overflowY: 'scroll', scrollbarGutter: 'stable', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A' }}><OnboardingView userEmail={userEmail} userProfile={userProfile} setUserProfile={setUserProfile} onCompleteOnboarding={handleCompleteOnboarding} /></main>;
 
   return (
-    <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', position: 'relative' }}>
+    <main style={{ minHeight: '100vh', overflowY: 'scroll', scrollbarGutter: 'stable', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', position: 'relative' }}>
       <DevNoticeModal devNotice={devNotice} onClose={() => setDevNotice(null)} />
       <Header navChoice={navChoice} setNavChoice={setNavChoice} backendStatus={backendStatus} userEmail={userEmail} userProfile={userProfile} onLogout={handleLogout} />
 

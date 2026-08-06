@@ -252,41 +252,63 @@ export default function Home() {
   const greetingName = userProfile.profilname || userProfile.vorname || (userEmail ? userEmail.split('@')[0] : 'Investor');
 
   if (!showApp) return <LandingPage setShowApp={setShowApp} setAuthenticated={setAuthenticated} userEmail={userEmail} setUserEmail={setUserEmail} />;
-  if (!userProfile.onboarded) return <main style={{ minHeight: '100vh', overflowY: 'scroll', scrollbarGutter: 'stable', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A' }}><OnboardingView userEmail={userEmail} userProfile={userProfile} setUserProfile={setUserProfile} onCompleteOnboarding={handleCompleteOnboarding} /></main>;
 
   return (
-    <main style={{ minHeight: '100vh', overflowY: 'scroll', scrollbarGutter: 'stable', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', position: 'relative' }}>
-      <DevNoticeModal devNotice={devNotice} onClose={() => setDevNotice(null)} />
-      <Header navChoice={navChoice} setNavChoice={setNavChoice} backendStatus={backendStatus} userEmail={userEmail} userProfile={userProfile} onLogout={handleLogout} />
+    <>
+      <style jsx global>{`
+        html, body {
+          margin: 0;
+          padding: 0;
+          overflow-y: scroll !important;
+          scrollbar-gutter: stable;
+          background-color: #F7F4EC;
+          color: #13381A;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        *, *:before, *:after {
+          box-sizing: border-box;
+        }
+      `}</style>
 
-      {navChoice === 'Startseite' && (
-        <StartseiteView 
-          greetingName={greetingName}
-          setNavChoice={setNavChoice}
-          setDevNotice={setDevNotice}
-          loadingDb={loadingDb}
-          dbProperties={dbProperties}
-          loadPropertyFromDb={loadPropertyFromDb}
-        />
-      )}
+      {!userProfile.onboarded ? (
+        <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A' }}>
+          <OnboardingView userEmail={userEmail} userProfile={userProfile} setUserProfile={setUserProfile} onCompleteOnboarding={handleCompleteOnboarding} />
+        </main>
+      ) : (
+        <main style={{ minHeight: '100vh', padding: '2rem 3rem', background: '#F7F4EC', color: '#13381A', position: 'relative' }}>
+          <DevNoticeModal devNotice={devNotice} onClose={() => setDevNotice(null)} />
+          <Header navChoice={navChoice} setNavChoice={setNavChoice} backendStatus={backendStatus} userEmail={userEmail} userProfile={userProfile} onLogout={handleLogout} />
 
-      {navChoice === 'Analyse' && (
-        <form onSubmit={handleCalculate}>
-          <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
-            <Parametrisierung formData={formData} setFormData={setFormData} capexList={capexList} setCapexList={setCapexList} loading={loading} pingBackend={pingBackend} handleReset={handleReset} />
-            <ExecutiveDashboard formData={formData} result={result} projectionHorizon={projectionHorizon} setProjectionHorizon={setProjectionHorizon} handleSaveToDatabase={handleSaveToDatabase} saving={saving} saveSuccess={saveSuccess} calcError={calcError} monthlyCashflow={monthlyCashflow} bruttoMietrendite={bruttoMietrendite} actualHorizonYears={actualHorizonYears} gesamtGewinnHorizon={gesamtGewinnHorizon} activeDashboardTab={activeDashboardTab} setActiveDashboardTab={setActiveDashboardTab} chartView={chartView} setChartView={setChartView} slicedProjection={slicedProjection} summe_nk={summe_nk} tableTheme={tableTheme} setTableTheme={setTableTheme} cumulatedCashflowHorizon={cumulatedCashflowHorizon} endNav={endNav} />
-          </div>
-        </form>
-      )}
+          {navChoice === 'Startseite' && (
+            <StartseiteView 
+              greetingName={greetingName}
+              setNavChoice={setNavChoice}
+              setDevNotice={setDevNotice}
+              loadingDb={loadingDb}
+              dbProperties={dbProperties}
+              loadPropertyFromDb={loadPropertyFromDb}
+            />
+          )}
 
-      {navChoice === 'Objekt Datenbank' && <DatabaseView loadingDb={loadingDb} dbProperties={dbProperties} fetchDatabaseProperties={fetchDatabaseProperties} loadPropertyFromDb={loadPropertyFromDb} deletePropertyFromDb={deletePropertyFromDb} />}
-      {navChoice === 'Profil' && <ProfileView userEmail={userEmail} setUserEmail={setUserEmail} userProfile={userProfile} setUserProfile={setUserProfile} onSaveProfile={handleSaveProfile} onPasswordChange={() => {}} onDeleteAccount={() => {}} onLogout={handleLogout} />}
-      {navChoice === 'Einstellungen' && (
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}><IconGear /><h2 style={{ margin: 0, color: '#13381A' }}>System-Einstellungen</h2></div>
-          <p style={{ color: '#555759', marginBottom: '1.5rem' }}>Konfiguriere deine globalen Parameter-Standards für zukünftige Objektanalysen.</p>
-        </div>
+          {navChoice === 'Analyse' && (
+            <form onSubmit={handleCalculate}>
+              <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
+                <Parametrisierung formData={formData} setFormData={setFormData} capexList={capexList} setCapexList={setCapexList} loading={loading} pingBackend={pingBackend} handleReset={handleReset} />
+                <ExecutiveDashboard formData={formData} result={result} projectionHorizon={projectionHorizon} setProjectionHorizon={setProjectionHorizon} handleSaveToDatabase={handleSaveToDatabase} saving={saving} saveSuccess={saveSuccess} calcError={calcError} monthlyCashflow={monthlyCashflow} bruttoMietrendite={bruttoMietrendite} actualHorizonYears={actualHorizonYears} gesamtGewinnHorizon={gesamtGewinnHorizon} activeDashboardTab={activeDashboardTab} setActiveDashboardTab={setActiveDashboardTab} chartView={chartView} setChartView={setChartView} slicedProjection={slicedProjection} summe_nk={summe_nk} tableTheme={tableTheme} setTableTheme={setTableTheme} cumulatedCashflowHorizon={cumulatedCashflowHorizon} endNav={endNav} />
+              </div>
+            </form>
+          )}
+
+          {navChoice === 'Objekt Datenbank' && <DatabaseView loadingDb={loadingDb} dbProperties={dbProperties} fetchDatabaseProperties={fetchDatabaseProperties} loadPropertyFromDb={loadPropertyFromDb} deletePropertyFromDb={deletePropertyFromDb} />}
+          {navChoice === 'Profil' && <ProfileView userEmail={userEmail} setUserEmail={setUserEmail} userProfile={userProfile} setUserProfile={setUserProfile} onSaveProfile={handleSaveProfile} onPasswordChange={() => {}} onDeleteAccount={() => {}} onLogout={handleLogout} />}
+          {navChoice === 'Einstellungen' && (
+            <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}><IconGear /><h2 style={{ margin: 0, color: '#13381A' }}>System-Einstellungen</h2></div>
+              <p style={{ color: '#555759', marginBottom: '1.5rem' }}>Konfiguriere deine globalen Parameter-Standards für zukünftige Objektanalysen.</p>
+            </div>
+          )}
+        </main>
       )}
-    </main>
+    </>
   );
 }

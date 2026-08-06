@@ -1,6 +1,7 @@
 'use client';
 import StepperInput from '../../ui/StepperInput';
 import { MainCard, SubContainerCard } from '../../ui/CollapsibleCard';
+import { formatEuroInt } from '../../../utils/formatters';
 
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#4A5568', marginBottom: '6px' };
 const inputStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
@@ -33,16 +34,17 @@ export default function SectionSteuern({
     else if (model === 'Denkmalgeschützt') onFieldChange('afa_lin', 9.0);
   };
 
-  // EINSTELLUNG OB PROZENTSATZ MANUELL EDTIERBAR IST
   const isAfaRateFixed = currentModel !== 'Linear Standard';
 
-  // LIVE PRÜFUNG BAUKOSTENOBERGRENZE § 7b EStG (5.200 € / m²)
+  // PRÜFUNGEN FÜR FORMULAR-WARNHINWEISE
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const qm = Number(formData?.qm || 0);
   const gebaeudeAnteilP = Number(formData?.gebaeude_anteil_pct ?? 80) / 100;
   const gebaeudeWert = kaufpreis * gebaeudeAnteilP;
   const gebaeudeWertProQm = qm > 0 ? gebaeudeWert / qm : 0;
   const isSonderAfaExceeded = gebaeudeWertProQm > 5200;
+
+  const sanierungKosten = Number(formData?.sanierung || 0);
 
   return (
     <MainCard title="4. Steuern, Makro & Exit" isOpen={isOpen} onToggle={onToggle}>
@@ -102,7 +104,9 @@ export default function SectionSteuern({
 
         {isAfaRateFixed ? (
           <div>
-            <label style={labelStyle}>AfA % (Fixiert)</label>
+            <label style={labelStyle}>
+              {currentModel === 'Kombination: Degressiv + Sonder-AfA' ? 'Degressive AfA % (Fixiert)' : 'AfA % (Fixiert)'}
+            </label>
             <input
               type="text"
               readOnly
@@ -122,7 +126,21 @@ export default function SectionSteuern({
         )}
       </div>
 
-      {/* DETAILS- UND WARNHINWEISE FÜR SONDER-AFA (§ 7b EStG) */}
+      {/* EXTRA FELD FÜR SONDER-AFA % BEI DER KOMBINATION */}
+      {currentModel === 'Kombination: Degressiv + Sonder-AfA' && (
+        <div>
+          <label style={labelStyle}>Sonder-AfA % (Fixiert)</label>
+          <input
+            type="text"
+            readOnly
+            disabled
+            value="5,0 % p.a. (Jahre 1–4)"
+            style={disabledInputStyle}
+          />
+        </div>
+      )}
+
+      {/* HINWEISKASTEN SONDER-AFA (§ 7b EStG) */}
       {currentModel === 'Kombination: Degressiv + Sonder-AfA' && (
         <div style={{
           background: isSonderAfaExceeded ? '#FFF5F5' : '#FAF8F5',
@@ -147,7 +165,38 @@ export default function SectionSteuern({
             </div>
           ) : (
             <div style={{ marginTop: '8px', color: '#276749', fontWeight: '700', borderTop: '1px solid #E2D9CE', paddingTop: '6px' }}>
-              [Hinweis] Gebäudeanteil liegt unter der Baukostenobergrenze (5.200 € / m²). Die Sonder-AfA wird für die Jahre 1 bis 4 berücksichtigt.
+              Gebäudeanteil liegt unter der Baukostenobergrenze (5.200 € / m²). Die Sonder-AfA wird für die Jahre 1 bis 4 berücksichtigt.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* HINWEISKASTEN DENKMAL-AFA (§ 7h / § 7i EStG) */}
+      {currentModel === 'Denkmalgeschützt' && (
+        <div style={{
+          background: sanierungKosten === 0 ? '#FFF5F5' : '#FAF8F5',
+          border: sanierungKosten === 0 ? '1px solid #FEB2B2' : '1px solid #E2D9CE',
+          borderRadius: '8px',
+          padding: '12px 14px',
+          fontSize: '0.8rem',
+          color: sanierungKosten === 0 ? '#9B2C2C' : '#13381A'
+        }}>
+          <div style={{ fontWeight: '800', marginBottom: '4px' }}>
+            Denkmal-AfA (§ 7h / § 7i EStG) Parameter-Check:
+          </div>
+          <div style={{ lineHeight: '1.4' }}>
+            • <strong>Sanierungsaufwand (Jahre 1–8):</strong> 9,0 % p.a.<br />
+            • <strong>Sanierungsaufwand (Jahre 9–12):</strong> 7,0 % p.a.<br />
+            • <strong>Altbestand-Gebäudeanteil:</strong> Lineare Standard-AfA (2,0 % p.a.)
+          </div>
+
+          {sanierungKosten === 0 ? (
+            <div style={{ marginTop: '8px', fontWeight: '800', borderTop: '1px solid #FEB2B2', paddingTop: '6px' }}>
+              [Achtung] Unter "Sanierung / Umbau (€)" sind aktuell 0 € eingetragen. Die erhöhte Denkmal-AfA gilt gesetzlich ausschließlich auf die bescheinigten Sanierungskosten, nicht auf den ursprünglichen Altbestand-Kaufpreis!
+            </div>
+          ) : (
+            <div style={{ marginTop: '8px', color: '#276749', fontWeight: '700', borderTop: '1px solid #E2D9CE', paddingTop: '6px' }}>
+              Die Denkmal-AfA wird auf die angegebenen Sanierungskosten von {formatEuroInt(sanierungKosten)} € angewendet.
             </div>
           )}
         </div>
@@ -182,7 +231,7 @@ export default function SectionSteuern({
         isPercent={true}
       />
 
-      {/* CAPEX SUBSSECTION */}
+      {/* CAPEX SUBSECTION */}
       <SubContainerCard
         title="CapEx & Instandhaltungs-Fahrplan"
         isOpen={openSubSections.capex}

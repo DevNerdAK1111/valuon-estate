@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from supabase import create_client, Client
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -33,7 +33,7 @@ def fetch_properties_from_db() -> List[Dict[str, Any]]:
     return res.data or []
 
 
-def delete_property_from_db(property_id: int) -> Any:
+def delete_property_from_db(property_id: Union[int, str]) -> Any:
     if not supabase:
         raise Exception("Supabase nicht konfiguriert.")
     
@@ -41,7 +41,9 @@ def delete_property_from_db(property_id: int) -> Any:
     return res.data
 
 
-def update_property_status_in_db(property_id: int, new_status: str):
-    supabase = get_supabase_client()
+def update_property_status_in_db(property_id: Union[int, str], new_status: str) -> Any:
+    if not supabase:
+        raise Exception("Supabase nicht konfiguriert.")
+    
     res = supabase.table("properties").update({"status": new_status}).eq("id", property_id).execute()
     return res.data

@@ -69,7 +69,7 @@ export const calculateInvestmentApi = async (formData, capexList) => {
 };
 
 /**
- * Lädt gespeicherte Objekte aus der Datenbank (optional gefiltert nach userEmail und statusFilter)
+ * Lädt alle gespeicherten Objekte aus der Datenbank (optional gefiltert nach userEmail und statusFilter)
  */
 export const fetchPropertiesApi = async (userEmail, statusFilter = null) => {
   const res = await fetch(`${BACKEND_URL}/api/properties`);
@@ -103,7 +103,7 @@ export const savePropertyApi = async (formData, capexList, result, userEmail, st
     bundesland: formData.bundesland,
     kaufpreis: Number(formData.kaufpreis),
     qm: Number(formData.qm),
-    irr: Number(result?.summary?.irr || 0),
+    irr: Number(result?.summary?.irr || result?.kpis?.validIrr || 0),
     cashflow_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
     cashflow_netto_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
     user_email: userEmail,

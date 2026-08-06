@@ -1,5 +1,6 @@
 import { formatEuroInt } from './formatters';
 
+// HELPER: NEWTON-RAPHSON MODELL FÜR PRÄZISE EK-RENDITE (IRR)
 export function calculateIRR(cfs, guess = 0.1) {
   const maxIter = 100;
   const precision = 1e-7;
@@ -38,6 +39,7 @@ export function checkSonderAfaEligibility(formData) {
   };
 }
 
+// ZENTRALE INVESTITIONS-ENGINE (SINGLE SOURCE OF TRUTH)
 export function calculateInvestmentModel(formData, projectionHorizon = '10', rawBackendResult = null) {
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const qm = Number(formData?.qm || 0);

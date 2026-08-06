@@ -405,7 +405,7 @@ function TableView({ activeDashboardTab, slicedProjection, formData }) {
                     <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(restschuld)} €</td>
                     <td style={{ padding: '10px', color: '#9B2C2C' }}>-{formatEuroInt(zins)} €</td>
                     <td style={{ padding: '10px', color: '#276749' }}>+{formatEuroInt(tilg)} €</td>
-                    <td style={{ padding: '10px', color sondertilg > 0 ? '#276749' : '#718096' }}>+{formatEuroInt(sondertilg)} €</td>
+                    <td style={{ padding: '10px', color: sondertilg > 0 ? '#276749' : '#718096' }}>+{formatEuroInt(sondertilg)} €</td>
                     <td style={{ padding: '10px', fontWeight: '800', color: '#276749' }}>+{formatEuroInt(tilg + sondertilg)} €</td>
                     <td style={{ padding: '10px' }}>-{formatEuroInt(afa)} €</td>
                     <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(zstErtrag)} €</td>

@@ -7,7 +7,8 @@ from core.calculations import calculate_investment_metrics
 from core.database import (
     save_property_to_db,
     fetch_properties_from_db,
-    delete_property_from_db
+    delete_property_from_db,
+    update_property_status_in_db
 )
 from core.ai_service import analyze_text_with_gemini, fetch_text_from_url
 
@@ -113,9 +114,14 @@ class PropertyDatabasePayload(BaseModel):
     cashflow_y1: Optional[float] = 0.0
     cashflow_netto_y1: Optional[float] = 0.0
     user_email: Optional[str] = None
+    status: Optional[str] = "pipeline"
     form_data: Optional[Dict[str, Any]] = None
     capex_list: Optional[Any] = None
     created_at: Optional[str] = None
+
+
+class PropertyStatusUpdatePayload(BaseModel):
+    status: str
 
 
 class AiAnalysisRequest(BaseModel):
@@ -172,6 +178,7 @@ async def save_property(payload: PropertyDatabasePayload):
             "cashflow_y1": payload.cashflow_y1 or payload.cashflow_netto_y1 or 0.0,
             "cashflow_netto_y1": payload.cashflow_netto_y1 or payload.cashflow_y1 or 0.0,
             "user_email": payload.user_email,
+            "status": payload.status or "pipeline",
             "form_data": payload.form_data,
             "capex_list": payload.capex_list
         }
@@ -188,6 +195,15 @@ async def get_properties():
         return {"properties": properties}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Fehler beim Laden: {str(e)}")
+
+
+@app.patch("/api/properties/{property_id}")
+async def update_property_status(property_id: int, payload: PropertyStatusUpdatePayload):
+    try:
+        res_data = update_property_status_in_db(property_id, payload.status)
+        return {"status": "updated", "data": res_data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fehler beim Aktualisieren: {str(e)}")
 
 
 @app.delete("/api/properties/{property_id}")

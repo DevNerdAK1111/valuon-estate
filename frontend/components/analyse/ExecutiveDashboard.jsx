@@ -27,6 +27,8 @@ export default function ExecutiveDashboard({
   setProjectionHorizon,
   handleSaveToDatabase,
   saving,
+  saveSuccess,
+  calcError,
   activeDashboardTab,
   setActiveDashboardTab,
   summe_nk
@@ -60,7 +62,6 @@ export default function ExecutiveDashboard({
 
         {result && (
           <div style={{ display: 'flex', gap: '8px' }}>
-            {/* PROMINENTER PROJEKT-BUTTON FOR PIPELINE */}
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('pipeline')}
@@ -80,7 +81,6 @@ export default function ExecutiveDashboard({
               {saving ? 'Speichert...' : '+ In Pipeline'}
             </button>
 
-            {/* SEKUNDÄRER BUTTON FÜR BESTAND */}
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('bestand')}
@@ -102,6 +102,35 @@ export default function ExecutiveDashboard({
           </div>
         )}
       </div>
+
+      {/* BENACHRICHTIGUNGS-BANNER FÜR SPEICHERN ODER BERECHNUNGSFEHLER */}
+      {saveSuccess && (
+        <div style={{
+          padding: '0.85rem 1.25rem',
+          borderRadius: '8px',
+          background: saveSuccess.includes('Fehler') || saveSuccess.includes('fehlgeschlagen') ? '#FFF5F5' : '#F0FFF4',
+          border: `1px solid ${saveSuccess.includes('Fehler') || saveSuccess.includes('fehlgeschlagen') ? '#FEB2B2' : '#9AE6B4'}`,
+          color: saveSuccess.includes('Fehler') || saveSuccess.includes('fehlgeschlagen') ? '#9B2C2C' : '#22543D',
+          fontSize: '0.85rem',
+          fontWeight: '700'
+        }}>
+          {saveSuccess}
+        </div>
+      )}
+
+      {calcError && (
+        <div style={{
+          padding: '0.85rem 1.25rem',
+          borderRadius: '8px',
+          background: '#FFF5F5',
+          border: '1px solid #FEB2B2',
+          color: '#9B2C2C',
+          fontSize: '0.85rem',
+          fontWeight: '700'
+        }}>
+          {calcError}
+        </div>
+      )}
 
       {/* BETRACHTUNGSHORIZONT SCHALTER */}
       {result && (

@@ -156,13 +156,14 @@ export default function Home() {
     }
   };
 
-  const handleSaveToDatabase = async () => {
+  const handleSaveToDatabase = async (status = 'pipeline') => {
     if (!result) return;
     setSaving(true);
     setSaveSuccess(null);
     try {
-      await savePropertyApi(formData, capexList, result, userEmail);
-      setSaveSuccess('Objekt erfolgreich in deiner Datenbank gespeichert.');
+      await savePropertyApi(formData, capexList, result, userEmail, status);
+      const statusText = status === 'bestand' ? 'im Bestand' : 'in der Pipeline';
+      setSaveSuccess(`Objekt erfolgreich ${statusText} gespeichert.`);
       fetchDatabaseProperties();
     } catch (err) {
       setSaveSuccess(err.message || 'Speichern fehlgeschlagen.');

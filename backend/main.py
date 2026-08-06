@@ -107,6 +107,7 @@ class PropertyDatabasePayload(BaseModel):
     obj_name: Optional[str] = None
     objektart: Optional[str] = None
     stadt: Optional[str] = None
+    stadtteil: Optional[str] = None
     bundesland: Optional[str] = None
     kaufpreis: Optional[float] = 0.0
     qm: Optional[float] = 0.0
@@ -171,6 +172,7 @@ async def save_property(payload: PropertyDatabasePayload):
             "obj_name": payload.obj_name or payload.name or "Unbenanntes Objekt",
             "objektart": payload.objektart,
             "stadt": payload.stadt,
+            "stadtteil": payload.stadtteil,
             "bundesland": payload.bundesland,
             "kaufpreis": payload.kaufpreis,
             "qm": payload.qm,

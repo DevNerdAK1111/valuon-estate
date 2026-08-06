@@ -29,13 +29,14 @@ function getNiceTicks(minVal, maxVal, maxTicks = 5) {
   return { ticks, min: niceMin, max: niceMax };
 }
 
-export default function ProjectionChart({ slicedProjection }) {
+export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
   const [activeView, setActiveView] = useState('vermoegen');
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   // NORMALISIERUNG DER BACKEND-PROJEKTIONSDATEN
   const rawList = slicedProjection || [];
   let runningCumCashflow = 0;
+  
   const chartData = rawList.map((d, index) => {
     const jahr = Number(d.Jahr ?? d.jahr ?? (index + 1));
     const immoWert = Number(d.Immobilienwert ?? d.immobilienwert ?? 0);
@@ -65,6 +66,11 @@ export default function ProjectionChart({ slicedProjection }) {
     };
   });
 
+  // INITIALE EIGENKAPITAL-BASIS (FALLS VORHANDEN ODER AUS ERSTEM NET-EQUITY WERT)
+  const ekBase = Number(ekEuroInput) > 0 
+    ? Number(ekEuroInput) 
+    : (chartData[0] ? chartData[0].netEquity : 0);
+
   // GEOMETRIE MIT INSET FÜR SAUBERE RÄNDER & ACHSENABSTÄNDE
   const width = 740;
   const height = 320;
@@ -85,7 +91,8 @@ export default function ProjectionChart({ slicedProjection }) {
       const allVals = chartData.flatMap(d => [d.miete, d.kapitaldienst, d.nettoCashflow]);
       return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
     }
-    const allVals = chartData.flatMap(d => [d.totalReturn, d.cumCashflow]);
+    // AMORTISATION & BREAK-EVEN
+    const allVals = chartData.flatMap(d => [d.totalReturn, d.cumCashflow, ekBase]);
     return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
   };
 
@@ -107,12 +114,15 @@ export default function ProjectionChart({ slicedProjection }) {
     return chartData.reduce((acc, d, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d[key])}`, '');
   };
 
-  const makeAreaPath = (key) => {
+  const makeAreaPath = (key, baseValue = 0) => {
     if (chartData.length === 0) return '';
     const linePath = makePath(key);
-    const zeroY = getY(0);
-    return `${linePath} L ${getX(chartData.length - 1)} ${zeroY} L ${getX(0)} ${zeroY} Z`;
+    const baseY = getY(baseValue);
+    return `${linePath} L ${getX(chartData.length - 1)} ${baseY} L ${getX(0)} ${baseY} Z`;
   };
+
+  // BREAK EVEN JAHR BESTIMMEN (WO TOTAL RETURN >= EK-EINSATZ)
+  const breakEvenIndex = chartData.findIndex(d => d.totalReturn >= ekBase);
 
   return (
     <div style={{
@@ -137,7 +147,7 @@ export default function ProjectionChart({ slicedProjection }) {
           <span style={{ fontSize: '0.75rem', color: '#718096' }}>
             {activeView === 'vermoegen' && 'Schereneffekt zwischen steigendem Objektwert und sinkender Restschuld'}
             {activeView === 'cashflow' && 'Gegenüberstellung von Mieteinnahmen, Bankrate und Netto-Ertrag'}
-            {activeView === 'amortisation' && 'Kumulierter Ertrag inkl. Eigenkapitalrückfluss'}
+            {activeView === 'amortisation' && 'Gesamtertrag (NAV + Kum. Cashflow) vs. Eigenkapitaleinsatz'}
           </span>
         </div>
 
@@ -215,13 +225,13 @@ export default function ProjectionChart({ slicedProjection }) {
           {/* ANSICHT 1: VERMÖGEN & SCHULDEN */}
           {activeView === 'vermoegen' && (
             <>
-              <path d={makeAreaPath('immobilienwert')} fill="#13381A" fillOpacity="0.12" />
+              <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" />
               <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" />
 
-              <path d={makeAreaPath('netEquity')} fill="#A37841" fillOpacity="0.18" />
+              <path d={makeAreaPath('netEquity', 0)} fill="#A37841" fillOpacity="0.18" />
               <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" />
 
-              <path d={makeAreaPath('restschuld')} fill="#9B2C2C" fillOpacity="0.12" />
+              <path d={makeAreaPath('restschuld', 0)} fill="#9B2C2C" fillOpacity="0.12" />
               <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" />
             </>
           )}
@@ -250,8 +260,80 @@ export default function ProjectionChart({ slicedProjection }) {
           {/* ANSICHT 3: AMORTISATION & BREAK-EVEN */}
           {activeView === 'amortisation' && (
             <>
+              {/* EIGENKAPITAL-BASISREFERENZLINIE */}
+              {ekBase > 0 && (
+                <g>
+                  <line
+                    x1={padding.left}
+                    y1={getY(ekBase)}
+                    x2={width - padding.right}
+                    y2={getY(ekBase)}
+                    stroke="#A37841"
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                  />
+                  <text
+                    x={width - padding.right - 8}
+                    y={getY(ekBase) - 6}
+                    fontSize="10"
+                    fontWeight="800"
+                    fill="#A37841"
+                    textAnchor="end"
+                  >
+                    EK-Einsatz ({formatEuroInt(ekBase)} €)
+                  </text>
+                </g>
+              )}
+
+              {/* FLÄCHENFÜLLUNG GESAMTERTRAG */}
+              <path d={makeAreaPath('totalReturn', ekBase > 0 ? ekBase : 0)} fill="#276749" fillOpacity="0.15" />
+
+              {/* GESAMTERTRAGS-LINIE (NAV + KUM. CASHFLOW) */}
               <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" />
-              <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="5 5" />
+
+              {/* KUMULIERTER CASHFLOW LINIE */}
+              <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" />
+
+              {/* HIGHLIGHT BREAK EVEN PUNKT */}
+              {breakEvenIndex !== -1 && (
+                <g>
+                  <circle
+                    cx={getX(breakEvenIndex)}
+                    cy={getY(chartData[breakEvenIndex].totalReturn)}
+                    r="6"
+                    fill="#276749"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1={getX(breakEvenIndex)}
+                    y1={padding.top}
+                    x2={getX(breakEvenIndex)}
+                    y2={height - padding.bottom}
+                    stroke="#276749"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
+                  />
+                  <rect
+                    x={getX(breakEvenIndex) - 45}
+                    y={padding.top - 2}
+                    width="90"
+                    height="18"
+                    rx="4"
+                    fill="#276749"
+                  />
+                  <text
+                    x={getX(breakEvenIndex)}
+                    y={padding.top + 11}
+                    fontSize="9"
+                    fontWeight="800"
+                    fill="white"
+                    textAnchor="middle"
+                  >
+                    Break-Even J{chartData[breakEvenIndex].jahr}
+                  </text>
+                </g>
+              )}
             </>
           )}
 
@@ -303,8 +385,11 @@ export default function ProjectionChart({ slicedProjection }) {
             )}
             {activeView === 'amortisation' && (
               <>
-                <div style={{ color: '#13381A' }}>Gesamtgewinn: <strong>{formatEuroInt(chartData[hoveredIndex].totalReturn)} €</strong></div>
-                <div style={{ color: '#A37841' }}>Kum. Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].cumCashflow)} €</strong></div>
+                <div style={{ color: '#13381A' }}>Gesamtertrag (NAV + CF): <strong>{formatEuroInt(chartData[hoveredIndex].totalReturn)} €</strong></div>
+                <div style={{ color: '#A37841' }}>Kum. Netto-Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].cumCashflow)} €</strong></div>
+                <div style={{ color: chartData[hoveredIndex].totalReturn >= ekBase ? '#276749' : '#9B2C2C', fontWeight: '800', marginTop: '2px' }}>
+                  Reingewinn n. EK: {formatEuroInt(chartData[hoveredIndex].totalReturn - ekBase)} €
+                </div>
               </>
             )}
           </div>
@@ -362,11 +447,15 @@ export default function ProjectionChart({ slicedProjection }) {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ width: '18px', height: '3px', background: '#13381A', borderRadius: '2px' }}></span>
-              <span>Gesamtgewinn (Cashflow + NAV)</span>
+              <span>Gesamtertrag (NAV + Kum. Cashflow)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '18px', height: '3px', background: '#A37841', borderRadius: '2px', strokeDasharray: '3 3' }}></span>
-              <span>Kumulierter Netto-Cashflow</span>
+              <span style={{ width: '18px', height: '3px', strokeDasharray: '3 3', borderTop: '2px dashed #A37841' }}></span>
+              <span>EK-Referenzlinie ({formatEuroInt(ekBase)} €)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', strokeDasharray: '2 2', borderTop: '2px dashed #A37841' }}></span>
+              <span>Kum. Netto-Cashflow</span>
             </div>
           </>
         )}

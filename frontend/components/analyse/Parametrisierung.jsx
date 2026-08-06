@@ -87,63 +87,67 @@ export default function Parametrisierung({
       paddingRight: '4px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '1.2rem'
+      gap: '1rem'
     }}>
-      {/* MASK KOPFZEILE */}
+      {/* 1. KOPFZEILE: OBJEKT PARAMETER */}
       <div style={{
         background: 'white',
         padding: '1rem 1.2rem',
         borderRadius: '12px',
         border: '1px solid #E2D9CE',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        flexShrink: 0
       }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '900', color: '#13381A' }}>
-            Objekt-Parameter
-          </h3>
-          <span style={{ fontSize: '0.75rem', color: '#718096' }}>Eingabemaske für Kalkulation</span>
-        </div>
+        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '900', color: '#13381A' }}>
+          Objekt-Parameter
+        </h3>
+        <span style={{ fontSize: '0.75rem', color: '#718096' }}>Eingabemaske für Kalkulation</span>
+      </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+      {/* 2. ACTIONS BAR (BUTTONS IN EIGENER ZEILE) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        flexShrink: 0
+      }}>
+        <button
+          type="button"
+          onClick={toggleAllSections}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            background: 'white',
+            border: '1px solid #E2D9CE',
+            borderRadius: '8px',
+            fontSize: '0.75rem',
+            fontWeight: '700',
+            color: '#13381A',
+            cursor: 'pointer',
+            textAlign: 'center'
+          }}
+        >
+          {allSectionsOpen ? 'Alle einklappen' : 'Alle ausklappen'}
+        </button>
+
+        {handleReset && (
           <button
             type="button"
-            onClick={toggleAllSections}
+            onClick={handleReset}
+            title="Formular zurücksetzen"
             style={{
-              padding: '6px 10px',
-              background: '#FAF8F5',
-              border: '1px solid #E2D9CE',
-              borderRadius: '6px',
+              padding: '8px 16px',
+              background: '#FFF5F5',
+              border: '1px solid #FEB2B2',
+              borderRadius: '8px',
               fontSize: '0.75rem',
               fontWeight: '700',
-              color: '#13381A',
+              color: '#9B2C2C',
               cursor: 'pointer'
             }}
           >
-            {allSectionsOpen ? 'Alle einklappen' : 'Alle ausklappen'}
+            Reset
           </button>
-
-          {handleReset && (
-            <button
-              type="button"
-              onClick={handleReset}
-              title="Formular zurücksetzen"
-              style={{
-                padding: '6px 10px',
-                background: '#FFF5F5',
-                border: '1px solid #FEB2B2',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                color: '#9B2C2C',
-                cursor: 'pointer'
-              }}
-            >
-              Reset
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* HAUPTBEREICH 1: BASISDATEN */}
@@ -695,7 +699,8 @@ export default function Parametrisierung({
           fontWeight: '900',
           cursor: loading ? 'not-allowed' : 'pointer',
           boxShadow: '0 4px 14px rgba(19,56,26,0.25)',
-          marginTop: '0.5rem'
+          marginTop: '0.5rem',
+          flexShrink: 0
         }}
       >
         {loading ? 'Berechne Investment...' : 'Investition analysieren →'}
@@ -720,10 +725,12 @@ function SectionHeader({ title, isOpen, onToggle }) {
         justifyContent: 'space-between',
         alignItems: 'center',
         cursor: 'pointer',
-        userSelect: 'none'
+        userSelect: 'none',
+        minHeight: '48px',
+        boxSizing: 'border-box'
       }}
     >
-      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#13381A' }}>
+      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#13381A', lineHeight: '1.2' }}>
         {title}
       </h4>
       <ChevronDownIcon isOpen={isOpen} />
@@ -792,7 +799,8 @@ const cardContainerStyle = {
   background: 'white',
   borderRadius: '12px',
   border: '1px solid #E2D9CE',
-  overflow: 'hidden'
+  overflow: 'hidden',
+  flexShrink: 0
 };
 
 const sectionBodyStyle = {

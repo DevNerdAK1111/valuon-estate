@@ -6,12 +6,11 @@ import TableView from './TableView';
 import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { formatEuroInt } from '../../utils/formatters';
 
-// ALLE VERFÜGBAREN KPIS FÜR DIE TOP-KARTEN AUSWAHL
 const KPI_OPTIONS = [
   { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
   { id: 'brutto', label: 'Brutto-Mietrendite (Ø p.a.)', getValue: (m) => `${m.kpis.avgBruttoRendite.toFixed(2)} %`, getSub: () => 'Ø Miete p.a. / Kaufpreis', color: '#13381A' },
   { id: 'irr', label: 'Eigenkapitalrendite (IRR)', getValue: (m) => `${m.kpis.validIrr.toFixed(2)} %`, getSub: (m) => `Effektive EK-Verzinsung bei Exit (${m.kpis.horizonYears} J.)`, color: '#A37841' },
-  { id: 'gewinn', label: `Gesamtgewinn (Horizon)`, getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: () => 'Kum. Cashflow + NAV Zuwachs', isPos: (m) => m.kpis.gesamtGewinn >= 0 },
+  { id: 'gewinn', label: 'Gesamtgewinn (Horizon)', getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: () => 'Kum. Cashflow + NAV Zuwachs', isPos: (m) => m.kpis.gesamtGewinn >= 0 },
   { id: 'faktor', label: 'Kaufpreisfaktor', getValue: (m) => `${m.kpis.kaufpreisfaktor.toFixed(1)}x`, getSub: () => 'Kaufpreis / Jahreskaltmiete', color: '#13381A' },
   { id: 'nettoFaktor', label: 'Netto-Kaufpreisfaktor', getValue: (m) => `${m.kpis.nettoKaufpreisfaktor.toFixed(1)}x`, getSub: () => 'Gesamtkosten / Nettomiete (NOI)', color: '#13381A' },
   { id: 'nettoRendite', label: 'Netto-Mietrendite (Jahr 1)', getValue: (m) => `${m.kpis.nettoMietrenditeInitial.toFixed(2)} %`, getSub: () => 'Nettomiete / Gesamtkosten', color: '#13381A' },
@@ -105,7 +104,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* KPI KARTEN MIT MODULARER ANPASSUNG */}
+      {/* KPI KARTEN */}
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           
@@ -122,7 +121,6 @@ export default function ExecutiveDashboard({
             </button>
           </div>
 
-          {/* KARTEN ANPASSUNGS-PANEL */}
           {isCustomizingKpis && (
             <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
               {selectedKpiIds.map((currentId, slotIdx) => (
@@ -144,7 +142,6 @@ export default function ExecutiveDashboard({
             </div>
           )}
 
-          {/* RENDERING DER 4 AUSGEWÄHLTEN KARTEN */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
             {selectedKpiIds.map((kpiId, idx) => {
               const config = KPI_OPTIONS.find(o => o.id === kpiId) || KPI_OPTIONS[0];
@@ -164,7 +161,6 @@ export default function ExecutiveDashboard({
             })}
           </div>
 
-          {/* TOGGLE FÜR ERWEITERTE MATRIX */}
           <button
             type="button"
             onClick={() => setShowExtendedMatrix(!showExtendedMatrix)}
@@ -189,7 +185,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* TAB NAVIGATION (KONSOLIDIERT AUF 2 REITER) */}
+      {/* TAB NAVIGATION */}
       <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
         {[
           { id: 'Executive Dashboard', label: 'Executive Dashboard' },
@@ -203,9 +199,9 @@ export default function ExecutiveDashboard({
               padding: '10px 0',
               background: 'none',
               border: 'none',
-              borderBottom: activeDashboardTab === tab.id ? '3px solid #13381A' : '3px solid transparent',
-              color: activeDashboardTab === tab.id ? '#13381A' : '#718096',
-              fontWeight: activeDashboardTab === tab.id ? '800' : '600',
+              borderBottom: (activeDashboardTab === tab.id || (!activeDashboardTab && tab.id === 'Executive Dashboard')) ? '3px solid #13381A' : '3px solid transparent',
+              color: (activeDashboardTab === tab.id || (!activeDashboardTab && tab.id === 'Executive Dashboard')) ? '#13381A' : '#718096',
+              fontWeight: (activeDashboardTab === tab.id || (!activeDashboardTab && tab.id === 'Executive Dashboard')) ? '800' : '600',
               fontSize: '0.95rem',
               cursor: 'pointer',
               marginBottom: '-2px'
@@ -217,7 +213,7 @@ export default function ExecutiveDashboard({
       </div>
 
       {/* TAB 1: EXECUTIVE DASHBOARD */}
-      {result && (activeDashboardTab === 'Executive Dashboard' || !activeDashboardTab || activeDashboardTab === 'Cashflow & Liquidität' || activeDashboardTab === 'Finanzierung & Steuern') && activeDashboardTab !== 'Jahresprognose & Detailanalyse' && (
+      {result && (activeDashboardTab === 'Executive Dashboard' || !activeDashboardTab) && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
           <ProjectionChart slicedProjection={model.slicedProjection} />
           <DonutChart formData={formData} summe_nk={summe_nk} />
@@ -226,16 +222,13 @@ export default function ExecutiveDashboard({
 
       {/* TAB 2: JAHRESPROGNOSE & DETAILANALYSE */}
       {result && activeDashboardTab === 'Jahresprognose & Detailanalyse' && (
-        <TableView slicedProjection={model.slicedProjection} />
+        <TableView slicedProjection={model.slicedProjection} totals={model.totals} />
       )}
 
     </div>
   );
 }
 
-// -----------------------------------------------------------------------------
-// ERWEITERTE KENNZAHLEN-MATRIX (SAUBERE ABSTÄNDE UND BEREINIGTER INHALT)
-// -----------------------------------------------------------------------------
 function ExtendedMetricsMatrix({ model }) {
   const { kpis, finanzierung, stammDaten } = model;
 
@@ -249,8 +242,6 @@ function ExtendedMetricsMatrix({ model }) {
       gridTemplateColumns: 'repeat(3, 1fr)',
       gap: '1.5rem'
     }}>
-      
-      {/* SPALTE 1: RENDITE & VERVIELFACHUNG */}
       <div>
         <div style={matrixHeaderStyle}>Rendite & Vervielfältiger</div>
         <div style={matrixRowStyle}>
@@ -271,7 +262,6 @@ function ExtendedMetricsMatrix({ model }) {
         </div>
       </div>
 
-      {/* SPALTE 2: BANK & RISIKO */}
       <div>
         <div style={matrixHeaderStyle}>Bank & Risikoprofil</div>
         <div style={matrixRowStyle}>
@@ -292,7 +282,6 @@ function ExtendedMetricsMatrix({ model }) {
         </div>
       </div>
 
-      {/* SPALTE 3: SUBSTANZ & QUADRATMETER */}
       <div>
         <div style={matrixHeaderStyle}>Substanz & m²-Kennzahlen</div>
         <div style={matrixRowStyle}>
@@ -308,7 +297,6 @@ function ExtendedMetricsMatrix({ model }) {
           <strong style={matrixValueStyle}>{formatEuroInt(finanzierung.ekEuro)} €</strong>
         </div>
       </div>
-
     </div>
   );
 }

@@ -69,26 +69,31 @@ export const calculateInvestmentApi = async (formData, capexList) => {
 };
 
 /**
- * Lädt alle gespeicherten Objekte aus der Datenbank
+ * Lädt gespeicherte Objekte aus der Datenbank (optional gefiltert nach userEmail und statusFilter)
  */
-export const fetchPropertiesApi = async (userEmail) => {
+export const fetchPropertiesApi = async (userEmail, statusFilter = null) => {
   const res = await fetch(`${BACKEND_URL}/api/properties`);
   if (!res.ok) {
     throw new Error(`Fehler beim Laden der Datenbank (Status ${res.status})`);
   }
   const data = await res.json();
-  const rawList = data.properties || data || [];
+  let rawList = data.properties || data || [];
   
   if (userEmail) {
-    return rawList.filter((item) => !item.user_email || item.user_email === userEmail);
+    rawList = rawList.filter((item) => !item.user_email || item.user_email === userEmail);
   }
+
+  if (statusFilter) {
+    rawList = rawList.filter((item) => (item.status || 'pipeline') === statusFilter);
+  }
+
   return rawList;
 };
 
 /**
- * Speichert ein berechnetes Objekt in der Datenbank
+ * Speichert ein berechnetes Objekt in der Datenbank (inkl. status: 'pipeline' oder 'bestand')
  */
-export const savePropertyApi = async (formData, capexList, result, userEmail) => {
+export const savePropertyApi = async (formData, capexList, result, userEmail, status = 'pipeline') => {
   const payload = {
     name: formData.obj_name || 'Unbenanntes Objekt',
     obj_name: formData.obj_name || 'Unbenanntes Objekt',
@@ -102,6 +107,7 @@ export const savePropertyApi = async (formData, capexList, result, userEmail) =>
     cashflow_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
     cashflow_netto_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
     user_email: userEmail,
+    status: status || 'pipeline',
     form_data: formData,
     capex_list: capexList,
     created_at: new Date().toISOString()
@@ -119,6 +125,24 @@ export const savePropertyApi = async (formData, capexList, result, userEmail) =>
       ? errorData.detail
       : JSON.stringify(errorData.detail || errorData.message || `Status HTTP ${res.status}`);
     throw new Error(`Fehler beim Speichern: ${detailMsg}`);
+  }
+
+  return await res.json();
+};
+
+/**
+ * Aktualisiert den Status eines Objekts (z. B. Wechsel von 'pipeline' zu 'bestand')
+ */
+export const updatePropertyStatusApi = async (propertyId, newStatus) => {
+  const res = await fetch(`${BACKEND_URL}/api/properties/${propertyId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Fehler beim Aktualisieren des Status (Status ${res.status})`);
   }
 
   return await res.json();

@@ -37,7 +37,8 @@ def delete_property_from_db(property_id: Union[int, str]) -> Any:
     if not supabase:
         raise Exception("Supabase nicht konfiguriert.")
     
-    res = supabase.table("properties").delete().eq("id", property_id).execute()
+    target_id = int(property_id) if isinstance(property_id, str) and property_id.isdigit() else property_id
+    res = supabase.table("properties").delete().eq("id", target_id).execute()
     return res.data
 
 
@@ -45,5 +46,6 @@ def update_property_status_in_db(property_id: Union[int, str], new_status: str) 
     if not supabase:
         raise Exception("Supabase nicht konfiguriert.")
     
-    res = supabase.table("properties").update({"status": new_status}).eq("id", property_id).execute()
+    target_id = int(property_id) if isinstance(property_id, str) and property_id.isdigit() else property_id
+    res = supabase.table("properties").update({"status": new_status}).eq("id", target_id).execute()
     return res.data

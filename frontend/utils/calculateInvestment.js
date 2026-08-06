@@ -78,7 +78,10 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
 
   const istSonderAfaBerechtigt = gebaeudeWertProQm > 0 && gebaeudeWertProQm <= 5200;
   const sonderAfaBemessungsgrundlage = Math.min(gebaeudeWert, 4000 * qm);
-  const sanierungKosten = Number(formData?.sanierung || 0);
+
+  // DENKMAL-AFA PARAMETER
+  const denkmalSanierungEuro = Number(formData?.denkmal_sanierung_euro ?? formData?.sanierung ?? 0);
+  const denkmalFertigstellungJahr = Number(formData?.denkmal_fertigstellung_jahr ?? 1);
 
   // 4. BEWIRTSCHAFTUNG INITIAL
   const baseIstMo = Number(formData?.kaltmiete_monat || 0);
@@ -167,9 +170,9 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
     capexList.forEach(item => {
       if (Number(item.year || item.jahr) === year) capexYear += Number(item.amount || item.betrag || 0);
     });
-    if (year === 1) capexYear += sanierungKosten;
+    if (year === 1) capexYear += Number(formData?.sanierung || 0);
 
-    // DYNAMISCHE AFA BERECHNUNG
+    // DYNAMISCHE AFA-BERECHNUNG
     let afaEuro = 0;
 
     if (afaModel === 'Linear Neubau') {
@@ -186,15 +189,18 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
       afaEuro = degressivEuro + sonderAfaEuro;
       currentGebaeudeBuchwert = Math.max(0, currentGebaeudeBuchwert - afaEuro);
     } else if (afaModel === 'Denkmalgeschützt') {
-      // ALTBESTAND: LINEARE STANDARD-AFA (2,0 % P.A.)
+      // 1. Altbestand-Gebäudeanteil: 2 % p.a. linear
       const altbestandAfa = gebaeudeWert * 0.02;
-      
-      // SANIERUNGSAUFWAND: 9,0 % (JAHRE 1-8), 7,0 % (JAHRE 9-12) (§ 7h / § 7i EStG)
+
+      // 2. Bescheinigter Sanierungsaufwand: Startet erst ab Fertigstellungsjahr
       let denkmalAfa = 0;
-      if (year <= 8) {
-        denkmalAfa = sanierungKosten * 0.09;
-      } else if (year <= 12) {
-        denkmalAfa = sanierungKosten * 0.07;
+      if (year >= denkmalFertigstellungJahr) {
+        const denkmalYear = year - denkmalFertigstellungJahr + 1;
+        if (denkmalYear <= 8) {
+          denkmalAfa = denkmalSanierungEuro * 0.09;
+        } else if (denkmalYear <= 12) {
+          denkmalAfa = denkmalSanierungEuro * 0.07;
+        }
       }
 
       afaEuro = altbestandAfa + denkmalAfa;

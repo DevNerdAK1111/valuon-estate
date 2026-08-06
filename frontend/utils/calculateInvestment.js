@@ -22,6 +22,22 @@ export function calculateIRR(cfs, guess = 0.1) {
   return rate;
 }
 
+// HELPER FÜR FORMULAR-VALIDIERUNG (§ 7b EStG SONDER-AFA)
+export function checkSonderAfaEligibility(formData) {
+  const kaufpreis = Number(formData?.kaufpreis || 0);
+  const qm = Number(formData?.qm || 0);
+  const gebaeudeAnteilP = Number(formData?.gebaeude_anteil_pct ?? 80) / 100;
+  const gebaeudeWert = kaufpreis * gebaeudeAnteilP;
+  const gebaeudeWertProQm = qm > 0 ? gebaeudeWert / qm : 0;
+  const isExceeded = gebaeudeWertProQm > 5200;
+
+  return {
+    gebaeudeWert,
+    gebaeudeWertProQm,
+    isExceeded
+  };
+}
+
 export function calculateInvestmentModel(formData, projectionHorizon = '10', rawBackendResult = null) {
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const qm = Number(formData?.qm || 0);
@@ -79,7 +95,6 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
   const istSonderAfaBerechtigt = gebaeudeWertProQm > 0 && gebaeudeWertProQm <= 5200;
   const sonderAfaBemessungsgrundlage = Math.min(gebaeudeWert, 4000 * qm);
 
-  // DENKMAL-AFA PARAMETER
   const denkmalSanierungEuro = Number(formData?.denkmal_sanierung_euro ?? formData?.sanierung ?? 0);
   const denkmalFertigstellungJahr = Number(formData?.denkmal_fertigstellung_jahr ?? 1);
 
@@ -172,7 +187,7 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
     });
     if (year === 1) capexYear += Number(formData?.sanierung || 0);
 
-    // DYNAMISCHE AFA-BERECHNUNG
+    // AFA BERECHNUNG
     let afaEuro = 0;
 
     if (afaModel === 'Linear Neubau') {
@@ -189,10 +204,7 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
       afaEuro = degressivEuro + sonderAfaEuro;
       currentGebaeudeBuchwert = Math.max(0, currentGebaeudeBuchwert - afaEuro);
     } else if (afaModel === 'Denkmalgeschützt') {
-      // 1. Altbestand-Gebäudeanteil: 2 % p.a. linear
       const altbestandAfa = gebaeudeWert * 0.02;
-
-      // 2. Bescheinigter Sanierungsaufwand: Startet erst ab Fertigstellungsjahr
       let denkmalAfa = 0;
       if (year >= denkmalFertigstellungJahr) {
         const denkmalYear = year - denkmalFertigstellungJahr + 1;
@@ -202,7 +214,6 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
           denkmalAfa = denkmalSanierungEuro * 0.07;
         }
       }
-
       afaEuro = altbestandAfa + denkmalAfa;
     } else {
       afaEuro = gebaeudeWert * afaRateBase;
@@ -256,10 +267,39 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
 
   const slicedProjection = projection.slice(0, horizonYears);
 
-  const totalNetCashflowNachSteuer = slicedProjection.reduce((sum, r) => sum + r.cashflowNachSteuer, 0);
+  // ZENTRALE AGGREGATION DER GESAMTSUMMEN FÜR DEN HORIZONT
+  const totals = slicedProjection.reduce(
+    (acc, r) => {
+      acc.miete += r.miete || 0;
+      acc.opex += r.opex || 0;
+      acc.noi += r.noi || 0;
+      acc.zins += r.zins || 0;
+      acc.tilgung += r.tilgung || 0;
+      acc.kapitaldienst += r.kapitaldienst || 0;
+      acc.afaEuro += r.afaEuro || 0;
+      acc.zuVersteuerndesEinkommen += r.zuVersteuerndesEinkommen || 0;
+      acc.steuerErgebnis += r.steuerErgebnis || 0;
+      acc.cashflowNachSteuerPa += r.cashflowNachSteuer || 0;
+      return acc;
+    },
+    {
+      miete: 0,
+      opex: 0,
+      noi: 0,
+      zins: 0,
+      tilgung: 0,
+      kapitaldienst: 0,
+      afaEuro: 0,
+      zuVersteuerndesEinkommen: 0,
+      steuerErgebnis: 0,
+      cashflowNachSteuerPa: 0
+    }
+  );
+
+  const totalNetCashflowNachSteuer = totals.cashflowNachSteuerPa;
   const avgMonthlyCashflow = totalNetCashflowNachSteuer / (horizonYears * 12);
 
-  const totalRent = slicedProjection.reduce((sum, r) => sum + r.miete, 0);
+  const totalRent = totals.miete;
   const avgRentPerYear = totalRent / horizonYears;
   const avgBruttoRendite = kaufpreis > 0 ? (avgRentPerYear / kaufpreis) * 100 : 0;
 
@@ -332,6 +372,7 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
       breakEvenMieteSqmMo
     },
     projection,
-    slicedProjection
+    slicedProjection,
+    totals
   };
 }

@@ -4,6 +4,7 @@ import { MainCard, SubContainerCard } from '../../ui/CollapsibleCard';
 
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#4A5568', marginBottom: '6px' };
 const inputStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
+const disabledInputStyle = { ...inputStyle, background: '#EDF2F7', color: '#718096', cursor: 'not-allowed' };
 const selectContainerStyle = { position: 'relative', display: 'flex', alignItems: 'center', width: '100%' };
 const selectStyle = { width: '100%', height: '42px', padding: '0 28px 0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748', cursor: 'pointer' };
 const grid2Style = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' };
@@ -20,6 +21,29 @@ export default function SectionSteuern({
   removeCapexRow,
   addCapexRow
 }) {
+  const currentModel = formData?.afa_model || 'Linear Standard';
+
+  // HANDLER FÜR AUTOMATISCHE PROZENTSATZ-ANPASSUNG
+  const handleAfaModelChange = (model) => {
+    onFieldChange('afa_model', model);
+    if (model === 'Linear Standard') onFieldChange('afa_lin', 2.0);
+    else if (model === 'Linear Neubau') onFieldChange('afa_lin', 3.0);
+    else if (model === 'Degressiv') onFieldChange('afa_lin', 5.0);
+    else if (model === 'Kombination: Degressiv + Sonder-AfA') onFieldChange('afa_lin', 5.0);
+    else if (model === 'Denkmalgeschützt') onFieldChange('afa_lin', 9.0);
+  };
+
+  // EINSTELLUNG OB PROZENTSATZ MANUELL EDTIERBAR IST
+  const isAfaRateFixed = currentModel !== 'Linear Standard';
+
+  // LIVE PRÜFUNG BAUKOSTENOBERGRENZE § 7b EStG (5.200 € / m²)
+  const kaufpreis = Number(formData?.kaufpreis || 0);
+  const qm = Number(formData?.qm || 0);
+  const gebaeudeAnteilP = Number(formData?.gebaeude_anteil_pct ?? 80) / 100;
+  const gebaeudeWert = kaufpreis * gebaeudeAnteilP;
+  const gebaeudeWertProQm = qm > 0 ? gebaeudeWert / qm : 0;
+  const isSonderAfaExceeded = gebaeudeWertProQm > 5200;
+
   return (
     <MainCard title="4. Steuern, Makro & Exit" isOpen={isOpen} onToggle={onToggle}>
       
@@ -52,15 +76,15 @@ export default function SectionSteuern({
         <label style={labelStyle}>AfA-Modell</label>
         <div style={selectContainerStyle}>
           <select
-            value={formData?.afa_model || 'Linear Standard'}
-            onChange={(e) => onFieldChange('afa_model', e.target.value)}
+            value={currentModel}
+            onChange={(e) => handleAfaModelChange(e.target.value)}
             style={selectStyle}
           >
             <option value="Linear Standard">Linear Standard (2,0 % p.a.)</option>
             <option value="Linear Neubau">Linear Neubau (3,0 % p.a.)</option>
             <option value="Degressiv">Degressiv (§ 7 Abs. 5a - 5,0 %)</option>
-            <option value="Kombination: Degressiv + Sonder-AfA">Kombination: Degressiv + Sonder-AfA</option>
-            <option value="Denkmalgeschützt">Denkmalgeschützt (§ 7h/7i)</option>
+            <option value="Kombination: Degressiv + Sonder-AfA">Kombination: Degressiv + Sonder-AfA (§ 7b)</option>
+            <option value="Denkmalgeschützt">Denkmalgeschützt (§ 7h/7i - 9,0 %)</option>
           </select>
         </div>
       </div>
@@ -73,17 +97,61 @@ export default function SectionSteuern({
           onChange={(v) => onFieldChange('gebaeude_anteil_pct', v)}
           step={5}
           isPercent={true}
-          tooltip="Standardmäßig entfallen ca. 80 % des Kaufpreises auf das Gebäude (steuerlich abschreibungsfähig) und 20 % auf den Grund- und Bodenanteil (nicht abschreibungsfähig). Der genaue Wert hängt vom Bodenrichtwert der Lage ab."
+          tooltip="Standardmäßig entfallen ca. 80 % des Kaufpreises auf das Gebäude (steuerlich abschreibungsfähig) und 20 % auf den Grund- und Bodenanteil (nicht abschreibungsfähig)."
         />
 
-        <StepperInput
-          label="AfA %"
-          value={formData?.afa_lin || 2.0}
-          onChange={(v) => onFieldChange('afa_lin', v)}
-          step={0.5}
-          isPercent={true}
-        />
+        {isAfaRateFixed ? (
+          <div>
+            <label style={labelStyle}>AfA % (Fixiert)</label>
+            <input
+              type="text"
+              readOnly
+              disabled
+              value={`${(Number(formData?.afa_lin || 5.0)).toFixed(1).replace('.', ',')} %`}
+              style={disabledInputStyle}
+            />
+          </div>
+        ) : (
+          <StepperInput
+            label="AfA %"
+            value={formData?.afa_lin || 2.0}
+            onChange={(v) => onFieldChange('afa_lin', v)}
+            step={0.5}
+            isPercent={true}
+          />
+        )}
       </div>
+
+      {/* DETAILS- UND WARNHINWEISE FÜR SONDER-AFA (§ 7b EStG) */}
+      {currentModel === 'Kombination: Degressiv + Sonder-AfA' && (
+        <div style={{
+          background: isSonderAfaExceeded ? '#FFF5F5' : '#FAF8F5',
+          border: isSonderAfaExceeded ? '1px solid #FEB2B2' : '1px solid #E2D9CE',
+          borderRadius: '8px',
+          padding: '12px 14px',
+          fontSize: '0.8rem',
+          color: isSonderAfaExceeded ? '#9B2C2C' : '#13381A'
+        }}>
+          <div style={{ fontWeight: '800', marginBottom: '4px' }}>
+            Sonder-AfA (§ 7b EStG) Parameter-Check:
+          </div>
+          <div style={{ lineHeight: '1.4' }}>
+            • <strong>Degressive AfA:</strong> 5,0 % p.a. vom Restbuchwert<br />
+            • <strong>Sonder-AfA:</strong> +5,0 % p.a. für die ersten 4 Jahre (max. Bemessungsgrundlage 4.000 € / m²)<br />
+            • <strong>Gebäudeanteil aktuell:</strong> {Math.round(gebaeudeWertProQm)} € / m²
+          </div>
+
+          {isSonderAfaExceeded ? (
+            <div style={{ marginTop: '8px', fontWeight: '800', borderTop: '1px solid #FEB2B2', paddingTop: '6px' }}>
+              [Achtung] Baukostenobergrenze überschritten (&gt; 5.200 € / m²). Die Sonder-AfA ist gesetzlich nicht anwendbar. Es wird automatisch nur die degressive AfA (5,0 %) berechnet.
+            </div>
+          ) : (
+            <div style={{ marginTop: '8px', color: '#276749', fontWeight: '700', borderTop: '1px solid #E2D9CE', paddingTop: '6px' }}>
+              [Hinweis] Gebäudeanteil liegt unter der Baukostenobergrenze (5.200 € / m²). Die Sonder-AfA wird für die Jahre 1 bis 4 berücksichtigt.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* DYNAMIKEN */}
       <div style={grid2Style}>

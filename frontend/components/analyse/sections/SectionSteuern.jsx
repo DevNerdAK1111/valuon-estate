@@ -6,6 +6,7 @@ const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '700', co
 const inputStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
 const selectContainerStyle = { position: 'relative', display: 'flex', alignItems: 'center', width: '100%' };
 const selectStyle = { width: '100%', height: '42px', padding: '0 28px 0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748', cursor: 'pointer' };
+const grid2Style = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' };
 
 export default function SectionSteuern({
   formData,
@@ -21,6 +22,8 @@ export default function SectionSteuern({
 }) {
   return (
     <MainCard title="4. Steuern, Makro & Exit" isOpen={isOpen} onToggle={onToggle}>
+      
+      {/* GRENZSTEUERSATZ */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <label style={labelStyle}>Grenzsteuersatz (%)</label>
@@ -44,6 +47,7 @@ export default function SectionSteuern({
         />
       </div>
 
+      {/* AFA MODELL SELEKTION */}
       <div>
         <label style={labelStyle}>AfA-Modell</label>
         <div style={selectContainerStyle}>
@@ -61,29 +65,44 @@ export default function SectionSteuern({
         </div>
       </div>
 
-      <StepperInput
-        label="AfA %"
-        value={formData?.afa_lin || 2.0}
-        onChange={(v) => onFieldChange('afa_lin', v)}
-        step={0.5}
-        isPercent={true}
-      />
+      {/* GEBÄUDEANTEIL & AFA % GRID */}
+      <div style={grid2Style}>
+        <StepperInput
+          label="Gebäudeanteil (%)"
+          value={formData?.gebaeude_anteil_pct ?? 80}
+          onChange={(v) => onFieldChange('gebaeude_anteil_pct', v)}
+          step={5}
+          isPercent={true}
+          tooltip="Standardmäßig entfallen ca. 80 % des Kaufpreises auf das Gebäude (steuerlich abschreibungsfähig) und 20 % auf den Grund- und Bodenanteil (nicht abschreibungsfähig). Der genaue Wert hängt vom Bodenrichtwert der Lage ab."
+        />
 
-      <StepperInput
-        label="Mietsteigerung p.a. (%)"
-        value={formData?.miet_inc || 1.0}
-        onChange={(v) => onFieldChange('miet_inc', v)}
-        step={0.1}
-        isPercent={true}
-      />
+        <StepperInput
+          label="AfA %"
+          value={formData?.afa_lin || 2.0}
+          onChange={(v) => onFieldChange('afa_lin', v)}
+          step={0.5}
+          isPercent={true}
+        />
+      </div>
 
-      <StepperInput
-        label="Wertsteigerung p.a. (%)"
-        value={formData?.val_inc || 1.0}
-        onChange={(v) => onFieldChange('val_inc', v)}
-        step={0.1}
-        isPercent={true}
-      />
+      {/* DYNAMIKEN */}
+      <div style={grid2Style}>
+        <StepperInput
+          label="Mietsteigerung p.a. (%)"
+          value={formData?.miet_inc || 1.0}
+          onChange={(v) => onFieldChange('miet_inc', v)}
+          step={0.1}
+          isPercent={true}
+        />
+
+        <StepperInput
+          label="Wertsteigerung p.a. (%)"
+          value={formData?.val_inc || 1.0}
+          onChange={(v) => onFieldChange('val_inc', v)}
+          step={0.1}
+          isPercent={true}
+        />
+      </div>
 
       <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '0.25rem 0' }} />
 
@@ -95,6 +114,7 @@ export default function SectionSteuern({
         isPercent={true}
       />
 
+      {/* CAPEX SUBSSECTION */}
       <SubContainerCard
         title="CapEx & Instandhaltungs-Fahrplan"
         isOpen={openSubSections.capex}

@@ -1,6 +1,7 @@
 'use client';
 import ProjectionChart from '../charts/ProjectionChart';
 import DonutChart from '../charts/DonutChart';
+import MetricCard from '../ui/MetricCard';
 import { formatEuroInt } from '../../utils/formatters';
 
 export default function ExecutiveDashboard({
@@ -120,7 +121,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* 2. BETRACHTUNGSHORIZONT (DIREKT UNTER DEM NAMEN) */}
+      {/* 2. BETRACHTUNGSHORIZONT */}
       {result && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2D9CE' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>Betrachtungshorizont:</span>
@@ -154,7 +155,7 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* 3. NEUE, REDUZIERTE MENÜ-TABS (NUR NOCH 3 BEREICHE STATT 4) */}
+      {/* 3. MENÜ-TABS */}
       <div style={{ display: 'flex', borderBottom: '2px solid #E2D9CE', gap: '1.5rem' }}>
         {['Executive Dashboard', 'Cashflow & Liquidität', 'Finanzierung & Steuern'].map((tab) => (
           <button
@@ -404,7 +405,7 @@ function TableView({ activeDashboardTab, slicedProjection, formData }) {
                     <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(restschuld)} €</td>
                     <td style={{ padding: '10px', color: '#9B2C2C' }}>-{formatEuroInt(zins)} €</td>
                     <td style={{ padding: '10px', color: '#276749' }}>+{formatEuroInt(tilg)} €</td>
-                    <td style={{ padding: '10px', color: sondertilg > 0 ? '#276749' : '#718096' }}>+{formatEuroInt(sondertilg)} €</td>
+                    <td style={{ padding: '10px', color sondertilg > 0 ? '#276749' : '#718096' }}>+{formatEuroInt(sondertilg)} €</td>
                     <td style={{ padding: '10px', fontWeight: '800', color: '#276749' }}>+{formatEuroInt(tilg + sondertilg)} €</td>
                     <td style={{ padding: '10px' }}>-{formatEuroInt(afa)} €</td>
                     <td style={{ padding: '10px', fontWeight: '700' }}>{formatEuroInt(zstErtrag)} €</td>
@@ -422,7 +423,6 @@ function TableView({ activeDashboardTab, slicedProjection, formData }) {
           })}
         </tbody>
 
-        {/* NEUTRALE SUMMENZEILE (OHNE GRÜNE HIGHLIGHTS) */}
         <tfoot>
           <tr style={{ background: '#13381A', color: 'white', fontWeight: '800', borderTop: '2px solid #13381A' }}>
             <td style={{ padding: '12px', textAlign: 'left' }}>Summe ({data.length} J.)</td>

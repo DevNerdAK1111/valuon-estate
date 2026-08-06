@@ -37,18 +37,88 @@ export default function ProjectionChart({ slicedProjection, formData }) {
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const ekEuro = Number(formData?.ek_euro || 0);
 
+  // KAUFNEBENKOSTEN DYNAMISCH BERECHNEN FÜR KAPITALDIENST-FALLBACK
+  const grwtP = Number(formData?.grwt_p ?? 5.0);
+  const notarP = Number(formData?.notar_p ?? 2.0);
+  const maklerP = Number(formData?.makler_p ?? 3.57);
+  const sonstNk = Number(formData?.sonst_nk ?? 0);
+  const nkTotal = (kaufpreis * (grwtP + notarP + maklerP) / 100) + sonstNk;
+
   let cumCashflow = -ekEuro;
+
+  // ROBUSTE DATENAUFBEREITUNG & EINHEITEN-HARMONISIERUNG
   const chartData = rawData.map((row, idx) => {
     const jahr = Number(row.Jahr ?? row.jahr ?? (idx + 1));
-    const immobilienwert = Number(row.Immobilienwert ?? row.immobilienwert ?? (kaufpreis * Math.pow(1.01, jahr)));
-    const restschuld = Number(row.Restschuld ?? row.restschuld ?? 0);
-    const netEquity = Math.max(0, immobilienwert - restschuld);
     
-    const nettoCashflow = Number(row['Cashflow Netto'] ?? row.cashflow_netto ?? 0);
-    const miete = Number(row['Kaltmiete p.a.'] ?? row.Mieteinnahmen ?? row.miete ?? 0);
-    const zins = Number(row.Zins ?? row.zins ?? 0);
-    const tilgung = Number(row.Tilgung ?? row.tilgung ?? 0);
-    const kapitaldienst = zins + tilgung;
+    // 1. IMMOBILIENWERT
+    const valIncP = Number(formData?.val_inc ?? 1.0) / 100;
+    const calcImmo = kaufpreis * Math.pow(1 + valIncP, jahr);
+    const immobilienwert = Number(
+      row.Immobilienwert ?? row.immobilienwert ?? row.objektwert ?? row.wert ?? calcImmo
+    );
+
+    // 2. RESTSCHULD & NETTO-EIGENKAPITAL
+    const restschuld = Number(row.Restschuld ?? row.restschuld ?? row.restschuld_end ?? 0);
+    const netEquity = Math.max(0, immobilienwert - restschuld);
+
+    // 3. MIETE (EXAKTE P.A. ERKENNUNG ODER FALLBACK-BERECHNUNG)
+    const mietIncP = Number(formData?.miet_inc ?? 1.0) / 100;
+    const baseMietePa = Number(formData?.kaltmiete_monat || 0) * 12;
+    const calcMietePa = baseMietePa * Math.pow(1 + mietIncP, Math.max(0, jahr - 1));
+
+    let rawMiete = row['Kaltmiete p.a.'] ?? row.kaltmiete_pa ?? row.miete_pa ?? row.Mieteinnahmen ?? row.miete ?? row.kaltmiete ?? row.einnahmen;
+    let miete = rawMiete !== undefined && rawMiete !== null ? Number(rawMiete) : calcMietePa;
+
+    // Falls Miete auf Monatsebene übergeben wurde, auf Jahr hochrechnen
+    if (miete > 0 && miete < baseMietePa * 0.3) {
+      miete = miete * 12;
+    }
+    if (!miete || isNaN(miete) || miete === 0) {
+      miete = calcMietePa;
+    }
+
+    // 4. KAPITALDIENST (ZINS + TILGUNG P.A.)
+    let rawZins = row.Zins ?? row.zins ?? row.zins_pa ?? row.zins_euro;
+    let rawTilg = row.Tilgung ?? row.tilgung ?? row.tilg_pa ?? row.tilgung_euro;
+    let rawKapitaldienst = row.Kapitaldienst ?? row.kapitaldienst ?? row.annuitaet ?? row.rate_pa;
+
+    let zins = Number(rawZins || 0);
+    let tilgung = Number(rawTilg || 0);
+    let kapitaldienst = Number(rawKapitaldienst || 0);
+
+    if (kapitaldienst === 0) {
+      kapitaldienst = zins + tilgung;
+    }
+
+    // Falls Kapitaldienst auf Monatsebene vorliegt, auf Jahresbasis umrechnen
+    if (kapitaldienst > 0 && kapitaldienst < (kaufpreis * 0.015)) {
+      kapitaldienst = kapitaldienst * 12;
+      zins = zins * 12;
+      tilgung = tilgung * 12;
+    }
+
+    // Fallback aus Formular-Parametern, falls Wert immer noch 0 ist
+    if (kapitaldienst === 0) {
+      const darlehnsbetrag = Math.max(0, kaufpreis + nkTotal - ekEuro);
+      const hbZinsP = Number(formData?.hb_zins ?? 3.8) / 100;
+      const hbTilgP = Number(formData?.hb_tilg ?? 2.0) / 100;
+      kapitaldienst = darlehnsbetrag * (hbZinsP + hbTilgP);
+      zins = darlehnsbetrag * hbZinsP;
+      tilgung = darlehnsbetrag * hbTilgP;
+    }
+
+    // 5. NETTO-CASHFLOW P.A.
+    let rawNettoCf = row['Cashflow Netto'] ?? row.cashflow_netto ?? row.netto_cashflow ?? row.cashflow;
+    let nettoCashflow = Number(rawNettoCf || 0);
+
+    if (rawNettoCf === undefined || rawNettoCf === null || isNaN(nettoCashflow)) {
+      const nonUmlegbarMo = Number(formData?.hausgeld_nicht_umlegbar || 0);
+      const instSqmPa = Number(formData?.inst_sqm || 12);
+      const qm = Number(formData?.qm || 0);
+      const mgtMo = Number(formData?.mgt_monat || 30);
+      const opexPa = (nonUmlegbarMo + mgtMo) * 12 + (instSqmPa * qm);
+      nettoCashflow = miete - opexPa - kapitaldienst;
+    }
 
     cumCashflow += nettoCashflow;
     const totalReturn = cumCashflow + netEquity;
@@ -73,7 +143,6 @@ export default function ProjectionChart({ slicedProjection, formData }) {
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
 
-  // EXAKTE RANGE-BERECHNUNG FOR SWAP
   const getRawMinMax = () => {
     if (chartData.length === 0) return { min: 0, max: 100000 };
     if (activeView === 'vermoegen') {
@@ -140,7 +209,6 @@ export default function ProjectionChart({ slicedProjection, formData }) {
           </span>
         </div>
 
-        {/* TAB REITER (CASHFLOW OHNE p.a.) */}
         <div style={{ display: 'flex', background: '#FAF8F5', padding: '4px', borderRadius: '8px', border: '1px solid #E2D9CE', gap: '4px' }}>
           {[
             { id: 'vermoegen', label: 'Vermögen & Schulden' },
@@ -228,8 +296,8 @@ export default function ProjectionChart({ slicedProjection, formData }) {
 
                 return (
                   <g key={i}>
-                    <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.abs(zeroY - mieteY)} fill="#13381A" rx="2" />
-                    <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.abs(zeroY - kapY)} fill="#A37841" rx="2" />
+                    <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.max(2, Math.abs(zeroY - mieteY))} fill="#13381A" rx="2" />
+                    <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.max(2, Math.abs(zeroY - kapY))} fill="#A37841" rx="2" />
                   </g>
                 );
               })}
@@ -245,7 +313,7 @@ export default function ProjectionChart({ slicedProjection, formData }) {
             </>
           )}
 
-          {/* X-ACHSEN BESCHRIFTUNG (NUR ZAHLEN & HINWEIS "JAHR") */}
+          {/* X-ACHSEN BESCHRIFTUNG */}
           {chartData.map((d, i) => (
             <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} style={{ cursor: 'pointer' }}>
               <text x={getX(i)} y={height - 12} fontSize="11" fontWeight="600" fill="#4A5568" textAnchor="middle">
@@ -255,7 +323,6 @@ export default function ProjectionChart({ slicedProjection, formData }) {
             </g>
           ))}
 
-          {/* HINWEIS "(JAHR)" AM RECHTEN RAND DER X-ACHSE */}
           <text x={width - padding.right + 5} y={height - 12} fontSize="10" fontWeight="700" fill="#718096" textAnchor="start">
             (Jahr)
           </text>
@@ -287,9 +354,9 @@ export default function ProjectionChart({ slicedProjection, formData }) {
             )}
             {activeView === 'cashflow' && (
               <>
-                <div style={{ color: '#13381A' }}>Kaltmiete: <strong>{formatEuroInt(chartData[hoveredIndex].miete)} €</strong></div>
-                <div style={{ color: '#A37841' }}>Kapitaldienst: <strong>{formatEuroInt(chartData[hoveredIndex].kapitaldienst)} €</strong></div>
-                <div style={{ color: '#276749' }}>Netto-Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].nettoCashflow)} €</strong></div>
+                <div style={{ color: '#13381A' }}>Kaltmiete p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].miete)} €</strong></div>
+                <div style={{ color: '#A37841' }}>Kapitaldienst p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].kapitaldienst)} €</strong></div>
+                <div style={{ color: '#276749' }}>Netto-Cashflow p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].nettoCashflow)} €</strong></div>
               </>
             )}
             {activeView === 'amortisation' && (
@@ -302,7 +369,7 @@ export default function ProjectionChart({ slicedProjection, formData }) {
         )}
       </div>
 
-      {/* DYNAMISCHE LEGENDE UNTER DEM DIAGRAMM */}
+      {/* DYNAMISCHE LEGENDE */}
       <div style={{
         display: 'flex',
         justify: 'center',

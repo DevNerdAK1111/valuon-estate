@@ -1,6 +1,8 @@
 'use client';
+import { useState } from 'react';
 import ProjectionChart from '../charts/ProjectionChart';
 import DonutChart from '../charts/DonutChart';
+import TableView from './TableView';
 import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { formatEuroInt } from '../../utils/formatters';
 
@@ -15,6 +17,8 @@ export default function ExecutiveDashboard({
   setActiveDashboardTab,
   summe_nk
 }) {
+  const [showExtendedMatrix, setShowExtendedMatrix] = useState(false);
+
   const propertyTitle = formData?.obj_name || 'Neues Investment-Objekt';
   const locationText = [formData?.stadt, formData?.stadtteil].filter(Boolean).join(' • ') || 'Kein Standort angegeben';
 
@@ -24,7 +28,7 @@ export default function ExecutiveDashboard({
   return (
     <div id="executive-dashboard-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', scrollMarginTop: '1.5rem' }}>
       
-      {/* KOPFZEILE & SPEICHER-BUTTON */}
+      {/* KOPFZEILE */}
       <div style={{ background: 'white', padding: '1.2rem 1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#13381A', margin: 0 }}>{propertyTitle}</h2>
@@ -79,9 +83,33 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* KPI KARTEN (KONSUMIERT NURE NOCH IMMUTABLE MODEL-KPIS) */}
+      {/* KPI KARTEN */}
       {result && (
-        <KeyMetrics kpis={model.kpis} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <KeyMetrics kpis={model.kpis} />
+          
+          {/* SCHALTER FÜR ERWEITERTE KENNZAHLEN-MATRIX */}
+          <button
+            type="button"
+            onClick={() => setShowExtendedMatrix(!showExtendedMatrix)}
+            style={{
+              alignSelf: 'center',
+              background: 'none',
+              border: 'none',
+              color: '#13381A',
+              fontWeight: '800',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+          >
+            {showExtendedMatrix ? 'Erweiterte Metriken ausblenden' : 'Alle Bank- & Rendite-Metriken einblenden'}
+          </button>
+
+          {showExtendedMatrix && (
+            <ExtendedMetricsMatrix model={model} />
+          )}
+        </div>
       )}
 
       {/* TAB NAVIGATION */}
@@ -108,7 +136,7 @@ export default function ExecutiveDashboard({
         ))}
       </div>
 
-      {/* DASHBOARD INHALTE */}
+      {/* DASHBOARD TAB 1: EXECUTIVE DASHBOARD */}
       {result && activeDashboardTab === 'Executive Dashboard' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
           <ProjectionChart slicedProjection={model.slicedProjection} />
@@ -116,30 +144,37 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
+      {/* DASHBOARD TAB 2: CASHFLOW & LIQUIDITÄT (MIT DER NEUEN TABELLE) */}
+      {result && activeDashboardTab === 'Cashflow & Liquidität' && (
+        <TableView slicedProjection={model.slicedProjection} />
+      )}
+
+      {/* DASHBOARD TAB 3: FINANZIERUNG & STEUERN */}
+      {result && activeDashboardTab === 'Finanzierung & Steuern' && (
+        <TableView slicedProjection={model.slicedProjection} />
+      )}
+
     </div>
   );
 }
 
 // -----------------------------------------------------------------------------
-// REINE PRÄSENTATIONS-KOMPONENTE FÜR KPI KARTEN
+// TOP 4 KPI KARTEN
 // -----------------------------------------------------------------------------
-
 function KeyMetrics({ kpis }) {
   const { avgMonthlyCashflow, isCfPositive, avgBruttoRendite, validIrr, gesamtGewinn, horizonYears } = kpis;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
       
-      {/* KARTE 1: CASHFLOW */}
       <div style={kpiCardStyle}>
         <div style={kpiTitleStyle}>Netto-Cashflow (Ø / Mo)</div>
         <div style={{ ...kpiValueStyle, color: isCfPositive ? '#276749' : '#9B2C2C' }}>
           {isCfPositive ? '+' : ''}{formatEuroInt(avgMonthlyCashflow)} € / Mo.
         </div>
-        <div style={kpiSubtextStyle}>Durchschnitt pro Monat über {horizonYears} Jahre</div>
+        <div style={kpiSubtextStyle}>Durchschnitt pro Monat nach Steuer über {horizonYears} J.</div>
       </div>
 
-      {/* KARTE 2: MIETRENDITE */}
       <div style={kpiCardStyle}>
         <div style={kpiTitleStyle}>Brutto-Mietrendite (Ø p.a.)</div>
         <div style={{ ...kpiValueStyle, color: '#13381A' }}>
@@ -148,7 +183,6 @@ function KeyMetrics({ kpis }) {
         <div style={kpiSubtextStyle}>Durchschnittliche Miete p.a. / Kaufpreis</div>
       </div>
 
-      {/* KARTE 3: EK-RENDITE (IRR) */}
       <div style={kpiCardStyle}>
         <div style={kpiTitleStyle}>Eigenkapitalrendite (IRR)</div>
         <div style={{ ...kpiValueStyle, color: '#A37841' }}>
@@ -157,13 +191,92 @@ function KeyMetrics({ kpis }) {
         <div style={kpiSubtextStyle}>Effektive EK-Verzinsung bei Exit nach {horizonYears} J.</div>
       </div>
 
-      {/* KARTE 4: GESAMTGEWINN */}
       <div style={kpiCardStyle}>
         <div style={kpiTitleStyle}>Gesamtgewinn ({horizonYears} J.)</div>
         <div style={{ ...kpiValueStyle, color: gesamtGewinn >= 0 ? '#276749' : '#9B2C2C' }}>
           {gesamtGewinn >= 0 ? '+' : ''}{formatEuroInt(gesamtGewinn)} €
         </div>
         <div style={kpiSubtextStyle}>Kumulierter Cashflow + Netto-EK-Zuwachs</div>
+      </div>
+
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// ERWEITERTE KENNZAHLEN-MATRIX (AUFKLAPPBARER QUICK-CHECK)
+// -----------------------------------------------------------------------------
+function ExtendedMetricsMatrix({ model }) {
+  const { kpis, finanzierung, stammDaten } = model;
+
+  return (
+    <div style={{
+      background: 'white',
+      border: '1px solid #E2D9CE',
+      borderRadius: '10px',
+      padding: '1.25rem',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '1.5rem'
+    }}>
+      
+      {/* SPALTE 1: RENDITE & VERVIELFACHUNG */}
+      <div>
+        <div style={matrixHeaderStyle}>Rendite & Vervielfältiger</div>
+        <div style={matrixRowStyle}>
+          <span>Kaufpreisfaktor:</span>
+          <strong>{kpis.kaufpreisfaktor.toFixed(1)}x</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Netto-Kaufpreisfaktor:</span>
+          <strong>{kpis.nettoKaufpreisfaktor.toFixed(1)}x</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Netto-Mietrendite (Jahr 1):</span>
+          <strong>{kpis.nettoMietrenditeInitial.toFixed(2)} %</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Cash-on-Cash Return (Jahr 1):</span>
+          <strong>{kpis.cashOnCashReturn.toFixed(2)} %</strong>
+        </div>
+      </div>
+
+      {/* SPALTE 2: BANK & RISIKO */}
+      <div>
+        <div style={matrixHeaderStyle}>Bank & Risikoprofil</div>
+        <div style={matrixRowStyle}>
+          <span>Beleihungsauslauf (LTV):</span>
+          <strong>{finanzierung.ltv.toFixed(1)} %</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Eigenkapital-Quote:</span>
+          <strong>{finanzierung.ekQuote.toFixed(1)} %</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>DSCR (Deckungsbeitrag):</span>
+          <strong>{kpis.dscrInitial.toFixed(2)}x</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Kritische Miete (Break-Even):</span>
+          <strong>{formatEuroInt(kpis.breakEvenMieteMo)} € / Mo ({kpis.breakEvenMieteSqmMo.toFixed(2)} €/m²)</strong>
+        </div>
+      </div>
+
+      {/* SPALTE 3: SUBSTANZ & QUADRATMETER */}
+      <div>
+        <div style={matrixHeaderStyle}>Substanz & m²-Kennzahlen</div>
+        <div style={matrixRowStyle}>
+          <span>Kaufpreis pro m²:</span>
+          <strong>{formatEuroInt(stammDaten.kaufpreisProQm)} € / m²</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Gesamtkosten pro m²:</span>
+          <strong>{formatEuroInt(stammDaten.gesamtKostenProQm)} € / m²</strong>
+        </div>
+        <div style={matrixRowStyle}>
+          <span>Gesamtdarlehen Bank:</span>
+          <strong>{formatEuroInt(finanzierung.gesamtDarlehen)} €</strong>
+        </div>
       </div>
 
     </div>
@@ -204,4 +317,21 @@ const kpiSubtextStyle = {
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis'
+};
+
+const matrixHeaderStyle = {
+  fontSize: '0.85rem',
+  fontWeight: '800',
+  color: '#13381A',
+  borderBottom: '1px solid #E2D9CE',
+  paddingBottom: '6px',
+  marginBottom: '8px'
+};
+
+const matrixRowStyle = {
+  display: 'flex',
+  justify: 'space-between',
+  fontSize: '0.78rem',
+  color: '#4A5568',
+  padding: '4px 0'
 };

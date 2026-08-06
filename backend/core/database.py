@@ -41,9 +41,7 @@ def delete_property_from_db(property_id: int) -> Any:
     return res.data
 
 
-def update_property_status_in_db(property_id: int, status: str) -> Any:
-    if not supabase:
-        raise Exception("Supabase nicht konfiguriert.")
-    
-    res = supabase.table("properties").update({"status": status}).eq("id", property_id).execute()
+def update_property_status_in_db(property_id: int, new_status: str):
+    supabase = get_supabase_client()
+    res = supabase.table("properties").update({"status": new_status}).eq("id", property_id).execute()
     return res.data

@@ -1,215 +1,193 @@
-import numpy as np
-import pandas as pd
-import numpy_financial as npf
-
-def get_metric_status(val, target, tolerance=0.0):
-    if val is None:
-        return ("neutral", "Keine Angabe")
-    if val >= target:
-        return ("green", "Ziel erreicht")
-    elif val >= (target - abs(tolerance)):
-        return ("yellow", "Im Toleranzbereich")
-    else:
-        return ("red", "Unter Zielvorgabe")
+import math
+from typing import List, Dict, Any
 
 
-def calc_projection(data, full_repayment=False):
-    kp = data['kaufpreis']
-    sanierung = data['sanierung']
-    
-    # Nebenkosten
-    nk = kp * (data['grwt_proz'] + data['notar_proz'] + data['makler_proz']) + data['sonst_nk']
-    tot_inv = kp + sanierung + nk
-    
-    ek_abs = data['ek_euro']
-    fk_tot = max(0.0, tot_inv - ek_abs)
-    
-    # KfW & Hausbank Splitting
-    kfw_amt = min(fk_tot, max(0.0, data['kfw_amt'] - data['kfw_grant']))
-    hb_loan_init = max(0.0, fk_tot - kfw_amt)
-    
-    # Zinsbindungs- & Anschluss-Parameter
-    zinsbindung = data.get('zinsbindung', 10)
-    hb_zins_init = data['hb_zins']
-    hb_tilg_init = data['hb_tilg']
-    
-    folge_zins = data.get('folge_zins', hb_zins_init)
-    folge_mode = data.get('folge_mode', "Rate konstant halten (Annuität)")
-    folge_tilg = data.get('folge_tilg', hb_tilg_init)
-    sondertilg_input = data.get('sondertilg', 0.0)
-    
-    capex_list = data.get('capex_list', [])
-    
-    hb_annuity_init = hb_loan_init * (hb_zins_init + hb_tilg_init)
-    
-    grund_anteil = data.get('grund_anteil', 0.20)
-    geb_wert = kp * (1.0 - grund_anteil)
-    afa_model = data.get('afa_model', '1_Linear_Standard')
-    afa_lin_rate = data.get('afa_lin', 0.02)
-    
-    book_value = geb_wert + sanierung
-    
-    qm = data['qm']
-    ist_miete_monat = data['ist_sqm'] * qm
-    target_miete_monat = data['target_sqm'] * qm
-    adj_year = data.get('adj_year', 3)
-    
-    miet_inc = data.get('miet_inc', 0.015)
-    cost_inc = data.get('cost_inc', 0.02)
-    val_inc = data.get('val_inc', 0.0)
-    exit_cost_pct = data.get('exit_cost', 0.02)
-    
-    inst_annual_base = data['inst_sqm'] * qm
-    mgt_annual_base = data['mgt_monat'] * 12
-    hausgeld_non_reimb_base = data['hausgeld_nicht_umlegbar'] * 12
-    vac_rate = data['vac_rate']
-    tax_rate = data['tax_rate']
-    
-    hb_rest = hb_loan_init
-    kfw_rest = kfw_amt
-    obj_val = kp + sanierung
-    
-    rows = []
-    y = 0
-    max_years = 50 if full_repayment else 10
-    
-    first_year_afa = 0.0
-    
-    while True:
-        y += 1
-        
-        if y <= zinsbindung:
-            curr_hb_zins = hb_zins_init
-            curr_hb_annuity = hb_annuity_init
+def calculate_irr(cashflows: List[float]) -> float:
+    if not cashflows or len(cashflows) < 2:
+        return 0.0
+
+    def npv(rate: float, cfs: List[float]) -> float:
+        val = 0.0
+        for t, cf in enumerate(cfs):
+            val += cf / ((1.0 + rate) ** t)
+        return val
+
+    def npv_prime(rate: float, cfs: List[float]) -> float:
+        val = 0.0
+        for t, cf in enumerate(cfs):
+            val -= t * cf / ((1.0 + rate) ** (t + 1))
+        return val
+
+    rate = 0.05
+    for _ in range(100):
+        f_val = npv(rate, cashflows)
+        if abs(f_val) < 1e-6:
+            return rate
+        f_prime = npv_prime(rate, cashflows)
+        if abs(f_prime) < 1e-12:
+            break
+        new_rate = rate - f_val / f_prime
+        if new_rate <= -0.99 or new_rate > 5.0:
+            break
+        rate = new_rate
+
+    return rate if not math.isnan(rate) else 0.0
+
+
+def calculate_investment_metrics(payload) -> Dict[str, Any]:
+    grwt_euro = payload.kaufpreis * (payload.grwt_proz or (payload.grwt_p / 100.0 if payload.grwt_p else 0.05))
+    notar_euro = payload.kaufpreis * (payload.notar_proz or (payload.notar_p / 100.0 if payload.notar_p else 0.02))
+    makler_euro = payload.kaufpreis * (payload.makler_proz or (payload.makler_p / 100.0 if payload.makler_p else 0.0357))
+    summe_nk = grwt_euro + notar_euro + makler_euro + (payload.sonst_nk or 0.0)
+
+    total_investment = payload.kaufpreis + summe_nk + (payload.sanierung or 0.0)
+    afa_base = (payload.kaufpreis + summe_nk) * 0.80 + (payload.sanierung or 0.0)
+
+    kfw_loan = payload.kfw_amt or 0.0
+    hb_loan = max(0.0, total_investment - (payload.ek_euro or 0.0) - (payload.kfw_grant or 0.0) - kfw_loan)
+    equity_absolute = payload.ek_euro or 0.0
+
+    capex_map: Dict[int, float] = {}
+    if payload.capex_list:
+        for item in payload.capex_list:
+            yr = item.get_year()
+            amt = item.get_amount()
+            capex_map[yr] = capex_map.get(yr, 0.0) + amt
+
+    hb_rest = hb_loan
+    kfw_rest = kfw_loan
+    afa_book_value = afa_base
+
+    hb_zins_initial = payload.hb_zins if payload.hb_zins is not None else 0.04
+    hb_tilg_initial = payload.hb_tilg if payload.hb_tilg is not None else 0.02
+
+    hb_annuity_constant = hb_loan * (hb_zins_initial + hb_tilg_initial)
+    kfw_annuity_constant = kfw_loan * ((payload.kfw_zins or 0.021) + (payload.kfw_tilg or 0.03))
+
+    projection = []
+    cashflows_for_irr = [-equity_absolute]
+
+    property_value = payload.kaufpreis
+    tax_rate = payload.tax_rate if payload.tax_rate is not None else ((payload.tax_rate_pct or 42.0) / 100.0)
+
+    # BERECHNUNG BIS ZU 50 JAHRE FÜR DIE VOLLSTÄNDIGE TILGUNG
+    for year in range(1, 51):
+        if year < (payload.adj_year or 1):
+            annual_rent_base = payload.kaltmiete_monat * 12.0
         else:
-            curr_hb_zins = folge_zins
-            if y == zinsbindung + 1 and folge_mode != "Rate konstant halten (Annuität)":
-                curr_hb_annuity = hb_rest * (folge_zins + folge_tilg)
-            elif folge_mode == "Rate konstant halten (Annuität)":
-                curr_hb_annuity = hb_annuity_init
+            target_base = (payload.target_monat or payload.kaltmiete_monat) * 12.0
+            growth_factor = (1.0 + (payload.miet_inc or 0.01)) ** (year - (payload.adj_year or 1))
+            annual_rent_base = target_base * growth_factor
+
+        vac_loss = annual_rent_base * (payload.vac_rate or 0.02)
+        effective_rent = annual_rent_base - vac_loss
+
+        cost_growth = (1.0 + (payload.cost_inc or 0.02)) ** (year - 1)
+        mgt_cost = (payload.mgt_monat or 30.0) * 12.0 * cost_growth
+        inst_cost = (payload.inst_sqm or 12.0) * payload.qm * cost_growth
+        non_recoverable_hausgeld = (payload.hausgeld_nicht_umlegbar or 0.0) * 12.0 * cost_growth
+
+        total_non_rec_costs = mgt_cost + inst_cost + non_recoverable_hausgeld
+        capex_current = capex_map.get(year, 0.0)
+
+        # HB LOAN ANNUITÄT
+        hb_zins_rate = hb_zins_initial if year <= (payload.zinsbindung or 10) else (payload.folge_zins or 0.038)
+        hb_interest = hb_rest * hb_zins_rate
+
+        if year <= (payload.grace_years or 0) or hb_rest <= 0:
+            hb_principal = 0.0
+            hb_interest = 0.0
+        else:
+            if payload.loan_type == "Endfälliges Darlehen":
+                hb_principal = 0.0
             else:
-                curr_hb_annuity = hb_rest * (folge_zins + folge_tilg)
+                target_annuity = hb_annuity_constant if year <= (payload.zinsbindung or 10) else (hb_loan * (hb_zins_rate + (payload.folge_tilg or 0.02)))
+                calculated_principal = max(0.0, target_annuity - hb_interest) + (payload.sondertilg or 0.0)
+                hb_principal = min(hb_rest, calculated_principal)
 
-        hb_zins_year = hb_rest * curr_hb_zins
-        hb_tilg_year = min(hb_rest, max(0.0, curr_hb_annuity - hb_zins_year))
-        hb_rest -= hb_tilg_year
-        
-        sondertilg_year = min(hb_rest, sondertilg_input)
-        hb_rest -= sondertilg_year
-        hb_tilg_year += sondertilg_year
-        
-        kfw_zins_year = kfw_rest * data['kfw_zins']
-        kfw_annu = kfw_amt * (data['kfw_zins'] + data['kfw_tilg'])
-        kfw_tilg_year = min(kfw_rest, max(0.0, kfw_annu - kfw_zins_year))
-        kfw_rest -= kfw_tilg_year
-        
-        tot_zins = hb_zins_year + kfw_zins_year
-        tot_tilg = hb_tilg_year + kfw_tilg_year
-        tot_rest = hb_rest + kfw_rest
-        
-        if y < adj_year:
-            m_monat = ist_miete_monat
+        hb_debt_service = hb_interest + hb_principal
+        hb_rest = max(0.0, hb_rest - hb_principal)
+
+        # KFW LOAN ANNUITÄT
+        kfw_interest = kfw_rest * (payload.kfw_zins or 0.021)
+        if year <= (payload.kfw_grace_years or 0) or kfw_rest <= 0:
+            kfw_principal = 0.0
+            kfw_interest = 0.0
         else:
-            m_monat = target_miete_monat * ((1.0 + miet_inc) ** (y - adj_year))
-        
-        gross_rent = m_monat * 12
-        net_rent = gross_rent * (1.0 - vac_rate)
-        
-        cost_factor = (1.0 + cost_inc) ** (y - 1)
-        inst = inst_annual_base * cost_factor
-        mgt = mgt_annual_base * cost_factor
-        hg_nr = hausgeld_non_reimb_base * cost_factor
-        tot_costs = inst + mgt + hg_nr
-        
-        year_capex = sum([item['betrag'] for item in capex_list if item['jahr'] == y])
-        
-        noi = net_rent - tot_costs
-        cf_v_st = noi - (tot_zins + tot_tilg) - year_capex
-        
-        # Exakte AfA-Berechnung inkl. Kombination degressiv + Sonder-AfA
-        if afa_model == "1_Linear_Standard":
-            afa_annual = (geb_wert + sanierung) * afa_lin_rate
-        elif afa_model == "2_Degressiv_§7_5a":
-            total_life = max(1, int(round(100 / (afa_lin_rate * 100))))
-            remaining_life = max(1, total_life - (y - 1))
-            afa_deg = book_value * 0.05
-            afa_lin_equiv = book_value / remaining_life
-            afa_annual = max(afa_deg, afa_lin_equiv)
-            book_value = max(0.0, book_value - afa_annual)
-        elif afa_model == "3_Sonder_AfA_§7b":
-            base_lin = (geb_wert + sanierung) * afa_lin_rate
-            sonder = (geb_wert + sanierung) * 0.05 if y <= 4 else 0.0
-            afa_annual = base_lin + sonder
-        elif afa_model == "4_Denkmal_§7h_7i":
-            base_lin = geb_wert * afa_lin_rate
-            denkmal_san = (sanierung * 0.09 if y <= 8 else (sanierung * 0.07 if y <= 12 else 0.0))
-            afa_annual = base_lin + denkmal_san
-        elif afa_model == "5_Degressiv_plus_Sonder":
-            total_life = max(1, int(round(100 / (afa_lin_rate * 100))))
-            remaining_life = max(1, total_life - (y - 1))
-            afa_deg = book_value * 0.05
-            afa_lin_equiv = book_value / remaining_life
-            current_deg = max(afa_deg, afa_lin_equiv)
-            sonder = (geb_wert + sanierung) * 0.05 if y <= 4 else 0.0
-            afa_annual = current_deg + sonder
-            book_value = max(0.0, book_value - afa_annual)
-        else:
-            afa_annual = (geb_wert + sanierung) * afa_lin_rate
+            calculated_kfw_principal = max(0.0, kfw_annuity_constant - kfw_interest)
+            kfw_principal = min(kfw_rest, calculated_kfw_principal)
 
-        if y == 1:
-            first_year_afa = afa_annual
+        kfw_debt_service = kfw_interest + kfw_principal
+        kfw_rest = max(0.0, kfw_rest - kfw_principal)
 
-        taxable_income = noi - tot_zins - afa_annual
-        tax = taxable_income * tax_rate
-        cf_n_st = cf_v_st - tax
-        
-        obj_val = obj_val * (1.0 + val_inc)
-        exit_cost_eur = obj_val * exit_cost_pct
-        nav_gross = obj_val - tot_rest
-        nav_net = nav_gross - exit_cost_eur
-        
-        ltv = (tot_rest / obj_val) if obj_val > 0 else 0.0
-        brutto_rendite = (gross_rent / kp) if kp > 0 else 0.0
-        
-        rows.append({
-            'Jahr': y,
-            'Bruttomietrendite': brutto_rendite,
-            'Brutto-Kaltmiete': gross_rent,
-            'NOI': noi,
-            'Zinsen': tot_zins,
-            'Tilgung': tot_tilg,
-            'CF v. St.': cf_v_st,
-            'AfA': afa_annual,
-            'Steuer': tax,
-            'CF n. St.': cf_n_st,
-            'Restschuld': tot_rest,
-            'Objektwert': obj_val,
-            'Exit-Kosten': exit_cost_eur,
-            'NAV (vor Exit)': nav_gross,
-            'NAV (nach Exit)': nav_net,
-            'NAV': nav_net,
-            'LTV': ltv
+        total_interest = hb_interest + kfw_interest
+        total_principal = hb_principal + kfw_principal
+        total_debt_service = hb_debt_service + kfw_debt_service
+        total_remaining_debt = hb_rest + kfw_rest
+
+        # AfA
+        afa_model = payload.afa_model or "Linear Standard"
+        afa_amount = 0.0
+
+        if afa_model == "Linear Standard":
+            afa_amount = afa_base * (payload.afa_lin or 0.02)
+        elif afa_model == "Linear Neubau":
+            afa_amount = afa_base * 0.03
+        elif afa_model == "Degressiv":
+            afa_amount = afa_book_value * 0.05
+        elif afa_model == "Kombination: Degressiv + Sonder-AfA":
+            degressiv_part = afa_book_value * 0.05
+            sonder_part = (afa_base * 0.05) if year <= 4 else 0.0
+            afa_amount = degressiv_part + sonder_part
+        elif afa_model == "Denkmalgeschützt":
+            if year <= 8:
+                afa_amount = afa_base * 0.09
+            elif year <= 12:
+                afa_amount = afa_base * 0.07
+            else:
+                afa_amount = 0.0
+
+        afa_amount = min(afa_amount, afa_book_value)
+        afa_book_value = max(0.0, afa_book_value - afa_amount)
+
+        taxable_income = effective_rent - total_non_rec_costs - total_interest - afa_amount
+        tax_amount = taxable_income * tax_rate
+
+        net_cashflow = effective_rent - total_non_rec_costs - capex_current - total_debt_service - tax_amount
+
+        property_value *= (1.0 + (payload.val_inc or 0.01))
+
+        projection.append({
+            "Jahr": year,
+            "Mieteinnahmen IST": round(annual_rent_base, 2),
+            "Effektive Miete": round(effective_rent, 2),
+            "Bewirtschaftungskosten": round(total_non_rec_costs, 2),
+            "Capex": round(capex_current, 2),
+            "Zinsen": round(total_interest, 2),
+            "Tilgung": round(total_principal, 2),
+            "AfA": round(afa_amount, 2),
+            "Steuer": round(tax_amount, 2),
+            "Cashflow Netto": round(net_cashflow, 2),
+            "Restschuld": round(total_remaining_debt, 2),
+            "Immobilienwert": round(property_value, 2)
         })
-        
-        if full_repayment and tot_rest <= 1.0:
+
+        # SCHLEIFE BEENDEN, WENN VOLLSTÄNDIG GETILGT UND MINDESTENS JAHR 30 ERREICHT
+        if total_remaining_debt <= 0 and year >= 30:
             break
-        if not full_repayment and y >= 10:
-            break
-        if y >= max_years:
-            break
-            
-    df_proj = pd.DataFrame(rows)
-    
-    cfs = [-ek_abs] + df_proj['CF n. St.'].tolist()
-    cfs[-1] += df_proj.iloc[-1]['NAV (nach Exit)']
-    
-    try:
-        irr = npf.irr(cfs)
-        if np.isnan(irr) or np.isinf(irr):
-            irr = 0.0
-    except:
-        irr = 0.0
-        
-    ek_quote_calc = (ek_abs / tot_inv) if tot_inv > 0 else 0.0
-    
-    return df_proj, tot_inv, ek_abs, fk_tot, irr, first_year_afa, ek_quote_calc
+
+    irr_val = calculate_irr(cashflows_for_irr)
+
+    return {
+        "summary": {
+            "total_investment": round(total_investment, 2),
+            "purchase_price": round(payload.kaufpreis, 2),
+            "ancillary_costs": round(summe_nk, 2),
+            "equity_absolute": round(equity_absolute, 2),
+            "hb_loan": round(hb_loan, 2),
+            "kfw_loan": round(kfw_loan, 2),
+            "afa_base": round(afa_base, 2),
+            "irr": round(irr_val, 4)
+        },
+        "projection": projection
+    }

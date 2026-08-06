@@ -3,12 +3,24 @@ import { useState } from 'react';
 import StepperInput from '../ui/StepperInput';
 import { formatEuroInt } from '../../utils/formatters';
 
-const BUNDESLAENDER_DEFAULT = [
-  "Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen",
-  "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen",
-  "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen",
-  "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"
-];
+const BUNDESLAENDER_DEFAULT = {
+  'Baden-Württemberg': 5.0,
+  'Bayern': 3.5,
+  'Berlin': 6.0,
+  'Brandenburg': 6.5,
+  'Bremen': 5.0,
+  'Hamburg': 5.5,
+  'Hessen': 6.0,
+  'Mecklenburg-Vorpommern': 6.0,
+  'Niedersachsen': 5.0,
+  'Nordrhein-Westfalen': 6.5,
+  'Rheinland-Pfalz': 5.0,
+  'Saarland': 6.5,
+  'Sachsen': 5.5,
+  'Sachsen-Anhalt': 5.0,
+  'Schleswig-Holstein': 6.5,
+  'Thüringen': 6.5
+};
 
 export default function Parametrisierung({
   formData,
@@ -72,31 +84,6 @@ export default function Parametrisierung({
 
   const allSectionsOpen = Object.values(openSections).every(Boolean);
 
-  // Kaufnebenkosten Fallback-Berechnung
-  const kaufpreis = Number(formData?.kaufpreis || 0);
-  const grwtP = Number(formData?.grwt_p || 5.0);
-  const notarP = Number(formData?.notar_p || 2.0);
-  const maklerP = Number(formData?.makler_p || 3.57);
-  const sonstNk = Number(formData?.sonst_nk || 0);
-
-  const calcGrwt = kaufpreis * (grwtP / 100);
-  const calcNotar = kaufpreis * (notarP / 100);
-  const calcMakler = kaufpreis * (maklerP / 100);
-  const calcNkTotal = calcGrwt + calcNotar + calcMakler + sonstNk;
-
-  const displayNkTotal = summe_nk || calcNkTotal;
-  const displayGrwtEuro = grwt_euro || calcGrwt;
-  const displayNotarEuro = notar_euro || calcNotar;
-  const displayMaklerEuro = makler_euro || calcMakler;
-
-  // Gerundeter Vergleich für 100% exakte Deckung
-  const ekEuro = Number(formData?.ek_euro || 0);
-  const isEkCoveringNk = Math.round(ekEuro) >= Math.round(displayNkTotal) - 1;
-
-  const bundeslaenderList = (grunderwerbsteuerSätze && Object.keys(grunderwerbsteuerSätze).length > 0)
-    ? Object.keys(grunderwerbsteuerSätze)
-    : BUNDESLAENDER_DEFAULT;
-
   const onFieldChange = (field, value) => {
     if (updateField) {
       updateField(field, value);
@@ -105,6 +92,39 @@ export default function Parametrisierung({
     }
     if (pingBackend) pingBackend();
   };
+
+  // BUNDESLAND WECHSEL INKL. AUTOMATISCHER ANPASSUNG DER GRUNDERWERBSTEUER
+  const handleBundeslandChange = (bl) => {
+    onFieldChange('bundesland', bl);
+    const rates = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
+    if (rates[bl] !== undefined) {
+      onFieldChange('grwt_p', rates[bl]);
+    }
+  };
+
+  // Kaufnebenkosten Dynamische Berechnung
+  const kaufpreis = Number(formData?.kaufpreis || 0);
+  const grwtP = Number(formData?.grwt_p ?? 5.0);
+  const notarP = Number(formData?.notar_p ?? 2.0);
+  const maklerP = Number(formData?.makler_p ?? 3.57);
+  const sonstNk = Number(formData?.sonst_nk ?? 0);
+
+  const calcGrwt = kaufpreis * (grwtP / 100);
+  const calcNotar = kaufpreis * (notarP / 100);
+  const calcMakler = kaufpreis * (maklerP / 100);
+  const calcNkTotal = calcGrwt + calcNotar + calcMakler + sonstNk;
+
+  const displayNkTotal = calcNkTotal;
+  const displayGrwtEuro = calcGrwt;
+  const displayNotarEuro = calcNotar;
+  const displayMaklerEuro = calcMakler;
+
+  // Gerundeter Vergleich für 100% exakte Deckung
+  const ekEuro = Number(formData?.ek_euro || 0);
+  const isEkCoveringNk = Math.round(ekEuro) >= Math.round(displayNkTotal) - 1;
+
+  const bundeslaenderMap = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
+  const bundeslaenderList = Object.keys(bundeslaenderMap);
 
   // BIDIREKTIONALE MIET-BERECHNUNGEN & AUTO-SYNC ZU ZIEL-MIETE
   const handleLocalIstMonat = (val) => {
@@ -283,7 +303,7 @@ export default function Parametrisierung({
           <div style={selectContainerStyle}>
             <select
               value={formData?.bundesland || 'Niedersachsen'}
-              onChange={(e) => onFieldChange('bundesland', e.target.value)}
+              onChange={(e) => handleBundeslandChange(e.target.value)}
               style={selectStyle}
             >
               {bundeslaenderList.map((bl) => (
@@ -396,28 +416,28 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* EINKLAPPBARER UNTERBEREICH FÜR HAUSGELD MIT 25/75 LOGIK */}
+        {/* HAUSGELD GESAMT DIREKT IM HAUPTBEREICH */}
+        <StepperInput
+          label="Hausgeld gesamt (€ / Mo)"
+          value={formData?.hausgeld || 0}
+          onChange={handleLocalHausgeldGesamt}
+          step={10}
+          isCurrency={true}
+        />
+
+        {/* EINKLAPPBARER UNTERBEREICH FÜR NICHT UMLEGBAREN ANTEIL & DETAILS */}
         <SubContainerCard
-          title="Hausgeld & Umlegbarkeit"
+          title="Nicht umlegbarer Anteil & Details"
           isOpen={openSubSections.hausgeld}
           onToggle={() => toggleSubSection('hausgeld')}
         >
-          <div style={grid2Style}>
-            <StepperInput
-              label="Hausgeld gesamt (€ / Mo)"
-              value={formData?.hausgeld || 0}
-              onChange={handleLocalHausgeldGesamt}
-              step={10}
-              isCurrency={true}
-            />
-            <StepperInput
-              label="Nicht umlegbar (€ / Mo)"
-              value={formData?.hausgeld_nicht_umlegbar || 0}
-              onChange={handleLocalHausgeldNichtUmlegbar}
-              step={5}
-              isCurrency={true}
-            />
-          </div>
+          <StepperInput
+            label="Nicht umlegbar (€ / Mo)"
+            value={formData?.hausgeld_nicht_umlegbar || 0}
+            onChange={handleLocalHausgeldNichtUmlegbar}
+            step={5}
+            isCurrency={true}
+          />
 
           <div style={infoBoxStyle}>
             <div style={{ fontWeight: '800', fontSize: '0.8rem', color: '#13381A', marginBottom: '4px' }}>
@@ -429,20 +449,36 @@ export default function Parametrisierung({
           </div>
         </SubContainerCard>
 
+        {/* INSTANDHALTUNG & VERWALTUNG MIT ? INFO-SYMBOLEN */}
         <div style={grid2Style}>
-          <StepperInput
-            label="Instandhaltung (€ / m² / J.)"
-            value={formData?.inst_sqm || 12}
-            onChange={(v) => onFieldChange('inst_sqm', v)}
-            step={1}
-          />
-          <StepperInput
-            label="Verwaltung (€ / Mo)"
-            value={formData?.mgt_monat || 30}
-            onChange={(v) => onFieldChange('mgt_monat', v)}
-            step={5}
-            isCurrency={true}
-          />
+          <div>
+            <StepperInput
+              label="Instandhaltung (€ / m² / J.)"
+              value={formData?.inst_sqm || 12}
+              onChange={(v) => onFieldChange('inst_sqm', v)}
+              step={1}
+              tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
+            />
+            <div style={{ fontSize: '0.7rem', color: '#718096', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '13px', height: '13px', borderRadius: '50%', background: '#E2D9CE', color: '#13381A', fontSize: '0.65rem', fontWeight: '800' }}>?</span>
+              <span>Orientiert sich am Baujahr & Objektart</span>
+            </div>
+          </div>
+
+          <div>
+            <StepperInput
+              label="Verwaltung (€ / Mo)"
+              value={formData?.mgt_monat || 30}
+              onChange={(v) => onFieldChange('mgt_monat', v)}
+              step={5}
+              isCurrency={true}
+              tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
+            />
+            <div style={{ fontSize: '0.7rem', color: '#718096', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '13px', height: '13px', borderRadius: '50%', background: '#E2D9CE', color: '#13381A', fontSize: '0.65rem', fontWeight: '800' }}>?</span>
+              <span>Orientiert sich am Baujahr & Objektart</span>
+            </div>
+          </div>
         </div>
 
         <div style={grid2Style}>
@@ -462,6 +498,48 @@ export default function Parametrisierung({
           />
         </div>
 
+        {/* NEUE EINGABEFELDER FÜR EINZELNE KAUFNEBENKOSTEN */}
+        <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '0.25rem 0' }} />
+
+        <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
+          Kaufnebenkosten Parameter
+        </div>
+
+        <div style={grid2Style}>
+          <StepperInput
+            label="Grunderwerbsteuer (%)"
+            value={formData?.grwt_p ?? 5.0}
+            onChange={(v) => onFieldChange('grwt_p', v)}
+            step={0.25}
+            isPercent={true}
+          />
+          <StepperInput
+            label="Notar & Grundbuch (%)"
+            value={formData?.notar_p ?? 2.0}
+            onChange={(v) => onFieldChange('notar_p', v)}
+            step={0.1}
+            isPercent={true}
+          />
+        </div>
+
+        <div style={grid2Style}>
+          <StepperInput
+            label="Maklercourtage (%)"
+            value={formData?.makler_p ?? 3.57}
+            onChange={(v) => onFieldChange('makler_p', v)}
+            step={0.01}
+            isPercent={true}
+          />
+          <StepperInput
+            label="Sonstige Nebenkosten (€)"
+            value={formData?.sonst_nk ?? 0}
+            onChange={(v) => onFieldChange('sonst_nk', v)}
+            step={250}
+            isCurrency={true}
+          />
+        </div>
+
+        {/* DYNAMISCHE INFOBOX FÜR NEBENKOSTEN */}
         <div style={infoBoxStyle}>
           <div style={{ fontWeight: '800', fontSize: '0.95rem', marginBottom: '8px', borderBottom: '1px solid #E2D9CE', paddingBottom: '4px' }}>
             Kaufnebenkosten Gesamt: {formatEuroInt(displayNkTotal)} €

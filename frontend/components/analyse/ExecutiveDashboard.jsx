@@ -62,6 +62,7 @@ export default function ExecutiveDashboard({
 
         {result && (
           <div style={{ display: 'flex', gap: '8px' }}>
+            {/* PROMINENTER GREEN BUTTON FOR PIPELINE */}
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('pipeline')}
@@ -78,9 +79,10 @@ export default function ExecutiveDashboard({
                 opacity: saving ? 0.7 : 1
               }}
             >
-              {saving ? 'Speichert...' : '+ In Pipeline'}
+              {saving ? 'Speichert...' : '+ In Pipeline speichern'}
             </button>
 
+            {/* SEKUNDÄRER BUTTON FÜR BESTAND */}
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('bestand')}
@@ -97,13 +99,13 @@ export default function ExecutiveDashboard({
                 opacity: saving ? 0.7 : 1
               }}
             >
-              {saving ? 'Speichert...' : 'In Bestand aufnehmen'}
+              {saving ? 'Speichert...' : 'In Bestand speichern'}
             </button>
           </div>
         )}
       </div>
 
-      {/* BENACHRICHTIGUNGS-BANNER FÜR SPEICHERN ODER BERECHNUNGSFEHLER */}
+      {/* BENACHRICHTIGUNGS-BANNER */}
       {saveSuccess && (
         <div style={{
           padding: '0.85rem 1.25rem',

@@ -129,9 +129,11 @@ export default function TableView({ slicedProjection }) {
               )}
 
               {/* Ergebnis */}
-              <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>CF v. St. / Mo.</th>
-              <th style={thSubStyle}>CF n. St. / Mo.</th>
-              {viewMode === 'vollstaendig' && <th style={thSubStyle}>CF n. St. p.a.</th>}
+              {viewMode === 'vollstaendig' && (
+                <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>CF v. St. / Mo.</th>
+              )}
+              <th style={{ ...thSubStyle, borderLeft: viewMode === 'vollstaendig' ? 'none' : '1px solid rgba(255,255,255,0.2)' }}>CF n. St. / Mo.</th>
+              <th style={thSubStyle}>CF n. St. p.a.</th>
               <th style={thSubStyle}>Restschuld</th>
               {viewMode === 'vollstaendig' && <th style={thSubStyle}>Netto-EK (NAV)</th>}
             </tr>
@@ -173,17 +175,17 @@ export default function TableView({ slicedProjection }) {
                   )}
 
                   {/* Ergebnis */}
-                  <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: row.cashflowVorSteuerMo >= 0 ? '#276749' : '#9B2C2C' }}>
-                    {row.cashflowVorSteuerMo >= 0 ? '+' : ''}{formatEuroInt(row.cashflowVorSteuerMo)} €
-                  </td>
-                  <td style={{ ...tdStyle, fontWeight: '900', color: isCfPos ? '#276749' : '#9B2C2C', background: isCfPos ? 'rgba(39, 103, 73, 0.05)' : 'rgba(155, 44, 44, 0.05)' }}>
-                    {isCfPos ? '+' : ''}{formatEuroInt(cfMo)} €
-                  </td>
                   {viewMode === 'vollstaendig' && (
-                    <td style={{ ...tdStyle, fontWeight: '900', color: cfPa >= 0 ? '#276749' : '#9B2C2C' }}>
-                      {cfPa >= 0 ? '+' : ''}{formatEuroInt(cfPa)} €
+                    <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: row.cashflowVorSteuerMo >= 0 ? '#276749' : '#9B2C2C' }}>
+                      {row.cashflowVorSteuerMo >= 0 ? '+' : ''}{formatEuroInt(row.cashflowVorSteuerMo)} €
                     </td>
                   )}
+                  <td style={{ ...tdStyle, borderLeft: viewMode === 'vollstaendig' ? 'none' : '1px solid #E2D9CE', fontWeight: '900', color: isCfPos ? '#276749' : '#9B2C2C', background: isCfPos ? 'rgba(39, 103, 73, 0.05)' : 'rgba(155, 44, 44, 0.05)' }}>
+                    {isCfPos ? '+' : ''}{formatEuroInt(cfMo)} €
+                  </td>
+                  <td style={{ ...tdStyle, fontWeight: '900', color: cfPa >= 0 ? '#276749' : '#9B2C2C' }}>
+                    {cfPa >= 0 ? '+' : ''}{formatEuroInt(cfPa)} €
+                  </td>
                   <td style={{ ...tdStyle, color: '#9B2C2C' }}>{formatEuroInt(row.restschuld)} €</td>
                   {viewMode === 'vollstaendig' && (
                     <td style={{ ...tdStyle, fontWeight: '800', color: '#13381A' }}>{formatEuroInt(row.netEquity)} €</td>
@@ -222,13 +224,13 @@ export default function TableView({ slicedProjection }) {
               )}
 
               {/* Ergebnis Summen & Endstände */}
-              <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#718096' }}>-</td>
-              <td style={{ ...tdStyle, color: '#718096' }}>-</td>
               {viewMode === 'vollstaendig' && (
-                <td style={{ ...tdStyle, fontWeight: '900', color: sumData.cashflowNachSteuerPa >= 0 ? '#276749' : '#9B2C2C' }}>
-                  {sumData.cashflowNachSteuerPa >= 0 ? '+' : ''}{formatEuroInt(sumData.cashflowNachSteuerPa)} €
-                </td>
+                <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#718096' }}>-</td>
               )}
+              <td style={{ ...tdStyle, borderLeft: viewMode === 'vollstaendig' ? 'none' : '1px solid #CBD5E0', color: '#718096' }}>-</td>
+              <td style={{ ...tdStyle, fontWeight: '900', color: sumData.cashflowNachSteuerPa >= 0 ? '#276749' : '#9B2C2C' }}>
+                {sumData.cashflowNachSteuerPa >= 0 ? '+' : ''}{formatEuroInt(sumData.cashflowNachSteuerPa)} €
+              </td>
               <td style={{ ...tdStyle, color: '#9B2C2C' }}>{formatEuroInt(lastRow.restschuld || 0)} €</td>
               {viewMode === 'vollstaendig' && (
                 <td style={{ ...tdStyle, color: '#13381A' }}>{formatEuroInt(lastRow.netEquity || 0)} €</td>

@@ -1,43 +1,19 @@
 'use client';
 import { useState } from 'react';
-import StepperInput from '../ui/StepperInput';
-import { formatEuroInt } from '../../utils/formatters';
-
-const BUNDESLAENDER_DEFAULT = {
-  'Baden-Württemberg': 5.0,
-  'Bayern': 3.5,
-  'Berlin': 6.0,
-  'Brandenburg': 6.5,
-  'Bremen': 5.0,
-  'Hamburg': 5.5,
-  'Hessen': 6.0,
-  'Mecklenburg-Vorpommern': 6.0,
-  'Niedersachsen': 5.0,
-  'Nordrhein-Westfalen': 6.5,
-  'Rheinland-Pfalz': 5.0,
-  'Saarland': 6.5,
-  'Sachsen': 5.5,
-  'Sachsen-Anhalt': 5.0,
-  'Schleswig-Holstein': 6.5,
-  'Thüringen': 6.5
-};
+import SectionBasisdaten from './sections/SectionBasisdaten';
+import SectionBewirtschaftung from './sections/SectionBewirtschaftung';
+import SectionFinanzierung from './sections/SectionFinanzierung';
+import SectionSteuern from './sections/SectionSteuern';
+import { BUNDESLAENDER_DEFAULT } from '../../constants/realEstate';
 
 export default function Parametrisierung({
   formData,
   updateField,
   pingBackend,
   handleQmChange,
-  handleIstMonatChange,
-  handleIstSqmChange,
   handleHausgeldChange,
   handleHausgeldNichtUmlegbarChange,
-  handleTargetMonatChange,
-  handleTargetSqmChange,
   grunderwerbsteuerSätze,
-  summe_nk,
-  grwt_euro,
-  notar_euro,
-  makler_euro,
   capexList,
   handleCapexChange,
   removeCapexRow,
@@ -63,43 +39,27 @@ export default function Parametrisierung({
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
   const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
 
-  const toggleSection = (key) => {
-    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const toggleSubSection = (key) => {
-    setOpenSubSections(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleSubSection = (key) => setOpenSubSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   const toggleAllSections = () => {
     const allOpen = Object.values(openSections).every(Boolean);
     const newState = !allOpen;
-    setOpenSections({
-      basisdaten: newState,
-      bewirtschaftung: newState,
-      finanzierung: newState,
-      steuer: newState
-    });
+    setOpenSections({ basisdaten: newState, bewirtschaftung: newState, finanzierung: newState, steuer: newState });
   };
 
   const allSectionsOpen = Object.values(openSections).every(Boolean);
 
   const onFieldChange = (field, value) => {
-    if (updateField) {
-      updateField(field, value);
-    } else if (setFormData) {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
+    if (updateField) updateField(field, value);
+    else if (setFormData) setFormData(prev => ({ ...prev, [field]: value }));
     if (pingBackend) pingBackend();
   };
 
-  // BUNDESLAND WECHSEL INKL. AUTOMATISCHER ANPASSUNG DER GRUNDERWERBSTEUER
   const handleBundeslandChange = (bl) => {
     onFieldChange('bundesland', bl);
     const rates = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
-    if (rates[bl] !== undefined) {
-      onFieldChange('grwt_p', rates[bl]);
-    }
+    if (rates[bl] !== undefined) onFieldChange('grwt_p', rates[bl]);
   };
 
   // Kaufnebenkosten Dynamische Berechnung
@@ -112,29 +72,19 @@ export default function Parametrisierung({
   const calcGrwt = kaufpreis * (grwtP / 100);
   const calcNotar = kaufpreis * (notarP / 100);
   const calcMakler = kaufpreis * (maklerP / 100);
-  const calcNkTotal = calcGrwt + calcNotar + calcMakler + sonstNk;
+  const displayNkTotal = calcGrwt + calcNotar + calcMakler + sonstNk;
 
-  const displayNkTotal = calcNkTotal;
-  const displayGrwtEuro = calcGrwt;
-  const displayNotarEuro = calcNotar;
-  const displayMaklerEuro = calcMakler;
-
-  // EXAKTER EIGENKAPITAL-VERGLEICH (AB 1 € UNTERSCHIED ROT)
   const ekEuro = Number(formData?.ek_euro || 0);
-  const roundedNkTotal = Math.round(displayNkTotal);
-  const isEkCoveringNk = Math.round(ekEuro) >= roundedNkTotal;
+  const isEkCoveringNk = Math.round(ekEuro) >= Math.round(displayNkTotal);
 
   const bundeslaenderMap = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
   const bundeslaenderList = Object.keys(bundeslaenderMap);
 
-  // BIDIREKTIONALE MIET-BERECHNUNGEN & AUTO-SYNC ZU ZIEL-MIETE
   const handleLocalIstMonat = (val) => {
     const qm = Number(formData?.qm || 0);
     const sqmVal = qm > 0 ? val / qm : 0;
-    
     onFieldChange('kaltmiete_monat', val);
     onFieldChange('ist_sqm', sqmVal);
-
     if (!isTargetCustomized) {
       onFieldChange('target_monat', val);
       onFieldChange('target_sqm', sqmVal);
@@ -144,10 +94,8 @@ export default function Parametrisierung({
   const handleLocalIstSqm = (val) => {
     const qm = Number(formData?.qm || 0);
     const monatVal = val * qm;
-
     onFieldChange('ist_sqm', val);
     onFieldChange('kaltmiete_monat', monatVal);
-
     if (!isTargetCustomized) {
       onFieldChange('target_monat', monatVal);
       onFieldChange('target_sqm', val);
@@ -170,712 +118,103 @@ export default function Parametrisierung({
     onFieldChange('target_monat', monatVal);
   };
 
-  // HAUSGELD BERECHNUNG UNTER BERÜCKSICHTIGUNG DER 25/75 % LOGIK
   const handleLocalHausgeldGesamt = (val) => {
-    if (handleHausgeldChange) {
-      handleHausgeldChange(val);
-    } else {
-      onFieldChange('hausgeld', val);
-    }
+    if (handleHausgeldChange) handleHausgeldChange(val);
+    else onFieldChange('hausgeld', val);
 
     if (!isHausgeldCustomized) {
       const nichtUmlegbar = Math.round(val * 0.25 * 100) / 100;
-      if (handleHausgeldNichtUmlegbarChange) {
-        handleHausgeldNichtUmlegbarChange(nichtUmlegbar);
-      } else {
-        onFieldChange('hausgeld_nicht_umlegbar', nichtUmlegbar);
-      }
+      if (handleHausgeldNichtUmlegbarChange) handleHausgeldNichtUmlegbarChange(nichtUmlegbar);
+      else onFieldChange('hausgeld_nicht_umlegbar', nichtUmlegbar);
     }
   };
 
   const handleLocalHausgeldNichtUmlegbar = (val) => {
     setIsHausgeldCustomized(true);
-    if (handleHausgeldNichtUmlegbarChange) {
-      handleHausgeldNichtUmlegbarChange(val);
-    } else {
-      onFieldChange('hausgeld_nicht_umlegbar', val);
-    }
+    if (handleHausgeldNichtUmlegbarChange) handleHausgeldNichtUmlegbarChange(val);
+    else onFieldChange('hausgeld_nicht_umlegbar', val);
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-
-      {/* KOPFZEILE: OBJEKT PARAMETER */}
-      <div style={{
-        background: 'white',
-        padding: '1.25rem',
-        borderRadius: '12px',
-        border: '1px solid #E2D9CE'
-      }}>
-        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#13381A' }}>
-          Objekt-Parameter
-        </h3>
-        <span style={{ fontSize: '0.8rem', color: '#718096', marginTop: '2px', display: 'block' }}>
-          Eingabemaske für Kalkulation
-        </span>
+      
+      {/* KOPFZEILE */}
+      <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#13381A' }}>Objekt-Parameter</h3>
+        <span style={{ fontSize: '0.8rem', color: '#718096', marginTop: '2px', display: 'block' }}>Eingabemaske für Kalkulation</span>
       </div>
 
-      {/* SEPARATE ZEILE FÜR BUTTONS */}
+      {/* BUTTONS */}
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <button
-          type="button"
-          onClick={toggleAllSections}
-          style={{
-            flex: 1,
-            padding: '0.6rem 1rem',
-            background: 'white',
-            border: '1px solid #E2D9CE',
-            borderRadius: '8px',
-            fontSize: '0.8rem',
-            fontWeight: '700',
-            color: '#13381A',
-            cursor: 'pointer',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
-          }}
-        >
+        <button type="button" onClick={toggleAllSections} style={{ flex: 1, padding: '0.6rem 1rem', background: 'white', border: '1px solid #E2D9CE', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
           {allSectionsOpen ? 'Alle einklappen' : 'Alle ausklappen'}
         </button>
-
         {handleReset && (
-          <button
-            type="button"
-            onClick={() => {
-              setIsTargetCustomized(false);
-              setIsHausgeldCustomized(false);
-              handleReset();
-            }}
-            style={{
-              padding: '0.6rem 1.25rem',
-              background: '#FFF5F5',
-              border: '1px solid #FEB2B2',
-              borderRadius: '8px',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              color: '#9B2C2C',
-              cursor: 'pointer'
-            }}
-          >
+          <button type="button" onClick={() => { setIsTargetCustomized(false); setIsHausgeldCustomized(false); handleReset(); }} style={{ padding: '0.6rem 1.25rem', background: '#FFF5F5', border: '1px solid #FEB2B2', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#9B2C2C', cursor: 'pointer' }}>
             Reset
           </button>
         )}
       </div>
 
-      {/* HAUPTBEREICH 1: BASISDATEN */}
-      <MainCard
-        title="1. Basisdaten & Kaufpreis"
+      {/* MODULARE SEKTIONEN */}
+      <SectionBasisdaten
+        formData={formData}
         isOpen={openSections.basisdaten}
         onToggle={() => toggleSection('basisdaten')}
-      >
-        <div>
-          <label style={labelStyle}>Objektbezeichnung</label>
-          <input
-            type="text"
-            value={formData?.obj_name || ''}
-            onChange={(e) => onFieldChange('obj_name', e.target.value)}
-            placeholder="z.B. ETW Musterstraße"
-            style={inputStyle}
-          />
-        </div>
+        onFieldChange={onFieldChange}
+        handleBundeslandChange={handleBundeslandChange}
+        handleQmChange={handleQmChange}
+        bundeslaenderList={bundeslaenderList}
+      />
 
-        <div>
-          <label style={labelStyle}>Objektart</label>
-          <div style={selectContainerStyle}>
-            <select
-              value={formData?.objektart || 'Eigentumswohnung'}
-              onChange={(e) => onFieldChange('objektart', e.target.value)}
-              style={selectStyle}
-            >
-              <option value="Eigentumswohnung">Eigentumswohnung</option>
-              <option value="Einfamilienhaus">Einfamilienhaus</option>
-              <option value="Zweifamilienhaus">Zweifamilienhaus</option>
-              <option value="Reihenhaus / Doppelhaushälfte">Reihenhaus / Doppelhaushälfte</option>
-              <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
-              <option value="Wohn- und Geschäftshaus">Wohn- und Geschäftshaus</option>
-              <option value="Mikroapartment / Studentisches Wohnen">Mikroapartment / Studentisches Wohnen</option>
-              <option value="Pflege- / Seniorenimmobilie">Pflege- / Seniorenimmobilie</option>
-              <option value="Gewerbeimmobilie / Sonstiges">Gewerbeimmobilie / Sonstiges</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label style={labelStyle}>Bundesland</label>
-          <div style={selectContainerStyle}>
-            <select
-              value={formData?.bundesland || 'Niedersachsen'}
-              onChange={(e) => handleBundeslandChange(e.target.value)}
-              style={selectStyle}
-            >
-              {bundeslaenderList.map((bl) => (
-                <option key={bl} value={bl}>{bl}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div style={grid2Style}>
-          <div>
-            <label style={labelStyle}>Stadt</label>
-            <input
-              type="text"
-              value={formData?.stadt || ''}
-              onChange={(e) => onFieldChange('stadt', e.target.value)}
-              placeholder="z.B. Weyhe"
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Stadtteil</label>
-            <input
-              type="text"
-              value={formData?.stadtteil || ''}
-              onChange={(e) => onFieldChange('stadtteil', e.target.value)}
-              placeholder="z.B. Leeste"
-              style={inputStyle}
-            />
-          </div>
-        </div>
-
-        <StepperInput
-          label="Kaufpreis (€)"
-          value={formData?.kaufpreis || 0}
-          onChange={(v) => onFieldChange('kaufpreis', v)}
-          step={5000}
-          isCurrency={true}
-        />
-
-        <div style={grid2Style}>
-          <StepperInput
-            label="Wohnfläche (m²)"
-            value={formData?.qm || 0}
-            onChange={(v) => handleQmChange ? handleQmChange(v) : onFieldChange('qm', v)}
-            step={5}
-            isSqm={true}
-          />
-          
-          <div>
-            <label style={labelStyle}>Baujahr</label>
-            <input
-              type="number"
-              step="1"
-              value={formData?.baujahr || 2000}
-              onChange={(e) => onFieldChange('baujahr', parseInt(e.target.value, 10) || 2000)}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-      </MainCard>
-
-      {/* HAUPTBEREICH 2: BEWIRTSCHAFTUNG & NEBENKOSTEN */}
-      <MainCard
-        title="2. Bewirtschaftung & Nebenkosten"
+      <SectionBewirtschaftung
+        formData={formData}
         isOpen={openSections.bewirtschaftung}
         onToggle={() => toggleSection('bewirtschaftung')}
-      >
-        <div style={grid2Style}>
-          <StepperInput
-            label="Ist-Kaltmiete (€ / Mo)"
-            value={formData?.kaltmiete_monat || 0}
-            onChange={handleLocalIstMonat}
-            step={25}
-            isCurrency={true}
-          />
-          <StepperInput
-            label="Ist-Miete (€ / m²)"
-            value={formData?.ist_sqm || 0}
-            onChange={handleLocalIstSqm}
-            step={0.5}
-          />
-        </div>
+        openSubSections={openSubSections}
+        toggleSubSection={toggleSubSection}
+        onFieldChange={onFieldChange}
+        handleLocalIstMonat={handleLocalIstMonat}
+        handleLocalIstSqm={handleLocalIstSqm}
+        handleLocalZielMonat={handleLocalZielMonat}
+        handleLocalZielSqm={handleLocalZielSqm}
+        handleLocalHausgeldGesamt={handleLocalHausgeldGesamt}
+        handleLocalHausgeldNichtUmlegbar={handleLocalHausgeldNichtUmlegbar}
+        grwtP={grwtP}
+        notarP={notarP}
+        maklerP={maklerP}
+        sonstNk={sonstNk}
+        displayNkTotal={displayNkTotal}
+        displayGrwtEuro={calcGrwt}
+        displayNotarEuro={calcNotar}
+        displayMaklerEuro={calcMakler}
+      />
 
-        <div style={grid2Style}>
-          <StepperInput
-            label="Ziel-Kaltmiete (€ / Mo)"
-            value={formData?.target_monat || 0}
-            onChange={handleLocalZielMonat}
-            step={25}
-            isCurrency={true}
-          />
-          <StepperInput
-            label="Ziel-Miete (€ / m²)"
-            value={formData?.target_sqm || 0}
-            onChange={handleLocalZielSqm}
-            step={0.5}
-          />
-        </div>
-
-        <div>
-          <label style={labelStyle}>Anpassung ab Jahr</label>
-          <input
-            type="number"
-            step="1"
-            min="1"
-            value={formData?.adj_year || 1}
-            onChange={(e) => onFieldChange('adj_year', parseInt(e.target.value, 10) || 1)}
-            style={inputStyle}
-          />
-        </div>
-
-        <StepperInput
-          label="Hausgeld gesamt (€ / Mo)"
-          value={formData?.hausgeld || 0}
-          onChange={handleLocalHausgeldGesamt}
-          step={10}
-          isCurrency={true}
-        />
-
-        <SubContainerCard
-          title="Nicht umlegbarer Anteil & Details"
-          isOpen={openSubSections.hausgeld}
-          onToggle={() => toggleSubSection('hausgeld')}
-        >
-          <StepperInput
-            label="Nicht umlegbar (€ / Mo)"
-            value={formData?.hausgeld_nicht_umlegbar || 0}
-            onChange={handleLocalHausgeldNichtUmlegbar}
-            step={5}
-            isCurrency={true}
-          />
-
-          <div style={infoBoxStyle}>
-            <div style={{ fontWeight: '800', fontSize: '0.8rem', color: '#13381A', marginBottom: '4px' }}>
-              Faustformel (25 / 75 % Logik):
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#4A5568', lineHeight: '1.4' }}>
-              Im Durchschnitt sind ca. 75 % des Hausgeldes umlagefähige Betriebskosten. Die verbleibenden 25 % (Instandhaltungsrücklage & Hausverwaltung) trägt der Eigentümer.
-            </div>
-          </div>
-        </SubContainerCard>
-
-        {/* INSTANDHALTUNG & VERWALTUNG OHNE UNTERE DOPPEL-TEXTE */}
-        <div style={grid2Style}>
-          <StepperInput
-            label="Instandhaltung (€ / m² p.a.)"
-            value={formData?.inst_sqm || 12}
-            onChange={(v) => onFieldChange('inst_sqm', v)}
-            step={1}
-            tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
-          />
-
-          <StepperInput
-            label="Verwaltung (€ / Mo)"
-            value={formData?.mgt_monat || 30}
-            onChange={(v) => onFieldChange('mgt_monat', v)}
-            step={5}
-            isCurrency={true}
-            tooltip="Orientiert sich standardmäßig am Baujahr und der Objektart."
-          />
-        </div>
-
-        <div style={grid2Style}>
-          <StepperInput
-            label="Mietausfallwagnis (%)"
-            value={formData?.vac_rate_pct || 2.0}
-            onChange={(v) => onFieldChange('vac_rate_pct', v)}
-            step={0.5}
-            isPercent={true}
-          />
-          <StepperInput
-            label="Sanierung / Umbau (€)"
-            value={formData?.sanierung || 0}
-            onChange={(v) => onFieldChange('sanierung', v)}
-            step={1000}
-            isCurrency={true}
-          />
-        </div>
-
-        <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '0.25rem 0' }} />
-
-        <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
-          Kaufnebenkosten Parameter
-        </div>
-
-        <div style={grid2Style}>
-          <StepperInput
-            label="Grunderwerbsteuer (%)"
-            value={formData?.grwt_p ?? 5.0}
-            onChange={(v) => onFieldChange('grwt_p', v)}
-            step={0.25}
-            isPercent={true}
-          />
-          <StepperInput
-            label="Notar & Grundbuch (%)"
-            value={formData?.notar_p ?? 2.0}
-            onChange={(v) => onFieldChange('notar_p', v)}
-            step={0.1}
-            isPercent={true}
-          />
-        </div>
-
-        <div style={grid2Style}>
-          <StepperInput
-            label="Maklercourtage (%)"
-            value={formData?.makler_p ?? 3.57}
-            onChange={(v) => onFieldChange('makler_p', v)}
-            step={0.01}
-            isPercent={true}
-          />
-          <StepperInput
-            label="Sonstige Nebenkosten (€)"
-            value={formData?.sonst_nk ?? 0}
-            onChange={(v) => onFieldChange('sonst_nk', v)}
-            step={250}
-            isCurrency={true}
-          />
-        </div>
-
-        <div style={infoBoxStyle}>
-          <div style={{ fontWeight: '800', fontSize: '0.95rem', marginBottom: '8px', borderBottom: '1px solid #E2D9CE', paddingBottom: '4px' }}>
-            Kaufnebenkosten Gesamt: {formatEuroInt(displayNkTotal)} €
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8rem', color: '#4A5568' }}>
-            <div>• <strong>Grunderwerbsteuer ({grwtP}%):</strong> {formatEuroInt(displayGrwtEuro)} €</div>
-            <div>• <strong>Notar & Grundbuch ({notarP}%):</strong> {formatEuroInt(displayNotarEuro)} €</div>
-            <div>• <strong>Maklercourtage ({maklerP}%):</strong> {formatEuroInt(displayMaklerEuro)} €</div>
-            {sonstNk > 0 && <div>• <strong>Sonstige Nebenkosten:</strong> {formatEuroInt(sonstNk)} €</div>}
-          </div>
-        </div>
-      </MainCard>
-
-      {/* HAUPTBEREICH 3: FINANZIERUNG & EIGENKAPITAL */}
-      <MainCard
-        title="3. Finanzierung & Eigenkapital"
+      <SectionFinanzierung
+        formData={formData}
         isOpen={openSections.finanzierung}
         onToggle={() => toggleSection('finanzierung')}
-      >
-        <StepperInput
-          label="Eigenkapital-Einsatz (€)"
-          value={formData?.ek_euro || 0}
-          onChange={(v) => onFieldChange('ek_euro', v)}
-          step={2500}
-          isCurrency={true}
-        />
+        openSubSections={openSubSections}
+        toggleSubSection={toggleSubSection}
+        onFieldChange={onFieldChange}
+        isEkCoveringNk={isEkCoveringNk}
+        displayNkTotal={displayNkTotal}
+      />
 
-        {/* KORRIGIERTE EIGENKAPITAL-BOX OHNE [STATUS] UND MIT FINANZIERUNGS-HINWEIS */}
-        <div style={{
-          padding: '10px 12px',
-          borderRadius: '8px',
-          fontSize: '0.8rem',
-          fontWeight: '700',
-          background: isEkCoveringNk ? '#F0FFF4' : '#FFF5F5',
-          border: isEkCoveringNk ? '1px solid #C6F6D5' : '1px solid #FEB2B2',
-          color: isEkCoveringNk ? '#22543D' : '#9B2C2C',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>{isEkCoveringNk ? '✓' : '⚠'}</span>
-          <div>
-            <div>
-              {isEkCoveringNk
-                ? `Eigenkapital deckt die Kaufnebenkosten (${formatEuroInt(displayNkTotal)} €) vollständig ab.`
-                : `Eigenkapital deckt die Kaufnebenkosten (${formatEuroInt(displayNkTotal)} €) nicht vollständig ab.`}
-            </div>
-            <div style={{ fontWeight: 'normal', fontSize: '0.75rem', marginTop: '4px', opacity: 0.9 }}>
-              {isEkCoveringNk
-                ? 'Gute Voraussetzung für eine klassische 100%-Finanzierung des Kaufpreises durch die Bank.'
-                : 'Hinweis: Müsste die Bank Kaufnebenkosten mitfinanzieren (> 100 % Beleihung), verlangen Kreditinstitute in der Regel Risikoaufschläge beim Sollzins sowie strengere Bonitätsanforderungen.'}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label style={labelStyle}>Darlehensart</label>
-          <div style={selectContainerStyle}>
-            <select
-              value={formData?.loan_type || 'Annuitätendarlehen'}
-              onChange={(e) => onFieldChange('loan_type', e.target.value)}
-              style={selectStyle}
-            >
-              <option value="Annuitätendarlehen">Annuitätendarlehen (Konstante Monatsrate)</option>
-              <option value="Endfälliges Darlehen">Endfälliges Darlehen (Nur Zinszahlung)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={grid2Style}>
-          <StepperInput
-            label="Sollzins Hausbank (%)"
-            value={formData?.hb_zins || 3.8}
-            onChange={(v) => onFieldChange('hb_zins', v)}
-            step={0.1}
-            isPercent={true}
-          />
-          <StepperInput
-            label="Anfängliche Tilgung (%)"
-            value={formData?.hb_tilg || 2.0}
-            onChange={(v) => onFieldChange('hb_tilg', v)}
-            step={0.1}
-            isPercent={true}
-          />
-        </div>
-
-        <div style={grid2Style}>
-          <StepperInput
-            label="Tilgungsfreie Jahre"
-            value={formData?.grace_years || 0}
-            onChange={(v) => onFieldChange('grace_years', v)}
-            step={1}
-          />
-          <StepperInput
-            label="Zinsbindung (Jahre)"
-            value={formData?.zinsbindung || 10}
-            onChange={(v) => onFieldChange('zinsbindung', v)}
-            step={1}
-          />
-        </div>
-
-        <StepperInput
-          label="Sondertilgung (€ / J.)"
-          value={formData?.sondertilg || 0}
-          onChange={(v) => onFieldChange('sondertilg', v)}
-          step={500}
-          isCurrency={true}
-        />
-
-        <SubContainerCard
-          title="Anschlussfinanzierung (nach Zinsbindung)"
-          isOpen={openSubSections.folgefinanzierung}
-          onToggle={() => toggleSubSection('folgefinanzierung')}
-        >
-          <StepperInput
-            label="Folgezins (%)"
-            value={formData?.folge_zins || 3.8}
-            onChange={(v) => onFieldChange('folge_zins', v)}
-            step={0.1}
-            isPercent={true}
-          />
-          <div>
-            <label style={labelStyle}>Anschluss-Modus</label>
-            <div style={selectContainerStyle}>
-              <select
-                value={formData?.folge_mode || 'Rate konstant halten (Annuität)'}
-                onChange={(e) => onFieldChange('folge_mode', e.target.value)}
-                style={selectStyle}
-              >
-                <option value="Rate konstant halten (Annuität)">Rate konstant halten (Annuität)</option>
-                <option value="Neuer Tilgungssatz festlegen">Neuen Tilgungssatz festlegen</option>
-              </select>
-            </div>
-          </div>
-
-          {formData?.folge_mode !== 'Rate konstant halten (Annuität)' && (
-            <StepperInput
-              label="Folge-Tilgung (%)"
-              value={formData?.folge_tilg || 2.0}
-              onChange={(v) => onFieldChange('folge_tilg', v)}
-              step={0.1}
-              isPercent={true}
-            />
-          )}
-        </SubContainerCard>
-
-        <SubContainerCard
-          title="KfW-Darlehen & Zuschüsse"
-          isOpen={openSubSections.kfw}
-          onToggle={() => toggleSubSection('kfw')}
-        >
-          <StepperInput
-            label="KfW-Darlehensbetrag (€)"
-            value={formData?.kfw_amt || 0}
-            onChange={(v) => onFieldChange('kfw_amt', v)}
-            step={5000}
-            isCurrency={true}
-          />
-          <div style={grid2Style}>
-            <StepperInput
-              label="KfW Zins (%)"
-              value={formData?.kfw_zins || 2.1}
-              onChange={(v) => onFieldChange('kfw_zins', v)}
-              step={0.1}
-              isPercent={true}
-            />
-            <StepperInput
-              label="KfW Tilgung (%)"
-              value={formData?.kfw_tilg || 3.0}
-              onChange={(v) => onFieldChange('kfw_tilg', v)}
-              step={0.1}
-              isPercent={true}
-            />
-          </div>
-          <div style={grid2Style}>
-            <StepperInput
-              label="KfW Tilgungsfreie Jahre"
-              value={formData?.kfw_grace_years || 0}
-              onChange={(v) => onFieldChange('kfw_grace_years', v)}
-              step={1}
-            />
-            <StepperInput
-              label="KfW Tilgungszuschuss (€)"
-              value={formData?.kfw_grant || 0}
-              onChange={(v) => onFieldChange('kfw_grant', v)}
-              step={1000}
-              isCurrency={true}
-            />
-          </div>
-        </SubContainerCard>
-      </MainCard>
-
-      {/* HAUPTBEREICH 4: STEUERN, MAKRO & EXIT */}
-      <MainCard
-        title="4. Steuern, Makro & Exit"
+      <SectionSteuern
+        formData={formData}
         isOpen={openSections.steuer}
         onToggle={() => toggleSection('steuer')}
-      >
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <label style={labelStyle}>Grenzsteuersatz (%)</label>
-            <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#13381A' }}>
-              {(Number(formData?.tax_rate_pct ?? 42)).toFixed(2).replace('.', ',')} %
-            </span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="50"
-            step="0.5"
-            value={formData?.tax_rate_pct ?? 42}
-            onChange={(e) => onFieldChange('tax_rate_pct', parseFloat(e.target.value))}
-            style={{
-              width: '100%',
-              accentColor: '#13381A',
-              cursor: 'pointer',
-              height: '6px'
-            }}
-          />
-        </div>
+        openSubSections={openSubSections}
+        toggleSubSection={toggleSubSection}
+        onFieldChange={onFieldChange}
+        capexList={capexList}
+        handleCapexChange={handleCapexChange}
+        removeCapexRow={removeCapexRow}
+        addCapexRow={addCapexRow}
+      />
 
-        <div>
-          <label style={labelStyle}>AfA-Modell</label>
-          <div style={selectContainerStyle}>
-            <select
-              value={formData?.afa_model || 'Linear Standard'}
-              onChange={(e) => onFieldChange('afa_model', e.target.value)}
-              style={selectStyle}
-            >
-              <option value="Linear Standard">Linear Standard (2,0 % p.a.)</option>
-              <option value="Linear Neubau">Linear Neubau (3,0 % p.a.)</option>
-              <option value="Degressiv">Degressiv (§ 7 Abs. 5a - 5,0 %)</option>
-              <option value="Kombination: Degressiv + Sonder-AfA">Kombination: Degressiv + Sonder-AfA</option>
-              <option value="Denkmalgeschützt">Denkmalgeschützt (§ 7h/7i)</option>
-            </select>
-          </div>
-        </div>
-
-        <StepperInput
-          label="AfA %"
-          value={formData?.afa_lin || 2.0}
-          onChange={(v) => onFieldChange('afa_lin', v)}
-          step={0.5}
-          isPercent={true}
-        />
-
-        <StepperInput
-          label="Mietsteigerung p.a. (%)"
-          value={formData?.miet_inc || 1.0}
-          onChange={(v) => onFieldChange('miet_inc', v)}
-          step={0.1}
-          isPercent={true}
-        />
-
-        <StepperInput
-          label="Wertsteigerung p.a. (%)"
-          value={formData?.val_inc || 1.0}
-          onChange={(v) => onFieldChange('val_inc', v)}
-          step={0.1}
-          isPercent={true}
-        />
-
-        <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '0.25rem 0' }} />
-
-        <StepperInput
-          label="Verkaufsnebenkosten / Exit (%)"
-          value={formData?.exit_cost || 0.0}
-          onChange={(v) => onFieldChange('exit_cost', v)}
-          step={0.5}
-          isPercent={true}
-        />
-
-        <SubContainerCard
-          title="CapEx & Instandhaltungs-Fahrplan"
-          isOpen={openSubSections.capex}
-          onToggle={() => toggleSubSection('capex')}
-        >
-          <p style={{ margin: '0 0 8px 0', fontSize: '0.75rem', color: '#718096', lineHeight: '1.4' }}>
-            Plane größere einmalige Instandhaltungen (z. B. Dachsanierung, Heizungstausch) für bestimmte Jahre im Voraus ein.
-          </p>
-
-          {capexList && capexList.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 36px', gap: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#4A5568' }}>
-                <span>Instandhaltungsjahr</span>
-                <span>Betrag (€)</span>
-                <span></span>
-              </div>
-
-              {capexList.map((row, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 36px', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="number"
-                    min="1"
-                    value={row.year || row.jahr || 1}
-                    onChange={(e) => handleCapexChange && handleCapexChange(idx, 'year', parseInt(e.target.value, 10))}
-                    placeholder="z. B. Jahr 3"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    value={row.amount || row.betrag || 0}
-                    onChange={(e) => handleCapexChange && handleCapexChange(idx, 'amount', parseFloat(e.target.value))}
-                    placeholder="Betrag €"
-                    style={inputStyle}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeCapexRow && removeCapexRow(idx)}
-                    style={{
-                      background: '#FFF5F5',
-                      border: '1px solid #FEB2B2',
-                      color: '#9B2C2C',
-                      borderRadius: '8px',
-                      height: '42px',
-                      fontWeight: '800',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: '0.8rem', color: '#718096' }}>Noch keine Sonder-CapEx angelegt.</div>
-          )}
-
-          {addCapexRow && (
-            <button
-              type="button"
-              onClick={addCapexRow}
-              style={{
-                padding: '10px',
-                background: '#13381A',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                marginTop: '4px'
-              }}
-            >
-              + CapEx Position hinzufügen
-            </button>
-          )}
-        </SubContainerCard>
-      </MainCard>
-
-      {/* BUTTON: INVESTITION ANALYSIEREN */}
+      {/* SUBMIT BUTTON */}
       <button
         type="submit"
         disabled={loading}
@@ -885,18 +224,7 @@ export default function Parametrisierung({
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 100);
         }}
-        style={{
-          padding: '1rem',
-          background: '#13381A',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '1.05rem',
-          fontWeight: '900',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          boxShadow: '0 4px 14px rgba(19,56,26,0.25)',
-          marginTop: '0.5rem'
-        }}
+        style={{ padding: '1rem', background: '#13381A', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1.05rem', fontWeight: '900', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(19,56,26,0.25)', marginTop: '0.5rem' }}
       >
         {loading ? 'Berechne Investment...' : 'Investition analysieren'}
       </button>
@@ -904,152 +232,3 @@ export default function Parametrisierung({
     </div>
   );
 }
-
-// -----------------------------------------------------------------------------
-// HELPER COMPONENTS & STYLES
-// -----------------------------------------------------------------------------
-
-function MainCard({ title, isOpen, onToggle, children }) {
-  return (
-    <div style={{
-      background: 'white',
-      borderRadius: '12px',
-      border: '1px solid #E2D9CE',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-      overflow: 'hidden'
-    }}>
-      <div
-        onClick={onToggle}
-        style={{
-          padding: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          cursor: 'pointer',
-          userSelect: 'none',
-          background: 'white'
-        }}
-      >
-        <span style={{ fontSize: '0.75rem', color: '#13381A' }}>
-          {isOpen ? '▼' : '►'}
-        </span>
-        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '800', color: '#13381A' }}>
-          {title}
-        </h4>
-      </div>
-
-      {isOpen && (
-        <div style={{
-          padding: '0 1.25rem 1.25rem 1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem'
-        }}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SubContainerCard({ title, isOpen, onToggle, children }) {
-  return (
-    <div style={{
-      background: '#FAF8F5',
-      border: '1px solid #E2D9CE',
-      borderRadius: '8px',
-      overflow: 'hidden'
-    }}>
-      <div
-        onClick={onToggle}
-        style={{
-          padding: '12px 14px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          cursor: 'pointer',
-          userSelect: 'none',
-          fontWeight: '800',
-          fontSize: '0.85rem',
-          color: '#13381A'
-        }}
-      >
-        <span>{title}</span>
-        <span style={{ fontSize: '0.75rem', color: '#718096' }}>
-          {isOpen ? '▲' : '▼'}
-        </span>
-      </div>
-
-      {isOpen && (
-        <div style={{
-          padding: '12px 14px 14px 14px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          borderTop: '1px solid #E2D9CE'
-        }}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const labelStyle = {
-  display: 'block',
-  fontSize: '0.8rem',
-  fontWeight: '700',
-  color: '#4A5568',
-  marginBottom: '6px'
-};
-
-const inputStyle = {
-  width: '100%',
-  height: '42px',
-  padding: '0 12px',
-  borderRadius: '8px',
-  border: '1px solid #CBD5E0',
-  fontSize: '0.9rem',
-  fontWeight: '500',
-  outline: 'none',
-  background: 'white',
-  boxSizing: 'border-box',
-  color: '#2D3748'
-};
-
-const selectContainerStyle = {
-  position: 'relative',
-  display: 'flex',
-  alignItems: 'center',
-  width: '100%'
-};
-
-const selectStyle = {
-  width: '100%',
-  height: '42px',
-  padding: '0 28px 0 12px',
-  borderRadius: '8px',
-  border: '1px solid #CBD5E0',
-  fontSize: '0.9rem',
-  fontWeight: '500',
-  outline: 'none',
-  background: 'white',
-  boxSizing: 'border-box',
-  color: '#2D3748',
-  cursor: 'pointer'
-};
-
-const grid2Style = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: '1rem'
-};
-
-const infoBoxStyle = {
-  background: '#FAF8F5',
-  border: '1px solid #E2D9CE',
-  borderRadius: '8px',
-  padding: '12px 14px',
-  fontSize: '0.85rem',
-  color: '#13381A'
-};

@@ -33,7 +33,37 @@ export default function ProjectionChart({ slicedProjection }) {
   const [activeView, setActiveView] = useState('vermoegen');
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
-  const chartData = slicedProjection || [];
+  // NORMALISIERUNG DER BACKEND-PROJEKTIONSDATEN
+  const rawList = slicedProjection || [];
+  let runningCumCashflow = 0;
+  const chartData = rawList.map((d, index) => {
+    const jahr = Number(d.Jahr ?? d.jahr ?? (index + 1));
+    const immoWert = Number(d.Immobilienwert ?? d.immobilienwert ?? 0);
+    const restSchuld = Number(d.Restschuld ?? d.restschuld ?? 0);
+    const netEq = Number(d.netEquity ?? (immoWert - restSchuld));
+    const mieteVal = Number(d['Mieteinnahmen IST'] ?? d.miete ?? d.Miete ?? 0);
+    const zinsVal = Number(d.Zinsen ?? d.zinsen ?? 0);
+    const tilgVal = Number(d.Tilgung ?? d.tilgung ?? 0);
+    const kapVal = Number(d.Kapitaldienst ?? d.kapitaldienst ?? (zinsVal + tilgVal));
+    const cfNetto = Number(d['Cashflow Netto'] ?? d.nettoCashflow ?? d.Cashflow ?? 0);
+
+    runningCumCashflow += cfNetto;
+    const cumCF = Number(d.cumCashflow ?? runningCumCashflow);
+    const totalRet = Number(d.totalReturn ?? (cumCF + netEq));
+
+    return {
+      jahr,
+      jahrLabel: `J${jahr}`,
+      immobilienwert: immoWert,
+      restschuld: restSchuld,
+      netEquity: netEq,
+      miete: mieteVal,
+      kapitaldienst: kapVal,
+      nettoCashflow: cfNetto,
+      cumCashflow: cumCF,
+      totalReturn: totalRet
+    };
+  });
 
   // GEOMETRIE MIT INSET FÜR SAUBERE RÄNDER & ACHSENABSTÄNDE
   const width = 740;

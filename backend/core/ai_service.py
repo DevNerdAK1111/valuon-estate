@@ -1,11 +1,13 @@
+import os
 import json
 import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
-import streamlit as st
+
 
 def get_gemini_api_key() -> str:
-    return st.secrets.get("GEMINI_API_KEY", "") or st.session_state.get("gemini_api_key", "")
+    return os.getenv("GEMINI_API_KEY", "")
+
 
 def fetch_text_from_url(url: str) -> str:
     try:
@@ -17,12 +19,17 @@ def fetch_text_from_url(url: str) -> str:
             element.extract()
         return ' '.join(line.strip() for line in soup.get_text(separator=' ').splitlines() if line.strip())
     except Exception as e:
-        st.error(f"Fehler beim Abrufen der URL: {e}")
+        print(f"Fehler beim Abrufen der URL: {e}")
         return ""
 
-def analyze_text_with_gemini(api_key, raw_text):
+
+def analyze_text_with_gemini(raw_text: str, api_key: str = None) -> dict:
+    key = api_key or get_gemini_api_key()
+    if not key:
+        raise Exception("Kein GEMINI_API_KEY im Backend konfiguriert.")
+
     try:
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=key)
         prompt = f"""
         Du bist ein Immobilien-Experte. Analysiere den folgenden Anzeigentext und extrahiere NUR die reinen Objekt-Fakten als valides JSON.
         Geforderte Felder:
@@ -37,7 +44,7 @@ def analyze_text_with_gemini(api_key, raw_text):
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         response = model.generate_content(prompt)
         cleaned = response.text.replace('```json', '').replace('```', '').strip()
-        return json.loads(cleaned[cleaned.find('{'):cleaned.rfind('}')+1])
+        return json.loads(cleaned[cleaned.find('{'):cleaned.rfind('}') + 1])
     except Exception as e:
-        st.error(f"Fehler bei KI-Analyse: {e}")
+        print(f"Fehler bei KI-Analyse: {e}")
         return None

@@ -15,16 +15,13 @@ import { IconGear, IconFolder, IconLock, IconArrowRight } from '../components/ui
 import { formatEuroInt } from '../utils/formatters';
 import { supabase } from '../lib/supabaseClient';
 import { loadUserProfileFromSupabase, saveUserProfileToSupabase } from '../lib/profileApi';
-
-const BACKEND_URL = 'https://valuon-estate-backend.onrender.com';
-
-const grunderwerbsteuerSätze = {
-  'Baden-Württemberg': 5.0, 'Bayern': 3.5, 'Berlin': 6.0, 'Brandenburg': 6.5,
-  'Bremen': 5.0, 'Hamburg': 5.5, 'Hessen': 6.0, 'Mecklenburg-Vorpommern': 6.0,
-  'Niedersachsen': 5.0, 'Nordrhein-Westfalen': 6.5, 'Rheinland-Pfalz': 5.0,
-  'Saarland': 6.5, 'Sachsen': 5.5, 'Sachsen-Anhalt': 5.0, 'Schleswig-Holstein': 6.5,
-  'Thüringen': 6.5
-};
+import {
+  pingBackendApi,
+  calculateInvestmentApi,
+  fetchPropertiesApi,
+  savePropertyApi,
+  deletePropertyApi
+} from '../lib/propertyApi';
 
 const defaultFormData = {
   obj_name: '',
@@ -108,12 +105,9 @@ export default function Home() {
   const [chartView, setChartView] = useState('1. Vermögensstruktur & NAV (Netto-Eigenkapital)');
 
   const [devNotice, setDevNotice] = useState(null);
-  const [isTargetCustomized, setIsTargetCustomized] = useState(false);
-  const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
   const [backendStatus, setBackendStatus] = useState('sleeping');
 
   const [formData, setFormData] = useState(defaultFormData);
-  // CAPEX STARTET JETZT SAUBER LEER
   const [capexList, setCapexList] = useState([]);
   
   const [result, setResult] = useState(null);
@@ -123,6 +117,13 @@ export default function Home() {
   const [saveSuccess, setSaveSuccess] = useState(null);
   const [dbProperties, setDbProperties] = useState([]);
   const [loadingDb, setLoadingDb] = useState(false);
+
+  const pingBackend = async () => {
+    if (backendStatus === 'ready') return;
+    setBackendStatus('waking');
+    const isOk = await pingBackendApi();
+    setBackendStatus(isOk ? 'ready' : 'sleeping');
+  };
 
   const fetchProfileFromSupabase = async (uid, email) => {
     const dbProfile = await loadUserProfileFromSupabase(uid);
@@ -188,14 +189,6 @@ export default function Home() {
     };
   }, []);
 
-  const pingBackend = () => {
-    if (backendStatus === 'ready') return;
-    setBackendStatus('waking');
-    fetch(`${BACKEND_URL}/`)
-      .then((res) => { if (res.ok) setBackendStatus('ready'); else setBackendStatus('sleeping'); })
-      .catch(() => setBackendStatus('sleeping'));
-  };
-
   useEffect(() => {
     if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite') && showApp) {
       fetchDatabaseProperties();
@@ -205,17 +198,33 @@ export default function Home() {
   const fetchDatabaseProperties = async () => {
     setLoadingDb(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/api/properties`);
-      if (res.ok) {
-        const data = await res.json();
-        const rawList = data.properties || data || [];
-        const userList = rawList.filter(item => !item.user_email || item.user_email === userEmail);
-        setDbProperties(userList);
-      }
+      const userList = await fetchPropertiesApi(userEmail);
+      setDbProperties(userList);
     } catch (err) {
       console.error('Fehler beim Laden der Datenbank:', err);
     } finally {
       setLoadingDb(false);
+    }
+  };
+
+  const handleCalculate = async (e) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+    setCalcError(null);
+    setSaveSuccess(null);
+
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    try {
+      const data = await calculateInvestmentApi(formData, capexList);
+      setResult(data);
+      setBackendStatus('ready');
+    } catch (err) {
+      setCalcError(err.message || 'Verbindung zum Backend fehlgeschlagen.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,42 +234,11 @@ export default function Home() {
     setSaveSuccess(null);
 
     try {
-      const payload = {
-        name: formData.obj_name || 'Unbenanntes Objekt',
-        obj_name: formData.obj_name || 'Unbenanntes Objekt',
-        objektart: formData.objektart,
-        stadt: formData.stadt,
-        stadtteil: formData.stadtteil,
-        bundesland: formData.bundesland,
-        kaufpreis: Number(formData.kaufpreis),
-        qm: Number(formData.qm),
-        irr: Number(result?.summary?.irr || 0),
-        cashflow_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
-        cashflow_netto_y1: Number(result?.projection?.[0]?.['Cashflow Netto'] || 0),
-        user_email: userEmail,
-        form_data: formData,
-        capex_list: capexList,
-        created_at: new Date().toISOString()
-      };
-
-      const res = await fetch(`${BACKEND_URL}/api/properties`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        setSaveSuccess('Objekt erfolgreich in deiner Datenbank gespeichert.');
-        fetchDatabaseProperties();
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        const detailMsg = typeof errorData.detail === 'string' 
-          ? errorData.detail 
-          : JSON.stringify(errorData.detail || errorData.message || `Status HTTP ${res.status}`);
-        setSaveSuccess(`Fehler beim Speichern: ${detailMsg}`);
-      }
+      await savePropertyApi(formData, capexList, result, userEmail);
+      setSaveSuccess('Objekt erfolgreich in deiner Datenbank gespeichert.');
+      fetchDatabaseProperties();
     } catch (err) {
-      setSaveSuccess(`Verbindung fehlgeschlagen: ${err.message || 'Backend nicht erreichbar.'}`);
+      setSaveSuccess(err.message || 'Speichern fehlgeschlagen.');
     } finally {
       setSaving(false);
     }
@@ -323,14 +301,13 @@ export default function Home() {
   const deletePropertyFromDb = async (id) => {
     if (!confirm('Möchtest du dieses Objekt wirklich aus deiner Datenbank löschen?')) return;
     try {
-      await fetch(`${BACKEND_URL}/api/properties/${id}`, { method: 'DELETE' });
+      await deletePropertyApi(id);
       fetchDatabaseProperties();
     } catch (err) {
       alert('Fehler beim Löschen des Objekts.');
     }
   };
 
-  // FORMULAR ZURÜCKSETZEN (RESET)
   const handleReset = () => {
     setFormData({
       ...defaultFormData,
@@ -340,194 +317,13 @@ export default function Home() {
     setResult(null);
     setCalcError(null);
     setSaveSuccess(null);
-    setIsTargetCustomized(false);
-    setIsHausgeldCustomized(false);
   };
 
-  const handleQmChange = (newQm) => {
-    pingBackend();
-    const newIstSqm = newQm > 0 ? formData.kaltmiete_monat / newQm : 0;
-    let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
-    if (!isTargetCustomized) {
-      updated.target_monat = formData.kaltmiete_monat;
-      updated.target_sqm = newIstSqm;
-    } else {
-      updated.target_sqm = newQm > 0 ? formData.target_monat / newQm : 0;
-    }
-    setFormData(updated);
-  };
-
-  const handleIstMonatChange = (val) => {
-    pingBackend();
-    const sqmVal = formData.qm > 0 ? val / formData.qm : 0;
-    let updated = { ...formData, kaltmiete_monat: val, ist_sqm: sqmVal };
-    if (!isTargetCustomized) {
-      updated.target_monat = val;
-      updated.target_sqm = sqmVal;
-    }
-    setFormData(updated);
-  };
-
-  const handleIstSqmChange = (val) => {
-    pingBackend();
-    const monatVal = val * formData.qm;
-    let updated = { ...formData, ist_sqm: val, kaltmiete_monat: monatVal };
-    if (!isTargetCustomized) {
-      updated.target_monat = monatVal;
-      updated.target_sqm = val;
-    }
-    setFormData(updated);
-  };
-
-  const handleTargetMonatChange = (val) => {
-    setIsTargetCustomized(true);
-    const sqmVal = formData.qm > 0 ? val / formData.qm : 0;
-    setFormData({ ...formData, target_monat: val, target_sqm: sqmVal });
-  };
-
-  const handleTargetSqmChange = (val) => {
-    setIsTargetCustomized(true);
-    const monatVal = val * formData.qm;
-    setFormData({ ...formData, target_sqm: val, target_monat: monatVal });
-  };
-
-  const handleHausgeldChange = (val) => {
-    let updated = { ...formData, hausgeld: val };
-    if (!isHausgeldCustomized) {
-      updated.hausgeld_nicht_umlegbar = val * 0.25;
-    }
-    setFormData(updated);
-  };
-
-  const handleHausgeldNichtUmlegbarChange = (val) => {
-    setIsHausgeldCustomized(true);
-    setFormData({ ...formData, hausgeld_nicht_umlegbar: val });
-  };
-
-  const handleCapexChange = (index, field, value) => {
-    const updated = [...capexList];
-    updated[index][field] = value;
-    setCapexList(updated);
-  };
-
-  const addCapexRow = () => {
-    const nextYear = capexList.length > 0 ? capexList[capexList.length - 1].year + 3 : 3;
-    setCapexList([...capexList, { year: nextYear, amount: 0 }]);
-  };
-
-  const removeCapexRow = (index) => {
-    setCapexList(capexList.filter((_, i) => i !== index));
-  };
-
-  const updateField = (field, value) => {
-    pingBackend();
-    let updated = { ...formData, [field]: value };
-
-    if (field === 'bundesland' && grunderwerbsteuerSätze[value] !== undefined) {
-      updated.grwt_p = grunderwerbsteuerSätze[value];
-    }
-
-    const currentBaujahr = field === 'baujahr' ? Number(value) : Number(formData.baujahr);
-    const currentObjektart = field === 'objektart' ? value : formData.objektart;
-
-    if (field === 'baujahr' || field === 'objektart') {
-      if (currentBaujahr < 1980) updated.inst_sqm = 16.0;
-      else if (currentBaujahr <= 2005) updated.inst_sqm = 13.0;
-      else updated.inst_sqm = 10.0;
-
-      if (currentObjektart === 'Mehrfamilienhaus') updated.inst_sqm += 2.0;
-      else if (currentObjektart === 'Einfamilienhaus') updated.inst_sqm -= 1.0;
-
-      if (currentBaujahr < 1980) updated.mgt_monat = 35.0;
-      else if (currentBaujahr <= 2005) updated.mgt_monat = 30.0;
-      else updated.mgt_monat = 25.0;
-    }
-
-    if (field === 'afa_model') {
-      if (value === 'Linear Standard') updated.afa_lin = 2.0;
-      else if (value === 'Linear Neubau') updated.afa_lin = 3.0;
-      else if (value === 'Degressiv') updated.afa_lin = 5.0;
-      else if (value === 'Kombination: Degressiv + Sonder-AfA') updated.afa_lin = 5.0;
-      else if (value === 'Denkmalgeschützt') updated.afa_lin = 9.0;
-    }
-
-    setFormData(updated);
-  };
-
-  const grwt_euro = (formData.kaufpreis * formData.grwt_p) / 100;
-  const notar_euro = (formData.kaufpreis * formData.notar_p) / 100;
-  const makler_euro = (formData.kaufpreis * formData.makler_p) / 100;
+  // KAUFNEBENKOSTEN FÜR DASHBOARD-SUMMEN
+  const grwt_euro = (formData.kaufpreis * (formData.grwt_p || 0)) / 100;
+  const notar_euro = (formData.kaufpreis * (formData.notar_p || 0)) / 100;
+  const makler_euro = (formData.kaufpreis * (formData.makler_p || 0)) / 100;
   const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
-
-  // AUTOMATISCHES SMOOTH SCROLLEN NACH OBEN BEIM BERECHNEN
-  const handleCalculate = async (e) => {
-    if (e) e.preventDefault();
-    setLoading(true);
-    setCalcError(null);
-    setSaveSuccess(null);
-
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    try {
-      const payload = {
-        ...formData,
-        grwt_proz: formData.grwt_p / 100,
-        notar_proz: formData.notar_p / 100,
-        makler_proz: formData.makler_p / 100,
-        hb_zins: formData.hb_zins / 100,
-        hb_tilg: formData.hb_tilg / 100,
-        sondertilg: Number(formData.sondertilg || 0),
-        grace_years: Number(formData.grace_years || 0),
-        zinsbindung: Number(formData.zinsbindung || 10),
-        folge_zins: formData.folge_zins / 100,
-        folge_tilg: formData.folge_tilg / 100,
-        kfw_amt: Number(formData.kfw_amt || 0),
-        kfw_zins: (formData.kfw_zins || 0) / 100,
-        kfw_tilg: (formData.kfw_tilg || 0) / 100,
-        kfw_grace_years: Number(formData.kfw_grace_years || 0),
-        kfw_grant: Number(formData.kfw_grant || 0),
-        vac_rate: formData.vac_rate_pct / 100,
-        tax_rate: formData.tax_rate_pct / 100,
-        miet_inc: formData.miet_inc / 100,
-        miet_inc_start_year: Number(formData.miet_inc_start_year || 1),
-        cost_inc: formData.cost_inc / 100,
-        val_inc: formData.val_inc / 100,
-        exit_cost: formData.exit_cost / 100,
-        afa_lin: formData.afa_lin / 100,
-        capex_list: capexList.map(item => ({
-          jahr: Number(item.year),
-          year: Number(item.year),
-          betrag: Number(item.amount),
-          amount: Number(item.amount)
-        }))
-      };
-
-      const res = await fetch(`${BACKEND_URL}/api/calculate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Server meldet Status ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (!data || !data.summary) {
-        throw new Error('Das Backend hat keine vollständige Auswertung geliefert.');
-      }
-
-      setResult(data);
-      setBackendStatus('ready');
-    } catch (err) {
-      setCalcError(err.message || 'Verbindung zum Backend fehlgeschlagen.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const firstYearCashflow = result?.projection?.[0]?.['Cashflow Netto'] || 0;
   const monthlyCashflow = firstYearCashflow / 12;
@@ -539,11 +335,7 @@ export default function Home() {
   if (result?.projection && result.projection.length > 0) {
     if (projectionHorizon === 'payoff') {
       const payoffIdx = result.projection.findIndex(r => (r['Restschuld'] || 0) <= 0);
-      if (payoffIdx !== -1) {
-        slicedProjection = result.projection.slice(0, payoffIdx + 1);
-      } else {
-        slicedProjection = result.projection;
-      }
+      slicedProjection = payoffIdx !== -1 ? result.projection.slice(0, payoffIdx + 1) : result.projection;
     } else {
       const numYears = parseInt(projectionHorizon, 10) || 10;
       slicedProjection = result.projection.slice(0, numYears);
@@ -554,7 +346,7 @@ export default function Home() {
   const cumulatedCashflowHorizon = slicedProjection.reduce((acc, curr) => acc + (curr['Cashflow Netto'] || 0), 0);
   const endYearObj = slicedProjection[slicedProjection.length - 1];
   const endNav = endYearObj ? ((endYearObj['Immobilienwert'] || 0) - (endYearObj['Restschuld'] || 0)) : 0;
-  const gesamtGewinnHorizon = cumulatedCashflowHorizon + (endNav - formData.ek_euro);
+  const gesamtGewinnHorizon = cumulatedCashflowHorizon + (endNav - (formData.ek_euro || 0));
 
   const greetingName = userProfile.profilname || userProfile.vorname || (userEmail ? userEmail.split('@')[0] : 'Investor');
 
@@ -596,7 +388,7 @@ export default function Home() {
         onLogout={handleLogout}
       />
 
-      {/* MODUL: STARTSEITE */}
+      {/* STARTSEITE */}
       {navChoice === 'Startseite' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
@@ -771,25 +563,11 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
             <Parametrisierung 
               formData={formData}
-              updateField={updateField}
-              pingBackend={pingBackend}
-              handleQmChange={handleQmChange}
-              handleIstMonatChange={handleIstMonatChange}
-              handleIstSqmChange={handleIstSqmChange}
-              handleHausgeldChange={handleHausgeldChange}
-              handleHausgeldNichtUmlegbarChange={handleHausgeldNichtUmlegbarChange}
-              handleTargetMonatChange={handleTargetMonatChange}
-              handleTargetSqmChange={handleTargetSqmChange}
-              grunderwerbsteuerSätze={grunderwerbsteuerSätze}
-              summe_nk={summe_nk}
-              grwt_euro={grwt_euro}
-              notar_euro={notar_euro}
-              makler_euro={makler_euro}
+              setFormData={setFormData}
               capexList={capexList}
-              handleCapexChange={handleCapexChange}
-              removeCapexRow={removeCapexRow}
-              addCapexRow={addCapexRow}
+              setCapexList={setCapexList}
               loading={loading}
+              pingBackend={pingBackend}
               handleReset={handleReset}
             />
 

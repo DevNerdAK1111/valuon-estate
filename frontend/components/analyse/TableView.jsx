@@ -8,7 +8,7 @@ export default function TableView({ slicedProjection }) {
   const data = slicedProjection || [];
 
   return (
-    <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+    <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', width: '100%', boxSizing: 'border-box' }}>
       
       {/* HEADER & ANSICHTS-UMSCHALTER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -57,14 +57,14 @@ export default function TableView({ slicedProjection }) {
         </div>
       </div>
 
-      {/* TABELLE */}
-      <div style={{ overflowX: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+      {/* ISOLIERTER IN-CARD SCROLL-CONTAINER (VERHINDERT SEITENSCROLLEN) */}
+      <div style={{ width: '100%', overflowX: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
           <thead>
             
             {/* OBERER KATEGORIEN-HEADER */}
             <tr style={{ background: '#FAF8F5', color: '#13381A', borderBottom: '1px solid #E2D9CE', fontWeight: '800' }}>
-              <th style={{ ...thStyle, textPadding: 'left', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 2 }}>Jahr</th>
+              <th style={{ ...thStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 2 }}>Jahr</th>
               <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Operativ & Miete</th>
               <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Bank & Kapitaldienst</th>
               {viewMode === 'vollstaendig' && (
@@ -75,7 +75,7 @@ export default function TableView({ slicedProjection }) {
 
             {/* SPALTEN-TITEL HEADER */}
             <tr style={{ background: '#13381A', color: 'white', fontWeight: '700' }}>
-              <th style={{ ...thSubStyle, position: 'sticky', left: 0, background: '#13381A', zIndex: 2 }}>J.</th>
+              <th style={{ ...thSubStyle, position: 'sticky', left: 0, background: '#13381A', zIndex: 2, textAlign: 'center' }}>Jahr</th>
               
               {/* Operativ */}
               <th style={thSubStyle}>Kaltmiete p.a.</th>
@@ -113,9 +113,9 @@ export default function TableView({ slicedProjection }) {
 
               return (
                 <tr key={row.jahr} style={{ background: bg, borderBottom: '1px solid #E2D9CE' }}>
-                  {/* Sticky Jahr */}
+                  {/* REINE RECHNERISCHE ZAHL OHNE "J" */}
                   <td style={{ ...tdStyle, fontWeight: '800', textAlign: 'center', position: 'sticky', left: 0, background: bg, zIndex: 1, borderRight: '1px solid #E2D9CE' }}>
-                    J{row.jahr}
+                    {row.jahr}
                   </td>
 
                   {/* Operativ */}
@@ -161,19 +161,19 @@ export default function TableView({ slicedProjection }) {
 }
 
 const thStyle = {
-  padding: '8px 12px',
-  fontSize: '0.75rem',
+  padding: '6px 10px',
+  fontSize: '0.72rem',
   letterSpacing: '0.5px',
   textTransform: 'uppercase'
 };
 
 const thSubStyle = {
-  padding: '8px 10px',
-  fontSize: '0.75rem',
+  padding: '7px 8px',
+  fontSize: '0.73rem',
   fontWeight: '700'
 };
 
 const tdStyle = {
-  padding: '8px 10px',
+  padding: '6px 8px',
   color: '#2D3748'
 };

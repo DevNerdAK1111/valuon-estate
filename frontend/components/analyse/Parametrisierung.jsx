@@ -2,6 +2,14 @@
 import { useState } from 'react';
 import StepperInput from '../ui/StepperInput';
 
+const GRUNDERWERBSTEUER_SAETZE = {
+  'Baden-Württemberg': 5.0, 'Bayern': 3.5, 'Berlin': 6.0, 'Brandenburg': 6.5,
+  'Bremen': 5.0, 'Hamburg': 5.5, 'Hessen': 6.0, 'Mecklenburg-Vorpommern': 6.0,
+  'Niedersachsen': 5.0, 'Nordrhein-Westfalen': 6.5, 'Rheinland-Pfalz': 5.0,
+  'Saarland': 6.5, 'Sachsen': 5.5, 'Sachsen-Anhalt': 5.0, 'Schleswig-Holstein': 6.5,
+  'Thüringen': 6.5
+};
+
 const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568', marginBottom: '4px', height: '18px' };
 const inputTextStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
 const sectionTitleStyle = { fontSize: '1.05rem', fontWeight: '800', color: '#13381A', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' };
@@ -9,6 +17,7 @@ const collapseBtnStyle = { background: '#FAF8F5', border: '1px solid #E2D9CE', b
 
 export default function Parametrisierung({
   formData,
+  setFormData,
   updateField,
   pingBackend,
   handleQmChange,
@@ -19,11 +28,12 @@ export default function Parametrisierung({
   handleTargetMonatChange,
   handleTargetSqmChange,
   grunderwerbsteuerSätze,
-  summe_nk,
-  grwt_euro,
-  notar_euro,
-  makler_euro,
+  summe_nk: passedSummeNk,
+  grwt_euro: passedGrwtEuro,
+  notar_euro: passedNotarEuro,
+  makler_euro: passedMaklerEuro,
   capexList,
+  setCapexList,
   handleCapexChange,
   removeCapexRow,
   addCapexRow,
@@ -36,17 +46,169 @@ export default function Parametrisierung({
   const [showNichtUmlegbar, setShowNichtUmlegbar] = useState(false);
   const [showMietDelay, setShowMietDelay] = useState(false);
 
-  const sonstNkEuro = Number(formData.sonst_nk || 0);
-  const totalNkEuro = grwt_euro + notar_euro + makler_euro + sonstNkEuro;
-  const totalNkPct = formData.kaufpreis > 0 ? (totalNkEuro / formData.kaufpreis) * 100 : 0;
+  // ANPASSUNGS-ZUSTÄNDE
+  const [isTargetCustomized, setIsTargetCustomized] = useState(false);
+  const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
+
+  // NEBENKOSTEN BERECHNEN (FALLBACK ODER INTERNAL)
+  const grwt_p = formData?.grwt_p || 5.0;
+  const notar_p = formData?.notar_p || 2.0;
+  const makler_p = formData?.makler_p || 3.57;
+  const kaufpreis = Number(formData?.kaufpreis || 0);
+
+  const grwt_euro = passedGrwtEuro !== undefined ? passedGrwtEuro : (kaufpreis * grwt_p) / 100;
+  const notar_euro = passedNotarEuro !== undefined ? passedNotarEuro : (kaufpreis * notar_p) / 100;
+  const makler_euro = passedMaklerEuro !== undefined ? passedMaklerEuro : (kaufpreis * makler_p) / 100;
+  const sonstNkEuro = Number(formData?.sonst_nk || 0);
+  const totalNkEuro = passedSummeNk !== undefined ? passedSummeNk : (grwt_euro + notar_euro + makler_euro + sonstNkEuro);
+  const totalNkPct = kaufpreis > 0 ? (totalNkEuro / kaufpreis) * 100 : 0;
   
-  const ekEuro = Number(formData.ek_euro || 0);
+  const ekEuro = Number(formData?.ek_euro || 0);
   const ekDiff = ekEuro - totalNkEuro;
-  // PRÜFUNG: AUCH BEI EXAKTER DECKUNG (0 € DIFFERENZ) GRÜN
   const isNkCovered = ekEuro >= (totalNkEuro - 0.01);
 
   // DYNAMISCHE PRÜFUNG, OB ZIELMIETE ABWEICHT
-  const isTargetDifferent = Math.abs((formData.target_monat || 0) - (formData.kaltmiete_monat || 0)) > 0.5;
+  const isTargetDifferent = Math.abs((formData?.target_monat || 0) - (formData?.kaltmiete_monat || 0)) > 0.5;
+
+  // INTERNE HANDLER BEI VERWENDUNG MIT SETFORMDATA
+  const internalUpdateField = (field, value) => {
+    if (pingBackend) pingBackend();
+    if (updateField) {
+      updateField(field, value);
+      return;
+    }
+    if (!setFormData) return;
+
+    let updated = { ...formData, [field]: value };
+    const rates = grunderwerbsteuerSätze || GRUNDERWERBSTEUER_SAETZE;
+
+    if (field === 'bundesland' && rates[value] !== undefined) {
+      updated.grwt_p = rates[value];
+    }
+
+    const currentBaujahr = field === 'baujahr' ? Number(value) : Number(formData.baujahr);
+    const currentObjektart = field === 'objektart' ? value : formData.objektart;
+
+    if (field === 'baujahr' || field === 'objektart') {
+      if (currentBaujahr < 1980) updated.inst_sqm = 16.0;
+      else if (currentBaujahr <= 2005) updated.inst_sqm = 13.0;
+      else updated.inst_sqm = 10.0;
+
+      if (currentObjektart === 'Mehrfamilienhaus') updated.inst_sqm += 2.0;
+      else if (currentObjektart === 'Einfamilienhaus') updated.inst_sqm -= 1.0;
+
+      if (currentBaujahr < 1980) updated.mgt_monat = 35.0;
+      else if (currentBaujahr <= 2005) updated.mgt_monat = 30.0;
+      else updated.mgt_monat = 25.0;
+    }
+
+    if (field === 'afa_model') {
+      if (value === 'Linear Standard') updated.afa_lin = 2.0;
+      else if (value === 'Linear Neubau') updated.afa_lin = 3.0;
+      else if (value === 'Degressiv') updated.afa_lin = 5.0;
+      else if (value === 'Kombination: Degressiv + Sonder-AfA') updated.afa_lin = 5.0;
+      else if (value === 'Denkmalgeschützt') updated.afa_lin = 9.0;
+    }
+
+    setFormData(updated);
+  };
+
+  const doQmChange = (newQm) => {
+    if (handleQmChange) return handleQmChange(newQm);
+    if (!setFormData) return;
+    if (pingBackend) pingBackend();
+    const newIstSqm = newQm > 0 ? (formData.kaltmiete_monat || 0) / newQm : 0;
+    let updated = { ...formData, qm: newQm, ist_sqm: newIstSqm };
+    if (!isTargetCustomized) {
+      updated.target_monat = formData.kaltmiete_monat || 0;
+      updated.target_sqm = newIstSqm;
+    } else {
+      updated.target_sqm = newQm > 0 ? (formData.target_monat || 0) / newQm : 0;
+    }
+    setFormData(updated);
+  };
+
+  const doIstMonatChange = (val) => {
+    if (handleIstMonatChange) return handleIstMonatChange(val);
+    if (!setFormData) return;
+    if (pingBackend) pingBackend();
+    const sqmVal = (formData.qm || 0) > 0 ? val / formData.qm : 0;
+    let updated = { ...formData, kaltmiete_monat: val, ist_sqm: sqmVal };
+    if (!isTargetCustomized) {
+      updated.target_monat = val;
+      updated.target_sqm = sqmVal;
+    }
+    setFormData(updated);
+  };
+
+  const doIstSqmChange = (val) => {
+    if (handleIstSqmChange) return handleIstSqmChange(val);
+    if (!setFormData) return;
+    if (pingBackend) pingBackend();
+    const monatVal = val * (formData.qm || 0);
+    let updated = { ...formData, ist_sqm: val, kaltmiete_monat: monatVal };
+    if (!isTargetCustomized) {
+      updated.target_monat = monatVal;
+      updated.target_sqm = val;
+    }
+    setFormData(updated);
+  };
+
+  const doTargetMonatChange = (val) => {
+    if (handleTargetMonatChange) return handleTargetMonatChange(val);
+    if (!setFormData) return;
+    setIsTargetCustomized(true);
+    const sqmVal = (formData.qm || 0) > 0 ? val / formData.qm : 0;
+    setFormData({ ...formData, target_monat: val, target_sqm: sqmVal });
+  };
+
+  const doTargetSqmChange = (val) => {
+    if (handleTargetSqmChange) return handleTargetSqmChange(val);
+    if (!setFormData) return;
+    setIsTargetCustomized(true);
+    const monatVal = val * (formData.qm || 0);
+    setFormData({ ...formData, target_sqm: val, target_monat: monatVal });
+  };
+
+  const doHausgeldChange = (val) => {
+    if (handleHausgeldChange) return handleHausgeldChange(val);
+    if (!setFormData) return;
+    let updated = { ...formData, hausgeld: val };
+    if (!isHausgeldCustomized) {
+      updated.hausgeld_nicht_umlegbar = val * 0.25;
+    }
+    setFormData(updated);
+  };
+
+  const doHausgeldNichtUmlegbarChange = (val) => {
+    if (handleHausgeldNichtUmlegbarChange) return handleHausgeldNichtUmlegbarChange(val);
+    if (!setFormData) return;
+    setIsHausgeldCustomized(true);
+    setFormData({ ...formData, hausgeld_nicht_umlegbar: val });
+  };
+
+  const doCapexChange = (index, field, value) => {
+    if (handleCapexChange) return handleCapexChange(index, field, value);
+    if (!setCapexList || !capexList) return;
+    const updated = [...capexList];
+    updated[index][field] = value;
+    setCapexList(updated);
+  };
+
+  const doAddCapexRow = () => {
+    if (addCapexRow) return addCapexRow();
+    if (!setCapexList || !capexList) return;
+    const nextYear = capexList.length > 0 ? capexList[capexList.length - 1].year + 3 : 3;
+    setCapexList([...capexList, { year: nextYear, amount: 0 }]);
+  };
+
+  const doRemoveCapexRow = (index) => {
+    if (removeCapexRow) return removeCapexRow(index);
+    if (!setCapexList || !capexList) return;
+    setCapexList(capexList.filter((_, i) => i !== index));
+  };
+
+  const availableStates = grunderwerbsteuerSätze ? Object.keys(grunderwerbsteuerSätze) : Object.keys(GRUNDERWERBSTEUER_SAETZE);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -60,8 +222,8 @@ export default function Parametrisierung({
             <label style={labelStyle}>Objektbezeichnung</label>
             <input
               type="text"
-              value={formData.obj_name}
-              onChange={(e) => updateField('obj_name', e.target.value)}
+              value={formData.obj_name || ''}
+              onChange={(e) => internalUpdateField('obj_name', e.target.value)}
               style={inputTextStyle}
               placeholder="z.B. Eigentumswohnung Mitte"
             />
@@ -71,8 +233,8 @@ export default function Parametrisierung({
             <div>
               <label style={labelStyle}>Objektart</label>
               <select
-                value={formData.objektart}
-                onChange={(e) => updateField('objektart', e.target.value)}
+                value={formData.objektart || 'Eigentumswohnung'}
+                onChange={(e) => internalUpdateField('objektart', e.target.value)}
                 style={inputTextStyle}
               >
                 <option value="Eigentumswohnung">Eigentumswohnung</option>
@@ -84,25 +246,24 @@ export default function Parametrisierung({
             <div>
               <label style={labelStyle}>Bundesland</label>
               <select
-                value={formData.bundesland}
-                onChange={(e) => updateField('bundesland', e.target.value)}
+                value={formData.bundesland || 'Niedersachsen'}
+                onChange={(e) => internalUpdateField('bundesland', e.target.value)}
                 style={inputTextStyle}
               >
-                {Object.keys(grunderwerbsteuerSätze).map((b) => (
+                {availableStates.map((b) => (
                   <option key={b} value={b}>{b}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* STADT & STADTTEIL NEBENEINANDER */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={labelStyle}>Stadt / Ort</label>
               <input
                 type="text"
-                value={formData.stadt}
-                onChange={(e) => updateField('stadt', e.target.value)}
+                value={formData.stadt || ''}
+                onChange={(e) => internalUpdateField('stadt', e.target.value)}
                 style={inputTextStyle}
                 placeholder="z.B. Berlin"
               />
@@ -111,8 +272,8 @@ export default function Parametrisierung({
               <label style={labelStyle}>Stadtteil / Lage</label>
               <input
                 type="text"
-                value={formData.stadtteil}
-                onChange={(e) => updateField('stadtteil', e.target.value)}
+                value={formData.stadtteil || ''}
+                onChange={(e) => internalUpdateField('stadtteil', e.target.value)}
                 style={inputTextStyle}
                 placeholder="z.B. Mitte"
               />
@@ -123,14 +284,14 @@ export default function Parametrisierung({
             <StepperInput
               label="Baujahr"
               value={formData.baujahr}
-              onChange={(v) => updateField('baujahr', v)}
+              onChange={(v) => internalUpdateField('baujahr', v)}
               isYear={true}
               step={1}
             />
             <StepperInput
               label="Wohnfläche (m²)"
               value={formData.qm}
-              onChange={(v) => handleQmChange(v)}
+              onChange={(v) => doQmChange(v)}
               step={5}
             />
           </div>
@@ -138,12 +299,11 @@ export default function Parametrisierung({
           <StepperInput
             label="Kaufpreis (€)"
             value={formData.kaufpreis}
-            onChange={(v) => updateField('kaufpreis', v)}
+            onChange={(v) => internalUpdateField('kaufpreis', v)}
             step={5000}
             isCurrency={true}
           />
 
-          {/* IST-MIETE */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A', marginTop: '4px' }}>
             IST-Miete (Aktuell)
           </div>
@@ -151,14 +311,14 @@ export default function Parametrisierung({
             <StepperInput
               label="IST-Kaltmiete mt. (€)"
               value={formData.kaltmiete_monat}
-              onChange={(v) => handleIstMonatChange(v)}
+              onChange={(v) => doIstMonatChange(v)}
               step={25}
               isCurrency={true}
             />
             <StepperInput
               label="IST-Miete / m² (€)"
               value={formData.ist_sqm}
-              onChange={(v) => handleIstSqmChange(v)}
+              onChange={(v) => doIstSqmChange(v)}
               step={0.5}
             />
           </div>
@@ -172,7 +332,6 @@ export default function Parametrisierung({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          {/* KAUFNEBENKOSTEN */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
             Kaufnebenkosten
           </div>
@@ -181,14 +340,14 @@ export default function Parametrisierung({
             <StepperInput
               label="Grunderwerbsteuer (%)"
               value={formData.grwt_p}
-              onChange={(v) => updateField('grwt_p', v)}
+              onChange={(v) => internalUpdateField('grwt_p', v)}
               step={0.25}
               isPercent={true}
             />
             <StepperInput
               label="Notar & Grundbuch (%)"
               value={formData.notar_p}
-              onChange={(v) => updateField('notar_p', v)}
+              onChange={(v) => internalUpdateField('notar_p', v)}
               step={0.1}
               isPercent={true}
             />
@@ -198,20 +357,19 @@ export default function Parametrisierung({
             <StepperInput
               label="Maklerprovision (%)"
               value={formData.makler_p}
-              onChange={(v) => updateField('makler_p', v)}
+              onChange={(v) => internalUpdateField('makler_p', v)}
               step={0.01}
               isPercent={true}
             />
             <StepperInput
               label="Sonstige Nebenkosten (€)"
               value={formData.sonst_nk}
-              onChange={(v) => updateField('sonst_nk', v)}
+              onChange={(v) => internalUpdateField('sonst_nk', v)}
               step={250}
               isCurrency={true}
             />
           </div>
 
-          {/* NEBENKOSTEN SUMMARY BOX */}
           <div style={{ background: '#FAF8F5', padding: '12px 14px', borderRadius: '8px', border: '1px solid #E2D9CE' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A', display: 'flex', justifyContent: 'space-between' }}>
               <span>Gesamte Kaufnebenkosten:</span>
@@ -227,11 +385,10 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* EIGENKAPITAL & DECKUNG */}
           <StepperInput
             label="Eigenkapitaleinsatz (€)"
             value={formData.ek_euro}
-            onChange={(v) => updateField('ek_euro', v)}
+            onChange={(v) => internalUpdateField('ek_euro', v)}
             step={2500}
             isCurrency={true}
           />
@@ -259,7 +416,6 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* HAUPTDARLEHEN */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
             Hauptdarlehen (Bank)
           </div>
@@ -267,8 +423,8 @@ export default function Parametrisierung({
           <div>
             <label style={labelStyle}>Darlehensform</label>
             <select
-              value={formData.loan_type}
-              onChange={(e) => updateField('loan_type', e.target.value)}
+              value={formData.loan_type || 'Annuitätendarlehen'}
+              onChange={(e) => internalUpdateField('loan_type', e.target.value)}
               style={inputTextStyle}
             >
               <option value="Annuitätendarlehen">Annuitätendarlehen</option>
@@ -280,14 +436,14 @@ export default function Parametrisierung({
             <StepperInput
               label="Sollzins p.a. (%)"
               value={formData.hb_zins}
-              onChange={(v) => updateField('hb_zins', v)}
+              onChange={(v) => internalUpdateField('hb_zins', v)}
               step={0.1}
               isPercent={true}
             />
             <StepperInput
               label="Anfängliche Tilgung (%)"
               value={formData.hb_tilg}
-              onChange={(v) => updateField('hb_tilg', v)}
+              onChange={(v) => internalUpdateField('hb_tilg', v)}
               step={0.25}
               isPercent={true}
             />
@@ -297,14 +453,14 @@ export default function Parametrisierung({
             <StepperInput
               label="Sondertilgung p.a. (€)"
               value={formData.sondertilg}
-              onChange={(v) => updateField('sondertilg', v)}
+              onChange={(v) => internalUpdateField('sondertilg', v)}
               step={500}
               isCurrency={true}
             />
             <StepperInput
               label="Tilgungsfreie Jahre"
               value={formData.grace_years}
-              onChange={(v) => updateField('grace_years', v)}
+              onChange={(v) => internalUpdateField('grace_years', v)}
               step={1}
             />
           </div>
@@ -312,11 +468,10 @@ export default function Parametrisierung({
           <StepperInput
             label="Zinsbindung (Jahre)"
             value={formData.zinsbindung}
-            onChange={(v) => updateField('zinsbindung', v)}
+            onChange={(v) => internalUpdateField('zinsbindung', v)}
             step={1}
           />
 
-          {/* ANSCHLUSSFINANZIERUNG (EINGEKLAPPT) */}
           <div style={{ marginTop: '4px' }}>
             <button
               type="button"
@@ -333,15 +488,15 @@ export default function Parametrisierung({
                   <StepperInput
                     label="Anschlusszins (%)"
                     value={formData.folge_zins}
-                    onChange={(v) => updateField('folge_zins', v)}
+                    onChange={(v) => internalUpdateField('folge_zins', v)}
                     step={0.1}
                     isPercent={true}
                   />
                   <div>
                     <label style={labelStyle}>Anschluss-Modus</label>
                     <select
-                      value={formData.folge_mode}
-                      onChange={(e) => updateField('folge_mode', e.target.value)}
+                      value={formData.folge_mode || 'Rate konstant halten (Annuität)'}
+                      onChange={(e) => internalUpdateField('folge_mode', e.target.value)}
                       style={inputTextStyle}
                     >
                       <option value="Rate konstant halten (Annuität)">Rate konstant halten</option>
@@ -353,7 +508,7 @@ export default function Parametrisierung({
                 <StepperInput
                   label="Folge-Tilgung (%)"
                   value={formData.folge_tilg}
-                  onChange={(v) => updateField('folge_tilg', v)}
+                  onChange={(v) => internalUpdateField('folge_tilg', v)}
                   step={0.25}
                   isPercent={true}
                 />
@@ -361,7 +516,6 @@ export default function Parametrisierung({
             )}
           </div>
 
-          {/* KFW-FÖRDERUNG (EINGEKLAPPT) */}
           <div>
             <button
               type="button"
@@ -377,7 +531,7 @@ export default function Parametrisierung({
                 <StepperInput
                   label="KfW-Darlehensbetrag (€)"
                   value={formData.kfw_amt}
-                  onChange={(v) => updateField('kfw_amt', v)}
+                  onChange={(v) => internalUpdateField('kfw_amt', v)}
                   step={5000}
                   isCurrency={true}
                 />
@@ -386,14 +540,14 @@ export default function Parametrisierung({
                   <StepperInput
                     label="KfW-Sollzins p.a. (%)"
                     value={formData.kfw_zins}
-                    onChange={(v) => updateField('kfw_zins', v)}
+                    onChange={(v) => internalUpdateField('kfw_zins', v)}
                     step={0.1}
                     isPercent={true}
                   />
                   <StepperInput
                     label="KfW-Tilgung (%)"
                     value={formData.kfw_tilg}
-                    onChange={(v) => updateField('kfw_tilg', v)}
+                    onChange={(v) => internalUpdateField('kfw_tilg', v)}
                     step={0.25}
                     isPercent={true}
                   />
@@ -403,13 +557,13 @@ export default function Parametrisierung({
                   <StepperInput
                     label="KfW-Tilgungsfreie Jahre"
                     value={formData.kfw_grace_years}
-                    onChange={(v) => updateField('kfw_grace_years', v)}
+                    onChange={(v) => internalUpdateField('kfw_grace_years', v)}
                     step={1}
                   />
                   <StepperInput
                     label="KfW-Tilgungszuschuss (€)"
                     value={formData.kfw_grant}
-                    onChange={(v) => updateField('kfw_grant', v)}
+                    onChange={(v) => internalUpdateField('kfw_grant', v)}
                     step={1000}
                     isCurrency={true}
                   />
@@ -430,13 +584,12 @@ export default function Parametrisierung({
           <StepperInput
             label="Hausgeld monatlich (€)"
             value={formData.hausgeld}
-            onChange={(v) => handleHausgeldChange(v)}
+            onChange={(v) => doHausgeldChange(v)}
             step={10}
             isCurrency={true}
             tooltip="Gesamtes monatliches Hausgeld laut Wirtschaftsplan (inkl. Instandhaltungsrücklage & Verwaltergebühr)"
           />
 
-          {/* EINGEKLAPPTER NICHT-UMLEGBARER ANTEIL */}
           <div>
             <button
               type="button"
@@ -452,7 +605,7 @@ export default function Parametrisierung({
                 <StepperInput
                   label="Davon nicht umlegbar mt. (€)"
                   value={formData.hausgeld_nicht_umlegbar}
-                  onChange={(v) => handleHausgeldNichtUmlegbarChange(v)}
+                  onChange={(v) => doHausgeldNichtUmlegbarChange(v)}
                   step={5}
                   isCurrency={true}
                   tooltip="Echte Eigentümer-Kosten (Verwaltergebühr + Zuführung Instandhaltungsrücklage). Kann nicht auf den Mieter umgelegt werden."
@@ -461,20 +614,18 @@ export default function Parametrisierung({
             )}
           </div>
 
-          {/* INSTANDHALTUNG MIT ERKLAERUNG */}
           <StepperInput
             label="Instandhaltung (€/m²/Jahr)"
             value={formData.inst_sqm}
-            onChange={(v) => updateField('inst_sqm', v)}
+            onChange={(v) => internalUpdateField('inst_sqm', v)}
             step={1}
             tooltip={`Geschätzter Richtwert für Baujahr ${formData.baujahr} (${formData.objektart}). Empfehlung nach II. BV / Petersscher Formel: <1980 ca. 15-18€, 1980-2000 ca. 12-15€, >2000 ca. 9-12€/m² p.a.`}
           />
 
-          {/* VERWALTUNGSKOSTEN MIT ERKLAERUNG */}
           <StepperInput
             label="Verwaltung monatlich (€)"
             value={formData.mgt_monat}
-            onChange={(v) => updateField('mgt_monat', v)}
+            onChange={(v) => internalUpdateField('mgt_monat', v)}
             step={5}
             isCurrency={true}
             tooltip={`Geschätzter Verwaltungsaufwand für Baujahr ${formData.baujahr}. Branchenüblich sind 25 € bis 35 € pro Monat/Einheit.`}
@@ -483,34 +634,33 @@ export default function Parametrisierung({
           <StepperInput
             label="Mietausfallwagnis (%)"
             value={formData.vac_rate_pct}
-            onChange={(v) => updateField('vac_rate_pct', v)}
+            onChange={(v) => internalUpdateField('vac_rate_pct', v)}
             step={0.5}
             isPercent={true}
           />
 
-          {/* CAPEX GEPLANTE SANIERUNGEN (STARTET LEER) */}
           <div>
             <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A', marginBottom: '8px' }}>
               Geplante Groß-Sanierungen (CapEx)
             </div>
-            {capexList.map((item, idx) => (
+            {(capexList || []).map((item, idx) => (
               <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 30px', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                 <StepperInput
                   label={idx === 0 ? "In Jahr" : ""}
                   value={item.year}
-                  onChange={(v) => handleCapexChange(idx, 'year', v)}
+                  onChange={(v) => doCapexChange(idx, 'year', v)}
                   step={1}
                 />
                 <StepperInput
                   label={idx === 0 ? "Betrag (€)" : ""}
                   value={item.amount}
-                  onChange={(v) => handleCapexChange(idx, 'amount', v)}
+                  onChange={(v) => doCapexChange(idx, 'amount', v)}
                   step={1000}
                   isCurrency={true}
                 />
                 <button
                   type="button"
-                  onClick={() => removeCapexRow(idx)}
+                  onClick={() => doRemoveCapexRow(idx)}
                   style={{ marginTop: idx === 0 ? '22px' : '0', background: 'none', border: 'none', color: '#9B2C2C', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem' }}
                 >
                   ✕
@@ -519,7 +669,7 @@ export default function Parametrisierung({
             ))}
             <button
               type="button"
-              onClick={addCapexRow}
+              onClick={doAddCapexRow}
               style={{ padding: '8px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
             >
               + Weitere Sanierung hinzufügen
@@ -534,12 +684,11 @@ export default function Parametrisierung({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          {/* STEUERN */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
               <label style={labelStyle}>Grenzsteuersatz (%)</label>
               <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
-                {formData.tax_rate_pct.toFixed(2)} %
+                {(formData.tax_rate_pct || 42.0).toFixed(2)} %
               </span>
             </div>
             <input
@@ -547,8 +696,8 @@ export default function Parametrisierung({
               min="0"
               max="50"
               step="0.5"
-              value={formData.tax_rate_pct}
-              onChange={(e) => updateField('tax_rate_pct', parseFloat(e.target.value))}
+              value={formData.tax_rate_pct || 42.0}
+              onChange={(e) => internalUpdateField('tax_rate_pct', parseFloat(e.target.value))}
               style={{ width: '100%', accentColor: '#13381A', cursor: 'pointer' }}
             />
           </div>
@@ -556,8 +705,8 @@ export default function Parametrisierung({
           <div>
             <label style={labelStyle}>AfA-Modell</label>
             <select
-              value={formData.afa_model}
-              onChange={(e) => updateField('afa_model', e.target.value)}
+              value={formData.afa_model || 'Linear Standard'}
+              onChange={(e) => internalUpdateField('afa_model', e.target.value)}
               style={inputTextStyle}
             >
               <option value="Linear Standard">Linear Standard (2,0% p.a.)</option>
@@ -571,7 +720,7 @@ export default function Parametrisierung({
           <StepperInput
             label="AfA %"
             value={formData.afa_lin}
-            onChange={(v) => updateField('afa_lin', v)}
+            onChange={(v) => internalUpdateField('afa_lin', v)}
             step={0.5}
             isPercent={true}
           />
@@ -591,7 +740,6 @@ export default function Parametrisierung({
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* ZIEL-MIETE & MAKRO-ENTWICKLUNG */}
           <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
             ZIEL-Miete & Makro-Entwicklung
           </div>
@@ -600,39 +748,36 @@ export default function Parametrisierung({
             <StepperInput
               label="ZIEL-Kaltmiete mt. (€)"
               value={formData.target_monat}
-              onChange={(v) => handleTargetMonatChange(v)}
+              onChange={(v) => doTargetMonatChange(v)}
               step={25}
               isCurrency={true}
             />
             <StepperInput
               label="ZIEL-Miete / m² (€)"
               value={formData.target_sqm}
-              onChange={(v) => handleTargetSqmChange(v)}
+              onChange={(v) => doTargetSqmChange(v)}
               step={0.5}
             />
           </div>
 
-          {/* NUR EINBLENDEN, WENN ZIELMIETE VON IST-MIETE ABWEICHT */}
           {isTargetDifferent && (
             <StepperInput
               label="Anpassung Zielmiete ab Jahr"
               value={formData.adj_year}
-              onChange={(v) => updateField('adj_year', v)}
+              onChange={(v) => internalUpdateField('adj_year', v)}
               step={1}
               tooltip="Jahr, ab dem die Mietanpassung auf die Zielmiete realisiert wird"
             />
           )}
 
-          {/* MIETSTEIGERUNG */}
           <StepperInput
             label="Mietsteigerung p.a. (%)"
             value={formData.miet_inc}
-            onChange={(v) => updateField('miet_inc', v)}
+            onChange={(v) => internalUpdateField('miet_inc', v)}
             step={0.25}
             isPercent={true}
           />
 
-          {/* VERZÖGERTER MIETSTEIGERUNGS-START (EINGEKLAPPT) */}
           <div>
             <button
               type="button"
@@ -648,7 +793,7 @@ export default function Parametrisierung({
                 <StepperInput
                   label="Mietsteigerung erst ab Jahr"
                   value={formData.miet_inc_start_year || 1}
-                  onChange={(v) => updateField('miet_inc_start_year', v)}
+                  onChange={(v) => internalUpdateField('miet_inc_start_year', v)}
                   step={1}
                   tooltip="Jahr, ab dem die jährliche prozentuale Mietsteigerung greift (z.B. nach Sanierung)"
                 />
@@ -656,11 +801,10 @@ export default function Parametrisierung({
             )}
           </div>
 
-          {/* KOSTENSTEIGERUNG DIREKT UNTER DER MIETSTEIGERUNG */}
           <StepperInput
             label="Kostensteigerung p.a. (%)"
             value={formData.cost_inc}
-            onChange={(v) => updateField('cost_inc', v)}
+            onChange={(v) => internalUpdateField('cost_inc', v)}
             step={0.25}
             isPercent={true}
             tooltip="Jährliche Inflation für Hausgeld, Instandhaltung und Verwaltung"
@@ -669,18 +813,17 @@ export default function Parametrisierung({
           <StepperInput
             label="Wertsteigerung p.a. (%)"
             value={formData.val_inc}
-            onChange={(v) => updateField('val_inc', v)}
+            onChange={(v) => internalUpdateField('val_inc', v)}
             step={0.25}
             isPercent={true}
           />
 
           <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '4px 0' }} />
 
-          {/* EXIT / VERKAUF */}
           <StepperInput
             label="Verkaufsnebenkosten / Exit (%)"
             value={formData.exit_cost}
-            onChange={(v) => updateField('exit_cost', v)}
+            onChange={(v) => internalUpdateField('exit_cost', v)}
             step={0.5}
             isPercent={true}
           />

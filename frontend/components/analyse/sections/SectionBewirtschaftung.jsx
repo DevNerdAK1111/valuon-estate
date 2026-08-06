@@ -107,9 +107,10 @@ export default function SectionBewirtschaftung({
         </div>
       </SubContainerCard>
 
+      {/* SAUBERE BEZEICHNUNGEN OHNE ZEILENUMBRUCH */}
       <div style={grid2Style}>
         <StepperInput
-          label="Instandhaltung (€ / m² p.a.)"
+          label="Instandhaltung (€ / m² / J.)"
           value={formData?.inst_sqm || 12}
           onChange={(v) => onFieldChange('inst_sqm', v)}
           step={1}

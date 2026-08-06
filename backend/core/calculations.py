@@ -157,6 +157,9 @@ def calculate_investment_metrics(payload) -> Dict[str, Any]:
 
         property_value *= (1.0 + (payload.val_inc or 0.01))
 
+        # CASHFLOW FÜR IRR HINZUFÜGEN
+        cashflows_for_irr.append(net_cashflow)
+
         projection.append({
             "Jahr": year,
             "Mieteinnahmen IST": round(annual_rent_base, 2),

@@ -42,12 +42,14 @@ export default function Parametrisierung({
   });
 
   const [openSubSections, setOpenSubSections] = useState({
+    hausgeld: false,
     folgefinanzierung: false,
     kfw: false,
     capex: false
   });
 
   const [isTargetCustomized, setIsTargetCustomized] = useState(false);
+  const [isHausgeldCustomized, setIsHausgeldCustomized] = useState(false);
 
   const toggleSection = (key) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -147,6 +149,33 @@ export default function Parametrisierung({
     onFieldChange('target_monat', monatVal);
   };
 
+  // HAUSGELD BERECHNUNG UNTER BERÜCKSICHTIGUNG DER 25/75 % LOGIK
+  const handleLocalHausgeldGesamt = (val) => {
+    if (handleHausgeldChange) {
+      handleHausgeldChange(val);
+    } else {
+      onFieldChange('hausgeld', val);
+    }
+
+    if (!isHausgeldCustomized) {
+      const nichtUmlegbar = Math.round(val * 0.25 * 100) / 100;
+      if (handleHausgeldNichtUmlegbarChange) {
+        handleHausgeldNichtUmlegbarChange(nichtUmlegbar);
+      } else {
+        onFieldChange('hausgeld_nicht_umlegbar', nichtUmlegbar);
+      }
+    }
+  };
+
+  const handleLocalHausgeldNichtUmlegbar = (val) => {
+    setIsHausgeldCustomized(true);
+    if (handleHausgeldNichtUmlegbarChange) {
+      handleHausgeldNichtUmlegbarChange(val);
+    } else {
+      onFieldChange('hausgeld_nicht_umlegbar', val);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
@@ -192,6 +221,7 @@ export default function Parametrisierung({
             type="button"
             onClick={() => {
               setIsTargetCustomized(false);
+              setIsHausgeldCustomized(false);
               handleReset();
             }}
             style={{
@@ -227,7 +257,6 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* OBJEKTART & BUNDESLAND UNTEREINANDER FÜR VOLLE LESBARKEIT */}
         <div>
           <label style={labelStyle}>Objektart</label>
           <div style={selectContainerStyle}>
@@ -304,7 +333,6 @@ export default function Parametrisierung({
             isSqm={true}
           />
           
-          {/* BAUJAHR ALS REINES GANZZAHL-FELD */}
           <div>
             <label style={labelStyle}>Baujahr</label>
             <input
@@ -356,7 +384,6 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* ANPASSUNG AB JAHR ALS REINES GANZZAHL-FELD */}
         <div>
           <label style={labelStyle}>Anpassung ab Jahr</label>
           <input
@@ -369,22 +396,38 @@ export default function Parametrisierung({
           />
         </div>
 
-        <div style={grid2Style}>
-          <StepperInput
-            label="Hausgeld gesamt (€ / Mo)"
-            value={formData?.hausgeld || 0}
-            onChange={(v) => handleHausgeldChange ? handleHausgeldChange(v) : onFieldChange('hausgeld', v)}
-            step={10}
-            isCurrency={true}
-          />
-          <StepperInput
-            label="Davon nicht umlegbar (€ / Mo)"
-            value={formData?.hausgeld_nicht_umlegbar || 0}
-            onChange={(v) => handleHausgeldNichtUmlegbarChange ? handleHausgeldNichtUmlegbarChange(v) : onFieldChange('hausgeld_nicht_umlegbar', v)}
-            step={5}
-            isCurrency={true}
-          />
-        </div>
+        {/* EINKLAPPBARER UNTERBEREICH FÜR HAUSGELD MIT 25/75 LOGIK */}
+        <SubContainerCard
+          title="Hausgeld & Umlegbarkeit"
+          isOpen={openSubSections.hausgeld}
+          onToggle={() => toggleSubSection('hausgeld')}
+        >
+          <div style={grid2Style}>
+            <StepperInput
+              label="Hausgeld gesamt (€ / Mo)"
+              value={formData?.hausgeld || 0}
+              onChange={handleLocalHausgeldGesamt}
+              step={10}
+              isCurrency={true}
+            />
+            <StepperInput
+              label="Nicht umlegbar (€ / Mo)"
+              value={formData?.hausgeld_nicht_umlegbar || 0}
+              onChange={handleLocalHausgeldNichtUmlegbar}
+              step={5}
+              isCurrency={true}
+            />
+          </div>
+
+          <div style={infoBoxStyle}>
+            <div style={{ fontWeight: '800', fontSize: '0.8rem', color: '#13381A', marginBottom: '4px' }}>
+              Faustformel (25 / 75 % Logik):
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#4A5568', lineHeight: '1.4' }}>
+              Im Durchschnitt sind ca. 75 % des Hausgeldes umlagefähige Betriebskosten. Die verbleibenden 25 % (Instandhaltungsrücklage & Hausverwaltung) trägt der Eigentümer.
+            </div>
+          </div>
+        </SubContainerCard>
 
         <div style={grid2Style}>
           <StepperInput
@@ -419,7 +462,6 @@ export default function Parametrisierung({
           />
         </div>
 
-        {/* NEBENKOSTEN UNTEREINANDER GESTAPELT */}
         <div style={infoBoxStyle}>
           <div style={{ fontWeight: '800', fontSize: '0.95rem', marginBottom: '8px', borderBottom: '1px solid #E2D9CE', paddingBottom: '4px' }}>
             Kaufnebenkosten Gesamt: {formatEuroInt(displayNkTotal)} €
@@ -447,7 +489,6 @@ export default function Parametrisierung({
           isCurrency={true}
         />
 
-        {/* NEBENKOSTEN-DECKUNG MIT INFOBOX ZU FINANZIERUNGSGRAD */}
         <div style={{
           padding: '10px 12px',
           borderRadius: '8px',
@@ -460,7 +501,7 @@ export default function Parametrisierung({
           alignItems: 'flex-start',
           gap: '8px'
         }}>
-          <span style={{ fontSize: '1rem' }}>{isEkCoveringNk ? '✓' : '⚠'}</span>
+          <span style={{ fontWeight: '900' }}>[STATUS]</span>
           <div>
             <div>
               {isEkCoveringNk
@@ -620,7 +661,6 @@ export default function Parametrisierung({
         isOpen={openSections.steuer}
         onToggle={() => toggleSection('steuer')}
       >
-        {/* GRENZSTEUERSATZ SLIDER */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
             <label style={labelStyle}>Grenzsteuersatz (%)</label>
@@ -695,7 +735,6 @@ export default function Parametrisierung({
           isPercent={true}
         />
 
-        {/* UNTERBEREICH 3: CAPEX PLANUNG MIT KLAREN SPALTENBESCHRIFTUNGEN */}
         <SubContainerCard
           title="CapEx & Instandhaltungs-Fahrplan"
           isOpen={openSubSections.capex}
@@ -743,7 +782,7 @@ export default function Parametrisierung({
                       cursor: 'pointer'
                     }}
                   >
-                    ×
+                    x
                   </button>
                 </div>
               ))}

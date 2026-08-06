@@ -1,30 +1,8 @@
 'use client';
 import ProjectionChart from '../charts/ProjectionChart';
 import DonutChart from '../charts/DonutChart';
+import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { formatEuroInt } from '../../utils/formatters';
-
-// HELPER: HILFSFUNKTION FÜR PRÄZISE IRR-BERECHNUNG (NEWTON-RAPHSON MODELL)
-function calculateIRR(cfs, guess = 0.1) {
-  const maxIter = 100;
-  const precision = 1e-7;
-  let rate = guess;
-
-  for (let i = 0; i < maxIter; i++) {
-    let npv = 0;
-    let dnpv = 0;
-    for (let t = 0; t < cfs.length; t++) {
-      const denom = Math.pow(1 + rate, t);
-      npv += cfs[t] / denom;
-      dnpv -= (t * cfs[t]) / Math.pow(1 + rate, t + 1);
-    }
-    if (Math.abs(npv) < precision) return rate;
-    if (Math.abs(dnpv) < precision) break;
-    const newRate = rate - npv / dnpv;
-    if (isNaN(newRate) || !isFinite(newRate)) break;
-    rate = newRate;
-  }
-  return rate;
-}
 
 export default function ExecutiveDashboard({
   formData,
@@ -35,11 +13,13 @@ export default function ExecutiveDashboard({
   saving,
   activeDashboardTab,
   setActiveDashboardTab,
-  slicedProjection,
   summe_nk
 }) {
   const propertyTitle = formData?.obj_name || 'Neues Investment-Objekt';
   const locationText = [formData?.stadt, formData?.stadtteil].filter(Boolean).join(' • ') || 'Kein Standort angegeben';
+
+  // ZENTRALE INVESTITIONS-BERECHNUNG (SINGLE SOURCE OF TRUTH)
+  const model = calculateInvestmentModel(formData, projectionHorizon, result);
 
   return (
     <div id="executive-dashboard-view" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', scrollMarginTop: '1.5rem' }}>
@@ -99,12 +79,9 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* KPI KARTEN */}
+      {/* KPI KARTEN (KONSUMIERT NURE NOCH IMMUTABLE MODEL-KPIS) */}
       {result && (
-        <KeyMetrics 
-          formData={formData}
-          slicedProjection={slicedProjection}
-        />
+        <KeyMetrics kpis={model.kpis} />
       )}
 
       {/* TAB NAVIGATION */}
@@ -134,7 +111,7 @@ export default function ExecutiveDashboard({
       {/* DASHBOARD INHALTE */}
       {result && activeDashboardTab === 'Executive Dashboard' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
-          <ProjectionChart slicedProjection={slicedProjection} formData={formData} />
+          <ProjectionChart slicedProjection={model.slicedProjection} />
           <DonutChart formData={formData} summe_nk={summe_nk} />
         </div>
       )}
@@ -144,52 +121,11 @@ export default function ExecutiveDashboard({
 }
 
 // -----------------------------------------------------------------------------
-// VEREINHEITLICHTE KPI KARTEN
+// REINE PRÄSENTATIONS-KOMPONENTE FÜR KPI KARTEN
 // -----------------------------------------------------------------------------
 
-function KeyMetrics({ formData, slicedProjection }) {
-  const data = slicedProjection || [];
-  const yearsCount = data.length || 1;
-  const kaufpreis = Number(formData?.kaufpreis || 0);
-  const ekEuro = Number(formData?.ek_euro || 0);
-
-  // 1. DURCHSCHNITTLICHER MONATLICHER CASHFLOW ÜBER DEN HORIZONT
-  const totalNetCashflow = data.reduce((sum, row) => {
-    return sum + Number(row['Cashflow Netto'] ?? row['cashflow_netto'] ?? 0);
-  }, 0);
-  const avgMonthlyCashflow = totalNetCashflow / (yearsCount * 12);
-  const isCfPositive = avgMonthlyCashflow >= 0;
-
-  // 2. DURCHSCHNITTLICHE BRUTTO-MIETRENDITE ÜBER DEN HORIZONT
-  const totalRent = data.reduce((sum, row) => {
-    return sum + Number(row['Kaltmiete p.a.'] ?? row['Mieteinnahmen'] ?? row['miete'] ?? (Number(formData?.kaltmiete_monat || 0) * 12));
-  }, 0);
-  const avgRentPerYear = totalRent / yearsCount;
-  const avgBruttoRendite = kaufpreis > 0 ? (avgRentPerYear / kaufpreis) * 100 : 0;
-
-  // 3. EXAKTE IRR BERECHNUNG (EK-RENDITE BEI EXIT NACH N JAHREN)
-  const lastRow = data[data.length - 1] || {};
-  const exitPropertyValue = Number(lastRow['Immobilienwert'] ?? (kaufpreis * Math.pow(1 + (formData?.val_inc || 1) / 100, yearsCount)));
-  const exitRestschuld = Number(lastRow['Restschuld'] ?? lastRow['restschuld'] ?? 0);
-  const exitCosts = exitPropertyValue * (Number(formData?.exit_cost || 0) / 100);
-  
-  const netExitProceeds = exitPropertyValue - exitCosts - exitRestschuld;
-
-  const cashflowsForIRR = [-ekEuro];
-  data.forEach((row, idx) => {
-    const cf = Number(row['Cashflow Netto'] ?? row['cashflow_netto'] ?? 0);
-    if (idx === data.length - 1) {
-      cashflowsForIRR.push(cf + netExitProceeds);
-    } else {
-      cashflowsForIRR.push(cf);
-    }
-  });
-
-  const irrRate = ekEuro > 0 ? calculateIRR(cashflowsForIRR) * 100 : 0;
-  const validIrr = isNaN(irrRate) || !isFinite(irrRate) ? 0 : irrRate;
-
-  // 4. GESAMTGEWINN ÜBER DEN HORIZONT
-  const gesamtGewinn = totalNetCashflow + (netExitProceeds - ekEuro);
+function KeyMetrics({ kpis }) {
+  const { avgMonthlyCashflow, isCfPositive, avgBruttoRendite, validIrr, gesamtGewinn, horizonYears } = kpis;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
@@ -200,7 +136,7 @@ function KeyMetrics({ formData, slicedProjection }) {
         <div style={{ ...kpiValueStyle, color: isCfPositive ? '#276749' : '#9B2C2C' }}>
           {isCfPositive ? '+' : ''}{formatEuroInt(avgMonthlyCashflow)} € / Mo.
         </div>
-        <div style={kpiSubtextStyle}>Durchschnitt pro Monat über {yearsCount} Jahre</div>
+        <div style={kpiSubtextStyle}>Durchschnitt pro Monat über {horizonYears} Jahre</div>
       </div>
 
       {/* KARTE 2: MIETRENDITE */}
@@ -218,12 +154,12 @@ function KeyMetrics({ formData, slicedProjection }) {
         <div style={{ ...kpiValueStyle, color: '#A37841' }}>
           {validIrr.toFixed(2)} %
         </div>
-        <div style={kpiSubtextStyle}>Effektive EK-Verzinsung bei Exit nach {yearsCount} J.</div>
+        <div style={kpiSubtextStyle}>Effektive EK-Verzinsung bei Exit nach {horizonYears} J.</div>
       </div>
 
       {/* KARTE 4: GESAMTGEWINN */}
       <div style={kpiCardStyle}>
-        <div style={kpiTitleStyle}>Gesamtgewinn ({yearsCount} J.)</div>
+        <div style={kpiTitleStyle}>Gesamtgewinn ({horizonYears} J.)</div>
         <div style={{ ...kpiValueStyle, color: gesamtGewinn >= 0 ? '#276749' : '#9B2C2C' }}>
           {gesamtGewinn >= 0 ? '+' : ''}{formatEuroInt(gesamtGewinn)} €
         </div>

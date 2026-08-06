@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { formatEuroInt } from '../../utils/formatters';
 
 export default function TableView({ slicedProjection, totals }) {
-  const [viewMode, setViewMode] = useState('kompakt'); // 'kompakt' | 'vollstaendig'
+  const [viewMode, setViewMode] = useState('kompakt');
 
   const data = slicedProjection || [];
   const sumData = totals || {
@@ -71,10 +71,11 @@ export default function TableView({ slicedProjection, totals }) {
         </div>
       </div>
 
-      {/* ISOLIERTER IN-CARD SCROLL-CONTAINER */}
+      {/* ISOLIERTER SCROLL-CONTAINER */}
       <div style={{ width: '100%', overflowX: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
           <thead>
+            
             <tr style={{ background: '#FAF8F5', color: '#13381A', borderBottom: '1px solid #E2D9CE', fontWeight: '800' }}>
               <th style={{ ...thStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 2 }}>Jahr</th>
               <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Operativ & Miete</th>

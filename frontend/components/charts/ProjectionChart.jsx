@@ -36,7 +36,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
   let runningCumCashflow = 0;
   const ekBase = Number(ekEuroInput) || 0;
 
-  // REINE NORMALE DATENVERARBEITUNG AUS DEM PYTHON BACKEND
+  // VERARBEITUNG DER BACKEND-DATEN
   const chartData = rawList.map((d, index) => {
     const jahr = Number(d.Jahr ?? d.jahr ?? (index + 1));
     const immoWert = Number(d.Immobilienwert ?? d.immobilienwert ?? 0);
@@ -50,9 +50,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
     runningCumCashflow += cfNetto;
 
-    // GESAMTERTRAG (NAV + KUMULIERTER CASHFLOW)
     const totalRet = netEq + runningCumCashflow;
-    // REINGEWINN (ERTRAG ZUABZÜGLICH INITIALEM EIGENKAPITAL)
     const netGain = totalRet - ekBase;
 
     return {
@@ -89,7 +87,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       const allVals = chartData.flatMap(d => [d.miete, d.kapitaldienst, d.nettoCashflow]);
       return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
     }
-    const allVals = chartData.flatMap(d => [d.netGain, d.cumCashflow]);
+    const allVals = chartData.flatMap(d => [d.totalReturn, d.cumCashflow, ekBase]);
     return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
   };
 
@@ -118,7 +116,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
     return `${linePath} L ${getX(chartData.length - 1)} ${baseY} L ${getX(0)} ${baseY} Z`;
   };
 
-  // BREAK-EVEN ERST WENN REINGEWINN >= 0
+  // BREAK-EVEN INDEX (REINGEWINN >= 0 EURO)
   const breakEvenIndex = chartData.findIndex(d => d.netGain >= 0);
 
   return (
@@ -139,12 +137,12 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A' }}>
             {activeView === 'vermoegen' && 'Vermögensaufbau & Schuldenabbau'}
             {activeView === 'cashflow' && 'Cashflow & Mieteinnahmen p.a.'}
-            {activeView === 'amortisation' && 'Amortisation & Reingewinn-Verlauf'}
+            {activeView === 'amortisation' && 'Amortisation & Break-Even-Verlauf'}
           </h3>
           <span style={{ fontSize: '0.75rem', color: '#718096' }}>
             {activeView === 'vermoegen' && 'Schereneffekt zwischen steigendem Objektwert und sinkender Restschuld'}
             {activeView === 'cashflow' && 'Gegenüberstellung von Mieteinnahmen, Bankrate und Netto-Ertrag'}
-            {activeView === 'amortisation' && 'Nettogewinn (NAV + Kum. Cashflow - EK-Einsatz)'}
+            {activeView === 'amortisation' && 'Gesamtertrag (NAV + Kum. Cashflow) vs. Eigenkapitaleinsatz'}
           </span>
         </div>
 
@@ -166,7 +164,8 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                 color: activeView === tab.id ? 'white' : '#4A5568',
                 fontWeight: activeView === tab.id ? '800' : '600',
                 fontSize: '0.75rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
             >
               {tab.label}
@@ -210,19 +209,21 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
           <line x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} stroke="#E2D9CE" strokeWidth="1" />
 
-          {/* VERMÖGENS-ANSICHT */}
+          {/* ANSICHT 1: VERMÖGEN & SCHULDEN */}
           {activeView === 'vermoegen' && (
             <>
               <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" />
               <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" />
+
               <path d={makeAreaPath('netEquity', 0)} fill="#A37841" fillOpacity="0.18" />
               <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" />
+
               <path d={makeAreaPath('restschuld', 0)} fill="#9B2C2C" fillOpacity="0.12" />
               <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" />
             </>
           )}
 
-          {/* CASHFLOW-ANSICHT */}
+          {/* ANSICHT 2: CASHFLOW */}
           {activeView === 'cashflow' && (
             <>
               {chartData.map((d, i) => {
@@ -231,6 +232,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                 const zeroY = getY(0);
                 const mieteY = getY(d.miete);
                 const kapY = getY(d.kapitaldienst);
+
                 return (
                   <g key={i}>
                     <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.max(2, Math.abs(zeroY - mieteY))} fill="#13381A" rx="2" />
@@ -242,19 +244,72 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
             </>
           )}
 
-          {/* AMORTISATION & BREAK-EVEN ANSICHT */}
+          {/* ANSICHT 3: AMORTISATION & BREAK-EVEN */}
           {activeView === 'amortisation' && (
             <>
-              <path d={makeAreaPath('netGain', 0)} fill="#276749" fillOpacity="0.15" />
-              <path d={makePath('netGain')} fill="none" stroke="#13381A" strokeWidth="3" />
+              {ekBase > 0 && (
+                <g>
+                  <line
+                    x1={padding.left}
+                    y1={getY(ekBase)}
+                    x2={width - padding.right}
+                    y2={getY(ekBase)}
+                    stroke="#A37841"
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                  />
+                  <text
+                    x={width - padding.right - 8}
+                    y={getY(ekBase) - 6}
+                    fontSize="10"
+                    fontWeight="800"
+                    fill="#A37841"
+                    textAnchor="end"
+                  >
+                    EK-Einsatz ({formatEuroInt(ekBase)} €)
+                  </text>
+                </g>
+              )}
+
+              <path d={makeAreaPath('totalReturn', ekBase > 0 ? ekBase : 0)} fill="#276749" fillOpacity="0.15" />
+              <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" />
               <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" />
 
               {breakEvenIndex !== -1 && (
                 <g>
-                  <circle cx={getX(breakEvenIndex)} cy={getY(chartData[breakEvenIndex].netGain)} r="6" fill="#276749" stroke="white" strokeWidth="2" />
-                  <line x1={getX(breakEvenIndex)} y1={padding.top} x2={getX(breakEvenIndex)} y2={height - padding.bottom} stroke="#276749" strokeWidth="1.5" strokeDasharray="2 2" />
-                  <rect x={getX(breakEvenIndex) - 45} y={padding.top - 2} width="90" height="18" rx="4" fill="#276749" />
-                  <text x={getX(breakEvenIndex)} y={padding.top + 11} fontSize="9" fontWeight="800" fill="white" textAnchor="middle">
+                  <circle
+                    cx={getX(breakEvenIndex)}
+                    cy={getY(chartData[breakEvenIndex].totalReturn)}
+                    r="6"
+                    fill="#276749"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1={getX(breakEvenIndex)}
+                    y1={padding.top}
+                    x2={getX(breakEvenIndex)}
+                    y2={height - padding.bottom}
+                    stroke="#276749"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
+                  />
+                  <rect
+                    x={getX(breakEvenIndex) - 45}
+                    y={padding.top - 2}
+                    width="90"
+                    height="18"
+                    rx="4"
+                    fill="#276749"
+                  />
+                  <text
+                    x={getX(breakEvenIndex)}
+                    y={padding.top + 11}
+                    fontSize="9"
+                    fontWeight="800"
+                    fill="white"
+                    textAnchor="middle"
+                  >
                     Break-Even J{chartData[breakEvenIndex].jahr}
                   </text>
                 </g>
@@ -262,6 +317,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
             </>
           )}
 
+          {/* X-ACHSE & HOVER */}
           {chartData.map((d, i) => (
             <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} style={{ cursor: 'pointer' }}>
               <text x={getX(i)} y={height - 15} fontSize="11" fontWeight="600" fill="#4A5568" textAnchor="middle">
@@ -270,6 +326,10 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
               <rect x={getX(i) - 15} y={padding.top} width={30} height={graphHeight} fill="transparent" />
             </g>
           ))}
+
+          <text x={width - padding.right + 10} y={height - 15} fontSize="10" fontWeight="700" fill="#718096" textAnchor="start">
+            (Jahr)
+          </text>
         </svg>
 
         {/* TOOLTIP BEI HOVER */}
@@ -289,14 +349,97 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
             <div style={{ fontWeight: '800', color: '#13381A', marginBottom: '4px', borderBottom: '1px solid #E2D9CE', paddingBottom: '3px' }}>
               Jahr {chartData[hoveredIndex].jahr}
             </div>
+            {activeView === 'vermoegen' && (
+              <>
+                <div style={{ color: '#13381A' }}>Immobilienwert: <strong>{formatEuroInt(chartData[hoveredIndex].immobilienwert)} €</strong></div>
+                <div style={{ color: '#A37841' }}>Netto-Eigenkapital: <strong>{formatEuroInt(chartData[hoveredIndex].netEquity)} €</strong></div>
+                <div style={{ color: '#9B2C2C' }}>Restschuld: <strong>{formatEuroInt(chartData[hoveredIndex].restschuld)} €</strong></div>
+              </>
+            )}
+            {activeView === 'cashflow' && (
+              <>
+                <div style={{ color: '#13381A' }}>Kaltmiete p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].miete)} €</strong></div>
+                <div style={{ color: '#A37841' }}>Kapitaldienst p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].kapitaldienst)} €</strong></div>
+                <div style={{ color: '#276749' }}>Netto-Cashflow p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].nettoCashflow)} €</strong></div>
+              </>
+            )}
             {activeView === 'amortisation' && (
               <>
-                <div style={{ color: '#13381A' }}>Reingewinn (n. EK): <strong>{formatEuroInt(chartData[hoveredIndex].netGain)} €</strong></div>
-                <div style={{ color: '#A37841' }}>Kum. Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].cumCashflow)} €</strong></div>
-                <div style={{ color: '#718096' }}>Gesamtertrag: <strong>{formatEuroInt(chartData[hoveredIndex].totalReturn)} €</strong></div>
+                <div style={{ color: '#13381A' }}>Gesamtertrag (NAV + CF): <strong>{formatEuroInt(chartData[hoveredIndex].totalReturn)} €</strong></div>
+                <div style={{ color: '#A37841' }}>Kum. Netto-Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].cumCashflow)} €</strong></div>
+                <div style={{ color: chartData[hoveredIndex].netGain >= 0 ? '#276749' : '#9B2C2C', fontWeight: '800', marginTop: '2px' }}>
+                  Reingewinn n. EK: {formatEuroInt(chartData[hoveredIndex].netGain)} €
+                </div>
               </>
             )}
           </div>
+        )}
+      </div>
+
+      {/* VOLLSTÄNDIGE LEGENDEN UNTER DEM DIAGRAMM */}
+      <div style={{
+        display: 'flex',
+        justify: 'center',
+        alignItems: 'center',
+        gap: '1.5rem',
+        flexWrap: 'wrap',
+        paddingTop: '0.5rem',
+        borderTop: '1px solid #E2D9CE',
+        fontSize: '0.8rem',
+        fontWeight: '700',
+        color: '#4A5568'
+      }}>
+        {activeView === 'vermoegen' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#13381A' }}></span>
+              <span>Immobilienwert</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A37841' }}></span>
+              <span>Netto-Eigenkapital (NAV)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#9B2C2C' }}></span>
+              <span>Restschuld (Bank)</span>
+            </div>
+          </>
+        )}
+
+        {activeView === 'cashflow' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#13381A' }}></span>
+              <span>Kaltmiete p.a.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A37841' }}></span>
+              <span>Kapitaldienst p.a.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', background: '#276749', borderRadius: '2px' }}></span>
+              <span>Netto-Cashflow p.a.</span>
+            </div>
+          </>
+        )}
+
+        {activeView === 'amortisation' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', background: '#13381A', borderRadius: '2px' }}></span>
+              <span>Gesamtertrag (NAV + Kum. Cashflow)</span>
+            </div>
+            {ekBase > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '18px', height: '3px', strokeDasharray: '3 3', borderTop: '2px dashed #A37841' }}></span>
+                <span>EK-Referenzlinie ({formatEuroInt(ekBase)} €)</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', strokeDasharray: '2 2', borderTop: '2px dashed #A37841' }}></span>
+              <span>Kum. Netto-Cashflow</span>
+            </div>
+          </>
         )}
       </div>
 

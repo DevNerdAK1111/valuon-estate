@@ -29,116 +29,17 @@ function getNiceTicks(minVal, maxVal, maxTicks = 5) {
   return { ticks, min: niceMin, max: niceMax };
 }
 
-export default function ProjectionChart({ slicedProjection, formData }) {
+export default function ProjectionChart({ slicedProjection }) {
   const [activeView, setActiveView] = useState('vermoegen');
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
-  const rawData = slicedProjection || [];
-  const kaufpreis = Number(formData?.kaufpreis || 0);
-  const ekEuro = Number(formData?.ek_euro || 0);
-
-  // KAUFNEBENKOSTEN & DARLEHEN BERECHNEN
-  const grwtP = Number(formData?.grwt_p ?? 5.0);
-  const notarP = Number(formData?.notar_p ?? 2.0);
-  const maklerP = Number(formData?.makler_p ?? 3.57);
-  const sonstNk = Number(formData?.sonst_nk ?? 0);
-  const nkTotal = (kaufpreis * (grwtP + notarP + maklerP) / 100) + sonstNk;
-  const darlehnsbetrag = Math.max(0, kaufpreis + nkTotal - ekEuro);
-
-  const hbZinsP = Number(formData?.hb_zins ?? 3.8) / 100;
-  const hbTilgP = Number(formData?.hb_tilg ?? 2.0) / 100;
-  const expectedKapitaldienstPa = darlehnsbetrag * (hbZinsP + hbTilgP);
-
-  let cumCashflow = -ekEuro;
-
-  // ROBUSTE DATENAUFBEREITUNG
-  const chartData = rawData.map((row, idx) => {
-    const jahr = Number(row.Jahr ?? row.jahr ?? (idx + 1));
-    
-    // 1. IMMOBILIENWERT
-    const valIncP = Number(formData?.val_inc ?? 1.0) / 100;
-    const calcImmo = kaufpreis * Math.pow(1 + valIncP, jahr);
-    const immobilienwert = Number(
-      row.Immobilienwert ?? row.immobilienwert ?? row.objektwert ?? row.wert ?? calcImmo
-    );
-
-    // 2. RESTSCHULD & NETTO-EIGENKAPITAL
-    const restschuld = Number(row.Restschuld ?? row.restschuld ?? row.restschuld_end ?? 0);
-    const netEquity = Math.max(0, immobilienwert - restschuld);
-
-    // 3. MIETE P.A.
-    const mietIncP = Number(formData?.miet_inc ?? 1.0) / 100;
-    const baseMietePa = Number(formData?.kaltmiete_monat || 0) * 12;
-    const calcMietePa = baseMietePa * Math.pow(1 + mietIncP, Math.max(0, jahr - 1));
-
-    let rawMiete = row['Kaltmiete p.a.'] ?? row.kaltmiete_pa ?? row.miete_pa ?? row.Mieteinnahmen ?? row.miete ?? row.kaltmiete ?? row.einnahmen;
-    let miete = rawMiete !== undefined && rawMiete !== null ? Number(rawMiete) : calcMietePa;
-
-    if (miete > 0 && miete < baseMietePa * 0.3) {
-      miete = miete * 12;
-    }
-    if (!miete || isNaN(miete) || miete === 0) {
-      miete = calcMietePa;
-    }
-
-    // 4. KAPITALDIENST P.A. (ZINS + TILGUNG KORREKTUR)
-    let rawZins = row.Zins ?? row.zins ?? row.zins_pa ?? row.zins_euro;
-    let rawTilg = row.Tilgung ?? row.tilgung ?? row.tilg_pa ?? row.tilgung_euro;
-    let rawKap = row.Kapitaldienst ?? row.kapitaldienst ?? row.annuitaet ?? row.rate_pa ?? row.kapitaldienst_pa;
-
-    let zins = Number(rawZins || 0);
-    let tilgung = Number(rawTilg || 0);
-    let kapitaldienst = Number(rawKap || 0);
-
-    if (zins > 0 && zins < darlehnsbetrag * 0.01) zins *= 12;
-    if (tilgung > 0 && tilgung < darlehnsbetrag * 0.005) tilgung *= 12;
-
-    if (kapitaldienst === 0) {
-      kapitaldienst = zins + tilgung;
-    } else if (kapitaldienst > 0 && kapitaldienst < expectedKapitaldienstPa * 0.2) {
-      kapitaldienst *= 12;
-    }
-
-    // Fallback/Plausibilitätsprüfung: Falls der Wert zu niedrig ist (z.B. nur Zinsen enthalten waren)
-    if (kapitaldienst < expectedKapitaldienstPa * 0.6 && expectedKapitaldienstPa > 0) {
-      kapitaldienst = expectedKapitaldienstPa;
-    }
-
-    // 5. NETTO-CASHFLOW P.A.
-    let rawNettoCf = row['Cashflow Netto'] ?? row.cashflow_netto ?? row.netto_cashflow ?? row.cashflow;
-    let nettoCashflow = Number(rawNettoCf || 0);
-
-    if (rawNettoCf === undefined || rawNettoCf === null || isNaN(nettoCashflow)) {
-      const nonUmlegbarMo = Number(formData?.hausgeld_nicht_umlegbar || 0);
-      const instSqmPa = Number(formData?.inst_sqm || 12);
-      const qm = Number(formData?.qm || 0);
-      const mgtMo = Number(formData?.mgt_monat || 30);
-      const opexPa = (nonUmlegbarMo + mgtMo) * 12 + (instSqmPa * qm);
-      nettoCashflow = miete - opexPa - kapitaldienst;
-    }
-
-    cumCashflow += nettoCashflow;
-    const totalReturn = cumCashflow + netEquity;
-
-    return {
-      jahrLabel: `${jahr}`,
-      jahr,
-      immobilienwert,
-      restschuld,
-      netEquity,
-      nettoCashflow,
-      miete,
-      kapitaldienst,
-      cumCashflow,
-      totalReturn
-    };
-  });
+  const chartData = slicedProjection || [];
 
   // GEOMETRIE MIT INSET FÜR SAUBERE RÄNDER & ACHSENABSTÄNDE
   const width = 740;
   const height = 320;
   const padding = { top: 25, right: 65, bottom: 45, left: 85 };
-  const insetX = 25; // Inset verhindert Überschneidungen an den Rändern
+  const insetX = 25;
 
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
@@ -155,7 +56,7 @@ export default function ProjectionChart({ slicedProjection, formData }) {
       return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
     }
     const allVals = chartData.flatMap(d => [d.totalReturn, d.cumCashflow]);
-    return { min: Math.min(...allVals, -ekEuro), max: Math.max(...allVals, 1000) };
+    return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
   };
 
   const rawRange = getRawMinMax();
@@ -334,7 +235,6 @@ export default function ProjectionChart({ slicedProjection, formData }) {
             </g>
           ))}
 
-          {/* SAUBERE POSITIONS-TRENNUNG FÜR HINWEIS "(JAHR)" */}
           <text x={width - padding.right + 10} y={height - 15} fontSize="10" fontWeight="700" fill="#718096" textAnchor="start">
             (Jahr)
           </text>

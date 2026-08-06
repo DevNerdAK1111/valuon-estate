@@ -2,41 +2,23 @@
 import { useState } from 'react';
 import { formatEuroInt } from '../../utils/formatters';
 
-export default function TableView({ slicedProjection }) {
+export default function TableView({ slicedProjection, totals }) {
   const [viewMode, setViewMode] = useState('kompakt'); // 'kompakt' | 'vollstaendig'
 
   const data = slicedProjection || [];
+  const sumData = totals || {
+    miete: 0,
+    opex: 0,
+    noi: 0,
+    zins: 0,
+    tilgung: 0,
+    kapitaldienst: 0,
+    afaEuro: 0,
+    zuVersteuerndesEinkommen: 0,
+    steuerErgebnis: 0,
+    cashflowNachSteuerPa: 0
+  };
 
-  // BERECHNUNG DER KUMULIERTEN SUMMEN FÜR DIE SUMMENZEILE
-  const sumData = data.reduce(
-    (acc, r) => {
-      acc.miete += r.miete || 0;
-      acc.opex += r.opex || 0;
-      acc.noi += r.noi || 0;
-      acc.zins += r.zins || 0;
-      acc.tilgung += r.tilgung || 0;
-      acc.kapitaldienst += r.kapitaldienst || 0;
-      acc.afaEuro += r.afaEuro || 0;
-      acc.zuVersteuerndesEinkommen += r.zuVersteuerndesEinkommen || 0;
-      acc.steuerErgebnis += r.steuerErgebnis || 0;
-      acc.cashflowNachSteuerPa += r.cashflowNachSteuer || 0;
-      return acc;
-    },
-    {
-      miete: 0,
-      opex: 0,
-      noi: 0,
-      zins: 0,
-      tilgung: 0,
-      kapitaldienst: 0,
-      afaEuro: 0,
-      zuVersteuerndesEinkommen: 0,
-      steuerErgebnis: 0,
-      cashflowNachSteuerPa: 0
-    }
-  );
-
-  // ENDSTÄNDE AM ENDE DES HORIZONTS
   const lastRow = data[data.length - 1] || {};
 
   return (
@@ -93,8 +75,6 @@ export default function TableView({ slicedProjection }) {
       <div style={{ width: '100%', overflowX: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
           <thead>
-            
-            {/* OBERER KATEGORIEN-HEADER */}
             <tr style={{ background: '#FAF8F5', color: '#13381A', borderBottom: '1px solid #E2D9CE', fontWeight: '800' }}>
               <th style={{ ...thStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 2 }}>Jahr</th>
               <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Operativ & Miete</th>
@@ -105,21 +85,17 @@ export default function TableView({ slicedProjection }) {
               <th colSpan={viewMode === 'vollstaendig' ? "5" : "3"} style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Ergebnis & Vermögen</th>
             </tr>
 
-            {/* SPALTEN-TITEL HEADER */}
             <tr style={{ background: '#13381A', color: 'white', fontWeight: '700' }}>
               <th style={{ ...thSubStyle, position: 'sticky', left: 0, background: '#13381A', zIndex: 2, textAlign: 'center' }}>Jahr</th>
               
-              {/* Operativ */}
               <th style={thSubStyle}>Kaltmiete p.a.</th>
               <th style={thSubStyle}>Bewirtschaftung</th>
               <th style={thSubStyle}>Nettomiete (NOI)</th>
 
-              {/* Bank */}
               <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>Zins p.a.</th>
               <th style={thSubStyle}>Tilgung p.a.</th>
               <th style={thSubStyle}>Kapitaldienst</th>
 
-              {/* Steuer */}
               {viewMode === 'vollstaendig' && (
                 <>
                   <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AfA € p.a.</th>
@@ -128,7 +104,6 @@ export default function TableView({ slicedProjection }) {
                 </>
               )}
 
-              {/* Ergebnis */}
               {viewMode === 'vollstaendig' && (
                 <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>CF v. St. / Mo.</th>
               )}
@@ -153,17 +128,14 @@ export default function TableView({ slicedProjection }) {
                     {row.jahr}
                   </td>
 
-                  {/* Operativ */}
                   <td style={tdStyle}>{formatEuroInt(row.miete)} €</td>
                   <td style={{ ...tdStyle, color: '#9B2C2C' }}>-{formatEuroInt(row.opex)} €</td>
                   <td style={{ ...tdStyle, fontWeight: '700' }}>{formatEuroInt(row.noi)} €</td>
 
-                  {/* Bank */}
                   <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: '#9B2C2C' }}>-{formatEuroInt(row.zins)} €</td>
                   <td style={{ ...tdStyle, color: '#A37841' }}>-{formatEuroInt(row.tilgung)} €</td>
                   <td style={{ ...tdStyle, fontWeight: '700' }}>-{formatEuroInt(row.kapitaldienst)} €</td>
 
-                  {/* Steuer */}
                   {viewMode === 'vollstaendig' && (
                     <>
                       <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: '#718096' }}>{formatEuroInt(row.afaEuro)} €</td>
@@ -174,7 +146,6 @@ export default function TableView({ slicedProjection }) {
                     </>
                   )}
 
-                  {/* Ergebnis */}
                   {viewMode === 'vollstaendig' && (
                     <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: row.cashflowVorSteuerMo >= 0 ? '#276749' : '#9B2C2C' }}>
                       {row.cashflowVorSteuerMo >= 0 ? '+' : ''}{formatEuroInt(row.cashflowVorSteuerMo)} €
@@ -195,24 +166,20 @@ export default function TableView({ slicedProjection }) {
             })}
           </tbody>
 
-          {/* SUMMENZEILE */}
           <tfoot>
             <tr style={{ background: '#FAF8F5', color: '#13381A', fontWeight: '900', borderTop: '2px solid #13381A' }}>
               <td style={{ ...tdStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 1, borderRight: '1px solid #CBD5E0' }}>
                 Gesamt
               </td>
 
-              {/* Operativ Summen */}
               <td style={tdStyle}>{formatEuroInt(sumData.miete)} €</td>
               <td style={{ ...tdStyle, color: '#9B2C2C' }}>-{formatEuroInt(sumData.opex)} €</td>
               <td style={tdStyle}>{formatEuroInt(sumData.noi)} €</td>
 
-              {/* Bank Summen */}
               <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#9B2C2C' }}>-{formatEuroInt(sumData.zins)} €</td>
               <td style={{ ...tdStyle, color: '#A37841' }}>-{formatEuroInt(sumData.tilgung)} €</td>
               <td style={tdStyle}>-{formatEuroInt(sumData.kapitaldienst)} €</td>
 
-              {/* Steuer Summen */}
               {viewMode === 'vollstaendig' && (
                 <>
                   <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0' }}>{formatEuroInt(sumData.afaEuro)} €</td>
@@ -223,7 +190,6 @@ export default function TableView({ slicedProjection }) {
                 </>
               )}
 
-              {/* Ergebnis Summen & Endstände */}
               {viewMode === 'vollstaendig' && (
                 <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#718096' }}>-</td>
               )}

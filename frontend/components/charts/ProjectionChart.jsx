@@ -2,6 +2,33 @@
 import { useState } from 'react';
 import { formatEuroInt } from '../../utils/formatters';
 
+// HELPER: SAUBERE, RUNDE Y-ACHSEN-SCHRITTE
+function getNiceTicks(minVal, maxVal, maxTicks = 5) {
+  let min = Math.min(minVal, 0);
+  let max = Math.max(maxVal, 0);
+  if (min === max) max = min + 10000;
+  
+  const range = max - min;
+  const rawStep = range / maxTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+  const magMsd = rawStep / mag;
+  
+  let step = mag;
+  if (magMsd <= 1.2) step = mag * 1;
+  else if (magMsd <= 2.5) step = mag * 2;
+  else if (magMsd <= 6) step = mag * 5;
+  else step = mag * 10;
+
+  const niceMin = Math.floor(min / step) * step;
+  const niceMax = Math.ceil(max / step) * step;
+
+  const ticks = [];
+  for (let val = niceMin; val <= niceMax + step * 0.1; val += step) {
+    ticks.push(Math.round(val));
+  }
+  return { ticks, min: niceMin, max: niceMax };
+}
+
 export default function ProjectionChart({ slicedProjection, formData }) {
   const [activeView, setActiveView] = useState('vermoegen');
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -27,7 +54,7 @@ export default function ProjectionChart({ slicedProjection, formData }) {
     const totalReturn = cumCashflow + netEquity;
 
     return {
-      jahrLabel: `J${jahr}`,
+      jahrLabel: `${jahr}`,
       jahr,
       immobilienwert,
       restschuld,
@@ -40,31 +67,29 @@ export default function ProjectionChart({ slicedProjection, formData }) {
     };
   });
 
-  const width = 700;
-  const height = 300;
-  const padding = { top: 20, right: 30, bottom: 40, left: 60 };
+  const width = 720;
+  const height = 310;
+  const padding = { top: 20, right: 45, bottom: 40, left: 75 };
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
 
-  const getMinMax = () => {
-    if (chartData.length === 0) return { min: 0, max: 100 };
+  // EXAKTE RANGE-BERECHNUNG FOR SWAP
+  const getRawMinMax = () => {
+    if (chartData.length === 0) return { min: 0, max: 100000 };
     if (activeView === 'vermoegen') {
       const maxVals = chartData.map(d => Math.max(d.immobilienwert, d.restschuld, d.netEquity));
-      return { min: 0, max: Math.max(...maxVals) * 1.1 };
+      return { min: 0, max: Math.max(...maxVals) };
     }
     if (activeView === 'cashflow') {
       const allVals = chartData.flatMap(d => [d.miete, d.kapitaldienst, d.nettoCashflow]);
-      const maxVal = Math.max(...allVals, 100);
-      const minVal = Math.min(...allVals, 0);
-      return { min: minVal < 0 ? minVal * 1.1 : 0, max: maxVal * 1.1 };
+      return { min: Math.min(...allVals, 0), max: Math.max(...allVals, 1000) };
     }
     const allVals = chartData.flatMap(d => [d.totalReturn, d.cumCashflow]);
-    const maxVal = Math.max(...allVals, 100);
-    const minVal = Math.min(...allVals, -ekEuro);
-    return { min: minVal * 1.1, max: maxVal * 1.1 };
+    return { min: Math.min(...allVals, -ekEuro), max: Math.max(...allVals, 1000) };
   };
 
-  const { min: yMin, max: yMax } = getMinMax();
+  const rawRange = getRawMinMax();
+  const { ticks: yTicks, min: yMin, max: yMax } = getNiceTicks(rawRange.min, rawRange.max, 5);
 
   const getX = (index) => {
     if (chartData.length <= 1) return padding.left + graphWidth / 2;
@@ -84,7 +109,7 @@ export default function ProjectionChart({ slicedProjection, formData }) {
   const makeAreaPath = (key) => {
     if (chartData.length === 0) return '';
     const linePath = makePath(key);
-    const zeroY = getY(Math.max(0, yMin));
+    const zeroY = getY(0);
     return `${linePath} L ${getX(chartData.length - 1)} ${zeroY} L ${getX(0)} ${zeroY} Z`;
   };
 
@@ -99,6 +124,8 @@ export default function ProjectionChart({ slicedProjection, formData }) {
       gap: '1rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
+      
+      {/* HEADER & TAB-UMSCHALTER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A' }}>
@@ -113,10 +140,11 @@ export default function ProjectionChart({ slicedProjection, formData }) {
           </span>
         </div>
 
+        {/* TAB REITER (CASHFLOW OHNE p.a.) */}
         <div style={{ display: 'flex', background: '#FAF8F5', padding: '4px', borderRadius: '8px', border: '1px solid #E2D9CE', gap: '4px' }}>
           {[
             { id: 'vermoegen', label: 'Vermögen & Schulden' },
-            { id: 'cashflow', label: 'Cashflow p.a.' },
+            { id: 'cashflow', label: 'Cashflow' },
             { id: 'amortisation', label: 'Break-Even' }
           ].map((tab) => (
             <button
@@ -131,7 +159,8 @@ export default function ProjectionChart({ slicedProjection, formData }) {
                 color: activeView === tab.id ? 'white' : '#4A5568',
                 fontWeight: activeView === tab.id ? '800' : '600',
                 fontSize: '0.75rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
             >
               {tab.label}
@@ -140,38 +169,58 @@ export default function ProjectionChart({ slicedProjection, formData }) {
         </div>
       </div>
 
-      <div style={{ width: '100%', height: '380px', position: 'relative' }}>
+      {/* SVG DIAGRAMM */}
+      <div style={{ width: '100%', height: '340px', position: 'relative' }}>
         <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%' }}>
-          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-            const val = yMin + ratio * (yMax - yMin);
-            const y = getY(val);
+          
+          {/* HORIZONTALE GRID-LINIEN UND Y-ACHSEN BESCHRIFTUNG */}
+          {yTicks.map((tickVal, i) => {
+            const y = getY(tickVal);
+            const isZero = tickVal === 0;
             return (
               <g key={i}>
-                <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#E2D9CE" strokeDasharray="3 3" />
-                <text x={padding.left - 8} y={y + 4} fontSize="10" fill="#718096" textAnchor="end">
-                  {formatEuroInt(val)} €
+                <line
+                  x1={padding.left}
+                  y1={y}
+                  x2={width - padding.right}
+                  y2={y}
+                  stroke={isZero ? '#2D3748' : '#E2D9CE'}
+                  strokeWidth={isZero ? 1.5 : 1}
+                  strokeDasharray={isZero ? 'none' : '3 3'}
+                />
+                <text
+                  x={padding.left - 10}
+                  y={y + 4}
+                  fontSize="10"
+                  fontWeight={isZero ? '800' : '500'}
+                  fill={isZero ? '#2D3748' : '#718096'}
+                  textAnchor="end"
+                >
+                  {formatEuroInt(tickVal)} €
                 </text>
               </g>
             );
           })}
 
+          {/* ANSICHT 1: VERMÖGEN & SCHULDEN */}
           {activeView === 'vermoegen' && (
             <>
-              <path d={makeAreaPath('immobilienwert')} fill="#13381A" fillOpacity="0.15" />
+              <path d={makeAreaPath('immobilienwert')} fill="#13381A" fillOpacity="0.12" />
               <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" />
 
-              <path d={makeAreaPath('netEquity')} fill="#A37841" fillOpacity="0.2" />
+              <path d={makeAreaPath('netEquity')} fill="#A37841" fillOpacity="0.18" />
               <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" />
 
-              <path d={makeAreaPath('restschuld')} fill="#9B2C2C" fillOpacity="0.15" />
+              <path d={makeAreaPath('restschuld')} fill="#9B2C2C" fillOpacity="0.12" />
               <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" />
             </>
           )}
 
+          {/* ANSICHT 2: CASHFLOW */}
           {activeView === 'cashflow' && (
             <>
               {chartData.map((d, i) => {
-                const barW = Math.max(6, (graphWidth / chartData.length) * 0.35);
+                const barW = Math.max(5, (graphWidth / chartData.length) * 0.35);
                 const x = getX(i);
                 const zeroY = getY(0);
                 const mieteY = getY(d.miete);
@@ -179,8 +228,8 @@ export default function ProjectionChart({ slicedProjection, formData }) {
 
                 return (
                   <g key={i}>
-                    <rect x={x - barW - 1} y={mieteY} width={barW} height={Math.abs(zeroY - mieteY)} fill="#13381A" rx="2" />
-                    <rect x={x + 1} y={kapY} width={barW} height={Math.abs(zeroY - kapY)} fill="#A37841" rx="2" />
+                    <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.abs(zeroY - mieteY)} fill="#13381A" rx="2" />
+                    <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.abs(zeroY - kapY)} fill="#A37841" rx="2" />
                   </g>
                 );
               })}
@@ -188,37 +237,47 @@ export default function ProjectionChart({ slicedProjection, formData }) {
             </>
           )}
 
+          {/* ANSICHT 3: AMORTISATION & BREAK-EVEN */}
           {activeView === 'amortisation' && (
             <>
-              <line x1={padding.left} y1={getY(0)} x2={width - padding.right} y2={getY(0)} stroke="#718096" strokeWidth="1.5" />
               <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" />
               <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="5 5" />
             </>
           )}
 
+          {/* X-ACHSEN BESCHRIFTUNG (NUR ZAHLEN & HINWEIS "JAHR") */}
           {chartData.map((d, i) => (
             <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} style={{ cursor: 'pointer' }}>
-              <text x={getX(i)} y={height - 12} fontSize="11" fill="#718096" textAnchor="middle">
+              <text x={getX(i)} y={height - 12} fontSize="11" fontWeight="600" fill="#4A5568" textAnchor="middle">
                 {d.jahrLabel}
               </text>
               <rect x={getX(i) - 15} y={padding.top} width={30} height={graphHeight} fill="transparent" />
             </g>
           ))}
+
+          {/* HINWEIS "(JAHR)" AM RECHTEN RAND DER X-ACHSE */}
+          <text x={width - padding.right + 5} y={height - 12} fontSize="10" fontWeight="700" fill="#718096" textAnchor="start">
+            (Jahr)
+          </text>
         </svg>
 
+        {/* TOOLTIP BEI HOVER */}
         {hoveredIndex !== null && chartData[hoveredIndex] && (
           <div style={{
             position: 'absolute',
-            top: '20px',
-            right: '20px',
+            top: '15px',
+            right: '15px',
             background: 'white',
             border: '1px solid #E2D9CE',
             borderRadius: '8px',
             padding: '8px 12px',
             fontSize: '0.8rem',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            zIndex: 10
           }}>
-            <div style={{ fontWeight: '800', color: '#13381A', marginBottom: '4px' }}>Jahr {chartData[hoveredIndex].jahr}</div>
+            <div style={{ fontWeight: '800', color: '#13381A', marginBottom: '4px', borderBottom: '1px solid #E2D9CE', paddingBottom: '3px' }}>
+              Jahr {chartData[hoveredIndex].jahr}
+            </div>
             {activeView === 'vermoegen' && (
               <>
                 <div style={{ color: '#13381A' }}>Immobilienwert: <strong>{formatEuroInt(chartData[hoveredIndex].immobilienwert)} €</strong></div>
@@ -242,6 +301,68 @@ export default function ProjectionChart({ slicedProjection, formData }) {
           </div>
         )}
       </div>
+
+      {/* DYNAMISCHE LEGENDE UNTER DEM DIAGRAMM */}
+      <div style={{
+        display: 'flex',
+        justify: 'center',
+        alignItems: 'center',
+        gap: '1.5rem',
+        flexWrap: 'wrap',
+        paddingTop: '0.5rem',
+        borderTop: '1px solid #E2D9CE',
+        fontSize: '0.8rem',
+        fontWeight: '700',
+        color: '#4A5568'
+      }}>
+        {activeView === 'vermoegen' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#13381A' }}></span>
+              <span>Immobilienwert</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A37841' }}></span>
+              <span>Netto-Eigenkapital (NAV)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#9B2C2C' }}></span>
+              <span>Restschuld (Bank)</span>
+            </div>
+          </>
+        )}
+
+        {activeView === 'cashflow' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#13381A' }}></span>
+              <span>Kaltmiete p.a.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A37841' }}></span>
+              <span>Kapitaldienst p.a.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', background: '#276749', borderRadius: '2px' }}></span>
+              <span>Netto-Cashflow p.a.</span>
+            </div>
+          </>
+        )}
+
+        {activeView === 'amortisation' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', background: '#13381A', borderRadius: '2px' }}></span>
+              <span>Gesamtgewinn (Cashflow + NAV)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '18px', height: '3px', background: '#A37841', borderRadius: '2px', borderStyle: 'dashed' }}></span>
+              <span>Kumulierter Netto-Cashflow</span>
+            </div>
+          </>
+        )}
+      </div>
+
     </div>
   );
 }

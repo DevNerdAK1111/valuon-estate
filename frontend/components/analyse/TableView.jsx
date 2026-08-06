@@ -7,6 +7,38 @@ export default function TableView({ slicedProjection }) {
 
   const data = slicedProjection || [];
 
+  // BERECHNUNG DER KUMULIERTEN SUMMEN FÜR DIE SUMMENZEILE
+  const sumData = data.reduce(
+    (acc, r) => {
+      acc.miete += r.miete || 0;
+      acc.opex += r.opex || 0;
+      acc.noi += r.noi || 0;
+      acc.zins += r.zins || 0;
+      acc.tilgung += r.tilgung || 0;
+      acc.kapitaldienst += r.kapitaldienst || 0;
+      acc.afaEuro += r.afaEuro || 0;
+      acc.zuVersteuerndesEinkommen += r.zuVersteuerndesEinkommen || 0;
+      acc.steuerErgebnis += r.steuerErgebnis || 0;
+      acc.cashflowNachSteuerPa += r.cashflowNachSteuer || 0;
+      return acc;
+    },
+    {
+      miete: 0,
+      opex: 0,
+      noi: 0,
+      zins: 0,
+      tilgung: 0,
+      kapitaldienst: 0,
+      afaEuro: 0,
+      zuVersteuerndesEinkommen: 0,
+      steuerErgebnis: 0,
+      cashflowNachSteuerPa: 0
+    }
+  );
+
+  // ENDSTÄNDE AM ENDE DES HORIZONTS
+  const lastRow = data[data.length - 1] || {};
+
   return (
     <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', width: '100%', boxSizing: 'border-box' }}>
       
@@ -57,7 +89,7 @@ export default function TableView({ slicedProjection }) {
         </div>
       </div>
 
-      {/* ISOLIERTER IN-CARD SCROLL-CONTAINER (VERHINDERT SEITENSCROLLEN) */}
+      {/* ISOLIERTER IN-CARD SCROLL-CONTAINER */}
       <div style={{ width: '100%', overflowX: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
           <thead>
@@ -70,7 +102,7 @@ export default function TableView({ slicedProjection }) {
               {viewMode === 'vollstaendig' && (
                 <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Steuer & AfA</th>
               )}
-              <th colSpan={viewMode === 'vollstaendig' ? "4" : "3"} style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Ergebnis & Vermögen</th>
+              <th colSpan={viewMode === 'vollstaendig' ? "5" : "3"} style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Ergebnis & Vermögen</th>
             </tr>
 
             {/* SPALTEN-TITEL HEADER */}
@@ -99,6 +131,7 @@ export default function TableView({ slicedProjection }) {
               {/* Ergebnis */}
               <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>CF v. St. / Mo.</th>
               <th style={thSubStyle}>CF n. St. / Mo.</th>
+              {viewMode === 'vollstaendig' && <th style={thSubStyle}>CF n. St. p.a.</th>}
               <th style={thSubStyle}>Restschuld</th>
               {viewMode === 'vollstaendig' && <th style={thSubStyle}>Netto-EK (NAV)</th>}
             </tr>
@@ -109,11 +142,11 @@ export default function TableView({ slicedProjection }) {
               const isEven = idx % 2 === 0;
               const bg = isEven ? 'white' : '#FAF8F5';
               const cfMo = row.cashflowNachSteuerMo;
+              const cfPa = row.cashflowNachSteuer;
               const isCfPos = cfMo >= 0;
 
               return (
                 <tr key={row.jahr} style={{ background: bg, borderBottom: '1px solid #E2D9CE' }}>
-                  {/* REINE RECHNERISCHE ZAHL OHNE "J" */}
                   <td style={{ ...tdStyle, fontWeight: '800', textAlign: 'center', position: 'sticky', left: 0, background: bg, zIndex: 1, borderRight: '1px solid #E2D9CE' }}>
                     {row.jahr}
                   </td>
@@ -146,6 +179,11 @@ export default function TableView({ slicedProjection }) {
                   <td style={{ ...tdStyle, fontWeight: '900', color: isCfPos ? '#276749' : '#9B2C2C', background: isCfPos ? 'rgba(39, 103, 73, 0.05)' : 'rgba(155, 44, 44, 0.05)' }}>
                     {isCfPos ? '+' : ''}{formatEuroInt(cfMo)} €
                   </td>
+                  {viewMode === 'vollstaendig' && (
+                    <td style={{ ...tdStyle, fontWeight: '900', color: cfPa >= 0 ? '#276749' : '#9B2C2C' }}>
+                      {cfPa >= 0 ? '+' : ''}{formatEuroInt(cfPa)} €
+                    </td>
+                  )}
                   <td style={{ ...tdStyle, color: '#9B2C2C' }}>{formatEuroInt(row.restschuld)} €</td>
                   {viewMode === 'vollstaendig' && (
                     <td style={{ ...tdStyle, fontWeight: '800', color: '#13381A' }}>{formatEuroInt(row.netEquity)} €</td>
@@ -154,6 +192,49 @@ export default function TableView({ slicedProjection }) {
               );
             })}
           </tbody>
+
+          {/* SUMMENZEILE */}
+          <tfoot>
+            <tr style={{ background: '#FAF8F5', color: '#13381A', fontWeight: '900', borderTop: '2px solid #13381A' }}>
+              <td style={{ ...tdStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 1, borderRight: '1px solid #CBD5E0' }}>
+                Gesamt
+              </td>
+
+              {/* Operativ Summen */}
+              <td style={tdStyle}>{formatEuroInt(sumData.miete)} €</td>
+              <td style={{ ...tdStyle, color: '#9B2C2C' }}>-{formatEuroInt(sumData.opex)} €</td>
+              <td style={tdStyle}>{formatEuroInt(sumData.noi)} €</td>
+
+              {/* Bank Summen */}
+              <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#9B2C2C' }}>-{formatEuroInt(sumData.zins)} €</td>
+              <td style={{ ...tdStyle, color: '#A37841' }}>-{formatEuroInt(sumData.tilgung)} €</td>
+              <td style={tdStyle}>-{formatEuroInt(sumData.kapitaldienst)} €</td>
+
+              {/* Steuer Summen */}
+              {viewMode === 'vollstaendig' && (
+                <>
+                  <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0' }}>{formatEuroInt(sumData.afaEuro)} €</td>
+                  <td style={tdStyle}>{formatEuroInt(sumData.zuVersteuerndesEinkommen)} €</td>
+                  <td style={{ ...tdStyle, color: sumData.steuerErgebnis > 0 ? '#9B2C2C' : '#276749' }}>
+                    {sumData.steuerErgebnis > 0 ? `-${formatEuroInt(sumData.steuerErgebnis)} €` : `+${formatEuroInt(Math.abs(sumData.steuerErgebnis))} €`}
+                  </td>
+                </>
+              )}
+
+              {/* Ergebnis Summen & Endstände */}
+              <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#718096' }}>-</td>
+              <td style={{ ...tdStyle, color: '#718096' }}>-</td>
+              {viewMode === 'vollstaendig' && (
+                <td style={{ ...tdStyle, fontWeight: '900', color: sumData.cashflowNachSteuerPa >= 0 ? '#276749' : '#9B2C2C' }}>
+                  {sumData.cashflowNachSteuerPa >= 0 ? '+' : ''}{formatEuroInt(sumData.cashflowNachSteuerPa)} €
+                </td>
+              )}
+              <td style={{ ...tdStyle, color: '#9B2C2C' }}>{formatEuroInt(lastRow.restschuld || 0)} €</td>
+              {viewMode === 'vollstaendig' && (
+                <td style={{ ...tdStyle, color: '#13381A' }}>{formatEuroInt(lastRow.netEquity || 0)} €</td>
+              )}
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

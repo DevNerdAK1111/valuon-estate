@@ -1,12 +1,8 @@
 'use client';
 import StepperInput from '../../ui/StepperInput';
 import { MainCard } from '../../ui/CollapsibleCard';
-
-const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#4A5568', marginBottom: '6px' };
-const inputStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
-const selectContainerStyle = { position: 'relative', display: 'flex', alignItems: 'center', width: '100%' };
-const selectStyle = { width: '100%', height: '42px', padding: '0 28px 0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748', cursor: 'pointer' };
-const grid2Style = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' };
+import { labelStyle, inputStyle, selectContainerStyle, selectStyle, grid2Style } from '../../../styles/formStyles';
+import { OBJEKTARTEN } from '../../../constants/realEstate';
 
 export default function SectionBasisdaten({
   formData,
@@ -38,15 +34,9 @@ export default function SectionBasisdaten({
             onChange={(e) => onFieldChange('objektart', e.target.value)}
             style={selectStyle}
           >
-            <option value="Eigentumswohnung">Eigentumswohnung</option>
-            <option value="Einfamilienhaus">Einfamilienhaus</option>
-            <option value="Zweifamilienhaus">Zweifamilienhaus</option>
-            <option value="Reihenhaus / Doppelhaushälfte">Reihenhaus / Doppelhaushälfte</option>
-            <option value="Mehrfamilienhaus">Mehrfamilienhaus</option>
-            <option value="Wohn- und Geschäftshaus">Wohn- und Geschäftshaus</option>
-            <option value="Mikroapartment / Studentisches Wohnen">Mikroapartment / Studentisches Wohnen</option>
-            <option value="Pflege- / Seniorenimmobilie">Pflege- / Seniorenimmobilie</option>
-            <option value="Gewerbeimmobilie / Sonstiges">Gewerbeimmobilie / Sonstiges</option>
+            {OBJEKTARTEN.map((art) => (
+              <option key={art} value={art}>{art}</option>
+            ))}
           </select>
         </div>
       </div>

@@ -134,7 +134,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
       
-      {/* HEADER & TAB-UMSCHALTER */}
+      {/* HEADER & TAB-UMSCHALTER OHNE LAYOUT-SHIFTS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', minHeight: '46px' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A', lineHeight: '1.2' }}>
@@ -290,7 +290,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
             {breakEvenIndex !== -1 && (() => {
               const pointX = getX(breakEvenIndex);
               const pointY = getY(chartData[breakEvenIndex].totalReturn);
-              const badgeW = 105;
+              const badgeW = 110;
               const badgeX = Math.max(padding.left + 5, Math.min(width - padding.right - badgeW - 5, pointX - badgeW / 2));
               
               return (

@@ -22,17 +22,7 @@ import {
   savePropertyApi,
   deletePropertyApi
 } from '../lib/propertyApi';
-
-const defaultFormData = {
-  obj_name: '', objektart: 'Eigentumswohnung', bundesland: 'Niedersachsen', stadt: '', stadtteil: '',
-  kaufpreis: 0.0, qm: 0.0, baujahr: 2000, kaltmiete_monat: 0.0, ist_sqm: 0.0, target_monat: 0.0, target_sqm: 0.0,
-  adj_year: 1, hausgeld: 0.0, hausgeld_nicht_umlegbar: 0.0, sanierung: 0.0, inst_sqm: 12.0, mgt_monat: 30.0,
-  vac_rate_pct: 2.0, grwt_p: 5.0, notar_p: 2.0, makler_p: 3.57, sonst_nk: 0.0, loan_type: 'Annuitätendarlehen',
-  hb_zins: 3.8, hb_tilg: 2.0, sondertilg: 0.0, grace_years: 0, ek_euro: 0.0, zinsbindung: 10, folge_zins: 3.8,
-  folge_mode: 'Rate konstant halten (Annuität)', folge_tilg: 2.0, kfw_amt: 0.0, kfw_zins: 2.1, kfw_tilg: 3.0,
-  kfw_grace_years: 0, kfw_grant: 0.0, tax_rate_pct: 42.0, afa_model: 'Linear Standard', afa_lin: 2.0,
-  miet_inc: 1.0, miet_inc_start_year: 1, cost_inc: 2.0, val_inc: 1.0, exit_cost: 0.0
-};
+import { usePropertyForm } from '../hooks/usePropertyForm';
 
 export default function Home() {
   const [showApp, setShowApp] = useState(false);
@@ -47,6 +37,17 @@ export default function Home() {
     kirchensteuersatz: 9.0, grenzsteuersatz: 42.0, onboarded: false
   });
 
+  const {
+    formData,
+    setFormData,
+    capexList,
+    setCapexList,
+    handleReset: resetPropertyForm,
+    addCapexRow,
+    removeCapexRow,
+    handleCapexChange
+  } = usePropertyForm(userProfile.grenzsteuersatz || 42.0);
+
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
   const [tableTheme, setTableTheme] = useState('Kapitaldienst & Steuern');
   const [projectionHorizon, setProjectionHorizon] = useState('10');
@@ -55,8 +56,6 @@ export default function Home() {
   const [devNotice, setDevNotice] = useState(null);
   const [backendStatus, setBackendStatus] = useState('sleeping');
 
-  const [formData, setFormData] = useState(defaultFormData);
-  const [capexList, setCapexList] = useState([]);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [calcError, setCalcError] = useState(null);
@@ -215,8 +214,7 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    setFormData({ ...defaultFormData, tax_rate_pct: userProfile.grenzsteuersatz || 42.0 });
-    setCapexList([]);
+    resetPropertyForm(userProfile.grenzsteuersatz || 42.0);
     setResult(null);
     setCalcError(null);
     setSaveSuccess(null);
@@ -293,7 +291,18 @@ export default function Home() {
           {navChoice === 'Analyse' && (
             <form onSubmit={handleCalculate}>
               <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
-                <Parametrisierung formData={formData} setFormData={setFormData} capexList={capexList} setCapexList={setCapexList} loading={loading} pingBackend={pingBackend} handleReset={handleReset} />
+                <Parametrisierung 
+                  formData={formData} 
+                  setFormData={setFormData} 
+                  capexList={capexList} 
+                  setCapexList={setCapexList} 
+                  handleCapexChange={handleCapexChange}
+                  addCapexRow={addCapexRow}
+                  removeCapexRow={removeCapexRow}
+                  loading={loading} 
+                  pingBackend={pingBackend} 
+                  handleReset={handleReset} 
+                />
                 <ExecutiveDashboard formData={formData} result={result} projectionHorizon={projectionHorizon} setProjectionHorizon={setProjectionHorizon} handleSaveToDatabase={handleSaveToDatabase} saving={saving} saveSuccess={saveSuccess} calcError={calcError} monthlyCashflow={monthlyCashflow} bruttoMietrendite={bruttoMietrendite} actualHorizonYears={actualHorizonYears} gesamtGewinnHorizon={gesamtGewinnHorizon} activeDashboardTab={activeDashboardTab} setActiveDashboardTab={setActiveDashboardTab} chartView={chartView} setChartView={setChartView} slicedProjection={slicedProjection} summe_nk={summe_nk} tableTheme={tableTheme} setTableTheme={setTableTheme} cumulatedCashflowHorizon={cumulatedCashflowHorizon} endNav={endNav} />
               </div>
             </form>

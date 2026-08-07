@@ -279,7 +279,7 @@ export default function ExecutiveDashboard({
       {/* TAB 1: EXECUTIVE DASHBOARD */}
       {result && (activeDashboardTab === 'Executive Dashboard' || !activeDashboardTab) && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
-          <ProjectionChart slicedProjection={model.slicedProjection} />
+         <ProjectionChart slicedProjection={model.slicedProjection} ekEuroInput={formData?.ek_euro} />
           <DonutChart formData={formData} summe_nk={summe_nk} />
         </div>
       )}

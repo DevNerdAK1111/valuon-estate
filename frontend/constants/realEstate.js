@@ -16,3 +16,15 @@ export const BUNDESLAENDER_DEFAULT = {
   'Schleswig-Holstein': 6.5,
   'Thüringen': 6.5
 };
+
+export const OBJEKTARTEN = [
+  'Eigentumswohnung',
+  'Einfamilienhaus',
+  'Zweifamilienhaus',
+  'Reihenhaus / Doppelhaushälfte',
+  'Mehrfamilienhaus',
+  'Wohn- und Geschäftshaus',
+  'Mikroapartment / Studentisches Wohnen',
+  'Pflege- / Seniorenimmobilie',
+  'Gewerbeimmobilie / Sonstiges'
+];

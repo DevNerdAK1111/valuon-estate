@@ -34,6 +34,8 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
   const rawList = slicedProjection || [];
   let runningCumCashflow = 0;
+  
+  // Eigenkapital-Einsatz als mathematische Referenz
   const ekBase = Number(ekEuroInput) || 0;
 
   const chartData = rawList.map((d, index) => {
@@ -49,12 +51,14 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
     runningCumCashflow += cfNetto;
 
+    // Gesamtertrag = Netto-Eigenkapital (NAV) + kumulierter Cashflow
     const totalRet = netEq + runningCumCashflow;
+    // Reingewinn = Gesamtertrag - Ursprünglicher Eigenkapital-Einsatz
     const netGain = totalRet - ekBase;
 
     return {
       jahr,
-      jahrLabel: `J${jahr}`,
+      jahrLabel: `${jahr}`,
       immobilienwert: immoWert,
       restschuld: restSchuld,
       netEquity: netEq,
@@ -115,6 +119,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
     return `${linePath} L ${getX(chartData.length - 1)} ${baseY} L ${getX(0)} ${baseY} Z`;
   };
 
+  // Break-Even: Erstes Jahr, in dem der Reingewinn >= 0 ist (Gesamtertrag >= EK-Einsatz)
   const breakEvenIndex = chartData.findIndex(d => d.netGain >= 0);
 
   return (
@@ -129,7 +134,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
       
-      {/* HEADER & TAB-UMSCHALTER OHNE BREITEN- & HEIGHT-SHIFTS */}
+      {/* HEADER & TAB-UMSCHALTER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', minHeight: '46px' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A', lineHeight: '1.2' }}>
@@ -144,7 +149,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           </span>
         </div>
 
-        {/* TAB LEISTE - FIXED SIZES & STABLE FONT-WEIGHT */}
+        {/* TAB LEISTE */}
         <div style={{
           display: 'flex',
           background: '#FAF8F5',
@@ -282,49 +287,56 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
             <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" style={{ transition: 'd 0.3s ease-in-out' }} />
             <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" style={{ transition: 'd 0.3s ease-in-out' }} />
 
-            {breakEvenIndex !== -1 && (
-              <g>
-                <circle
-                  cx={getX(breakEvenIndex)}
-                  cy={getY(chartData[breakEvenIndex].totalReturn)}
-                  r="6"
-                  fill="#276749"
-                  stroke="white"
-                  strokeWidth="2"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
-                />
-                <line
-                  x1={getX(breakEvenIndex)}
-                  y1={padding.top}
-                  x2={getX(breakEvenIndex)}
-                  y2={height - padding.bottom}
-                  stroke="#276749"
-                  strokeWidth="1.5"
-                  strokeDasharray="2 2"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
-                />
-                <rect
-                  x={getX(breakEvenIndex) - 45}
-                  y={padding.top - 2}
-                  width="90"
-                  height="18"
-                  rx="4"
-                  fill="#276749"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
-                />
-                <text
-                  x={getX(breakEvenIndex)}
-                  y={padding.top + 11}
-                  fontSize="9"
-                  fontWeight="800"
-                  fill="white"
-                  textAnchor="middle"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
-                >
-                  Break-Even J{chartData[breakEvenIndex].jahr}
-                </text>
-              </g>
-            )}
+            {breakEvenIndex !== -1 && (() => {
+              const pointX = getX(breakEvenIndex);
+              const pointY = getY(chartData[breakEvenIndex].totalReturn);
+              const badgeW = 105;
+              const badgeX = Math.max(padding.left + 5, Math.min(width - padding.right - badgeW - 5, pointX - badgeW / 2));
+              
+              return (
+                <g>
+                  <circle
+                    cx={pointX}
+                    cy={pointY}
+                    r="6"
+                    fill="#276749"
+                    stroke="white"
+                    strokeWidth="2"
+                    style={{ transition: 'all 0.3s ease-in-out' }}
+                  />
+                  <line
+                    x1={pointX}
+                    y1={padding.top + 20}
+                    x2={pointX}
+                    y2={height - padding.bottom}
+                    stroke="#276749"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
+                    style={{ transition: 'all 0.3s ease-in-out' }}
+                  />
+                  <rect
+                    x={badgeX}
+                    y={padding.top - 2}
+                    width={badgeW}
+                    height="20"
+                    rx="5"
+                    fill="#13381A"
+                    style={{ transition: 'all 0.3s ease-in-out' }}
+                  />
+                  <text
+                    x={badgeX + badgeW / 2}
+                    y={padding.top + 12}
+                    fontSize="9.5"
+                    fontWeight="800"
+                    fill="white"
+                    textAnchor="middle"
+                    style={{ transition: 'all 0.3s ease-in-out' }}
+                  >
+                    Break-Even Jahr {chartData[breakEvenIndex].jahr}
+                  </text>
+                </g>
+              );
+            })()}
           </g>
 
           {/* X-ACHSE & HOVER TARGETS */}

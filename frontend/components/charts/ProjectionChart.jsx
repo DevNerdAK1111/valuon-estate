@@ -116,7 +116,6 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
     return `${linePath} L ${getX(chartData.length - 1)} ${baseY} L ${getX(0)} ${baseY} Z`;
   };
 
-  // BREAK-EVEN INDEX (REINGEWINN >= 0 EURO)
   const breakEvenIndex = chartData.findIndex(d => d.netGain >= 0);
 
   return (
@@ -131,15 +130,15 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
       
-      {/* HEADER & TAB-UMSCHALTER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+      {/* HEADER & TAB-UMSCHALTER MIT FIXIERTER MINDESTHÖHE GEGEN LAYOUT-SHIFTS */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', minHeight: '52px' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A' }}>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A', lineHeight: '1.3' }}>
             {activeView === 'vermoegen' && 'Vermögensaufbau & Schuldenabbau'}
             {activeView === 'cashflow' && 'Cashflow & Mieteinnahmen p.a.'}
             {activeView === 'amortisation' && 'Amortisation & Break-Even-Verlauf'}
           </h3>
-          <span style={{ fontSize: '0.75rem', color: '#718096' }}>
+          <span style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginTop: '2px', lineHeight: '1.3' }}>
             {activeView === 'vermoegen' && 'Schereneffekt zwischen steigendem Objektwert und sinkender Restschuld'}
             {activeView === 'cashflow' && 'Gegenüberstellung von Mieteinnahmen, Bankrate und Netto-Ertrag'}
             {activeView === 'amortisation' && 'Gesamtertrag (NAV + Kum. Cashflow) vs. Eigenkapitaleinsatz'}
@@ -165,7 +164,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                 fontWeight: activeView === tab.id ? '800' : '600',
                 fontSize: '0.75rem',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.2s ease-in-out'
               }}
             >
               {tab.label}
@@ -174,11 +173,11 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
         </div>
       </div>
 
-      {/* SVG DIAGRAMM */}
+      {/* SVG DIAGRAMM CONTAINER */}
       <div style={{ width: '100%', height: '340px', position: 'relative' }}>
         <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%' }}>
           
-          {/* Y-ACHSE & GRID */}
+          {/* Y-ACHSE & GRID MIT TRANSITIONS */}
           {yTicks.map((tickVal, i) => {
             const y = getY(tickVal);
             const isZero = tickVal === 0;
@@ -192,6 +191,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                   stroke={isZero ? '#2D3748' : '#E2D9CE'}
                   strokeWidth={isZero ? 1.5 : 1}
                   strokeDasharray={isZero ? 'none' : '3 3'}
+                  style={{ transition: 'all 0.3s ease-in-out' }}
                 />
                 <text
                   x={padding.left - 12}
@@ -200,6 +200,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                   fontWeight={isZero ? '800' : '500'}
                   fill={isZero ? '#2D3748' : '#718096'}
                   textAnchor="end"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
                 >
                   {formatEuroInt(tickVal)} €
                 </text>
@@ -210,114 +211,114 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           <line x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} stroke="#E2D9CE" strokeWidth="1" />
 
           {/* ANSICHT 1: VERMÖGEN & SCHULDEN */}
-          {activeView === 'vermoegen' && (
-            <>
-              <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" />
-              <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" />
+          <g style={{ opacity: activeView === 'vermoegen' ? 1 : 0, transition: 'opacity 0.25s ease-in-out', pointerEvents: activeView === 'vermoegen' ? 'auto' : 'none' }}>
+            <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" style={{ transition: 'd 0.3s ease-in-out' }} />
 
-              <path d={makeAreaPath('netEquity', 0)} fill="#A37841" fillOpacity="0.18" />
-              <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" />
+            <path d={makeAreaPath('netEquity', 0)} fill="#A37841" fillOpacity="0.18" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" style={{ transition: 'd 0.3s ease-in-out' }} />
 
-              <path d={makeAreaPath('restschuld', 0)} fill="#9B2C2C" fillOpacity="0.12" />
-              <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" />
-            </>
-          )}
+            <path d={makeAreaPath('restschuld', 0)} fill="#9B2C2C" fillOpacity="0.12" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" style={{ transition: 'd 0.3s ease-in-out' }} />
+          </g>
 
           {/* ANSICHT 2: CASHFLOW */}
-          {activeView === 'cashflow' && (
-            <>
-              {chartData.map((d, i) => {
-                const barW = Math.max(6, (innerPlotWidth / chartData.length) * 0.35);
-                const x = getX(i);
-                const zeroY = getY(0);
-                const mieteY = getY(d.miete);
-                const kapY = getY(d.kapitaldienst);
+          <g style={{ opacity: activeView === 'cashflow' ? 1 : 0, transition: 'opacity 0.25s ease-in-out', pointerEvents: activeView === 'cashflow' ? 'auto' : 'none' }}>
+            {chartData.map((d, i) => {
+              const barW = Math.max(6, (innerPlotWidth / chartData.length) * 0.35);
+              const x = getX(i);
+              const zeroY = getY(0);
+              const mieteY = getY(d.miete);
+              const kapY = getY(d.kapitaldienst);
 
-                return (
-                  <g key={i}>
-                    <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.max(2, Math.abs(zeroY - mieteY))} fill="#13381A" rx="2" />
-                    <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.max(2, Math.abs(zeroY - kapY))} fill="#A37841" rx="2" />
-                  </g>
-                );
-              })}
-              <path d={makePath('nettoCashflow')} fill="none" stroke="#276749" strokeWidth="3" />
-            </>
-          )}
+              return (
+                <g key={i}>
+                  <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.max(2, Math.abs(zeroY - mieteY))} fill="#13381A" rx="2" style={{ transition: 'all 0.3s ease-in-out' }} />
+                  <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.max(2, Math.abs(zeroY - kapY))} fill="#A37841" rx="2" style={{ transition: 'all 0.3s ease-in-out' }} />
+                </g>
+              );
+            })}
+            <path d={makePath('nettoCashflow')} fill="none" stroke="#276749" strokeWidth="3" style={{ transition: 'd 0.3s ease-in-out' }} />
+          </g>
 
           {/* ANSICHT 3: AMORTISATION & BREAK-EVEN */}
-          {activeView === 'amortisation' && (
-            <>
-              {ekBase > 0 && (
-                <g>
-                  <line
-                    x1={padding.left}
-                    y1={getY(ekBase)}
-                    x2={width - padding.right}
-                    y2={getY(ekBase)}
-                    stroke="#A37841"
-                    strokeWidth="2"
-                    strokeDasharray="6 4"
-                  />
-                  <text
-                    x={width - padding.right - 8}
-                    y={getY(ekBase) - 6}
-                    fontSize="10"
-                    fontWeight="800"
-                    fill="#A37841"
-                    textAnchor="end"
-                  >
-                    EK-Einsatz ({formatEuroInt(ekBase)} €)
-                  </text>
-                </g>
-              )}
+          <g style={{ opacity: activeView === 'amortisation' ? 1 : 0, transition: 'opacity 0.25s ease-in-out', pointerEvents: activeView === 'amortisation' ? 'auto' : 'none' }}>
+            {ekBase > 0 && (
+              <g>
+                <line
+                  x1={padding.left}
+                  y1={getY(ekBase)}
+                  x2={width - padding.right}
+                  y2={getY(ekBase)}
+                  stroke="#A37841"
+                  strokeWidth="2"
+                  strokeDasharray="6 4"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
+                />
+                <text
+                  x={width - padding.right - 8}
+                  y={getY(ekBase) - 6}
+                  fontSize="10"
+                  fontWeight="800"
+                  fill="#A37841"
+                  textAnchor="end"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
+                >
+                  EK-Einsatz ({formatEuroInt(ekBase)} €)
+                </text>
+              </g>
+            )}
 
-              <path d={makeAreaPath('totalReturn', ekBase > 0 ? ekBase : 0)} fill="#276749" fillOpacity="0.15" />
-              <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" />
-              <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" />
+            <path d={makeAreaPath('totalReturn', ekBase > 0 ? ekBase : 0)} fill="#276749" fillOpacity="0.15" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" style={{ transition: 'd 0.3s ease-in-out' }} />
 
-              {breakEvenIndex !== -1 && (
-                <g>
-                  <circle
-                    cx={getX(breakEvenIndex)}
-                    cy={getY(chartData[breakEvenIndex].totalReturn)}
-                    r="6"
-                    fill="#276749"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  <line
-                    x1={getX(breakEvenIndex)}
-                    y1={padding.top}
-                    x2={getX(breakEvenIndex)}
-                    y2={height - padding.bottom}
-                    stroke="#276749"
-                    strokeWidth="1.5"
-                    strokeDasharray="2 2"
-                  />
-                  <rect
-                    x={getX(breakEvenIndex) - 45}
-                    y={padding.top - 2}
-                    width="90"
-                    height="18"
-                    rx="4"
-                    fill="#276749"
-                  />
-                  <text
-                    x={getX(breakEvenIndex)}
-                    y={padding.top + 11}
-                    fontSize="9"
-                    fontWeight="800"
-                    fill="white"
-                    textAnchor="middle"
-                  >
-                    Break-Even J{chartData[breakEvenIndex].jahr}
-                  </text>
-                </g>
-              )}
-            </>
-          )}
+            {breakEvenIndex !== -1 && (
+              <g>
+                <circle
+                  cx={getX(breakEvenIndex)}
+                  cy={getY(chartData[breakEvenIndex].totalReturn)}
+                  r="6"
+                  fill="#276749"
+                  stroke="white"
+                  strokeWidth="2"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
+                />
+                <line
+                  x1={getX(breakEvenIndex)}
+                  y1={padding.top}
+                  x2={getX(breakEvenIndex)}
+                  y2={height - padding.bottom}
+                  stroke="#276749"
+                  strokeWidth="1.5"
+                  strokeDasharray="2 2"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
+                />
+                <rect
+                  x={getX(breakEvenIndex) - 45}
+                  y={padding.top - 2}
+                  width="90"
+                  height="18"
+                  rx="4"
+                  fill="#276749"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
+                />
+                <text
+                  x={getX(breakEvenIndex)}
+                  y={padding.top + 11}
+                  fontSize="9"
+                  fontWeight="800"
+                  fill="white"
+                  textAnchor="middle"
+                  style={{ transition: 'all 0.3s ease-in-out' }}
+                >
+                  Break-Even J{chartData[breakEvenIndex].jahr}
+                </text>
+              </g>
+            )}
+          </g>
 
-          {/* X-ACHSE & HOVER */}
+          {/* X-ACHSE & HOVER TARGETS */}
           {chartData.map((d, i) => (
             <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} style={{ cursor: 'pointer' }}>
               <text x={getX(i)} y={height - 15} fontSize="11" fontWeight="600" fill="#4A5568" textAnchor="middle">
@@ -376,7 +377,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
         )}
       </div>
 
-      {/* VOLLSTÄNDIGE LEGENDEN UNTER DEM DIAGRAMM */}
+      {/* LEGENDEN CONTAINER MIT FIXIERTER HÖHE */}
       <div style={{
         display: 'flex',
         justify: 'center',
@@ -387,7 +388,9 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
         borderTop: '1px solid #E2D9CE',
         fontSize: '0.8rem',
         fontWeight: '700',
-        color: '#4A5568'
+        color: '#4A5568',
+        minHeight: '32px',
+        boxSizing: 'border-box'
       }}>
         {activeView === 'vermoegen' && (
           <>

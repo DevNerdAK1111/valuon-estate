@@ -2,11 +2,7 @@
 import StepperInput from '../../ui/StepperInput';
 import { MainCard, SubContainerCard } from '../../ui/CollapsibleCard';
 import { formatEuroInt } from '../../../utils/formatters';
-
-const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#4A5568', marginBottom: '6px' };
-const inputStyle = { width: '100%', height: '42px', padding: '0 12px', borderRadius: '8px', border: '1px solid #CBD5E0', fontSize: '0.9rem', fontWeight: '500', outline: 'none', background: 'white', boxSizing: 'border-box', color: '#2D3748' };
-const grid2Style = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' };
-const infoBoxStyle = { background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '8px', padding: '12px 14px', fontSize: '0.85rem', color: '#13381A' };
+import { labelStyle, inputStyle, grid2Style, infoBoxStyle } from '../../../styles/formStyles';
 
 export default function SectionBewirtschaftung({
   formData,

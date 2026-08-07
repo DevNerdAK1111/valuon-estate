@@ -36,7 +36,6 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
   let runningCumCashflow = 0;
   const ekBase = Number(ekEuroInput) || 0;
 
-  // VERARBEITUNG DER BACKEND-DATEN
   const chartData = rawList.map((d, index) => {
     const jahr = Number(d.Jahr ?? d.jahr ?? (index + 1));
     const immoWert = Number(d.Immobilienwert ?? d.immobilienwert ?? 0);
@@ -130,22 +129,31 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
       
-      {/* HEADER & TAB-UMSCHALTER MIT FIXIERTER MINDESTHÖHE GEGEN LAYOUT-SHIFTS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', minHeight: '52px' }}>
+      {/* HEADER & TAB-UMSCHALTER OHNE BREITEN- & HEIGHT-SHIFTS */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', minHeight: '46px' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A', lineHeight: '1.3' }}>
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A', lineHeight: '1.2' }}>
             {activeView === 'vermoegen' && 'Vermögensaufbau & Schuldenabbau'}
             {activeView === 'cashflow' && 'Cashflow & Mieteinnahmen p.a.'}
             {activeView === 'amortisation' && 'Amortisation & Break-Even-Verlauf'}
           </h3>
-          <span style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginTop: '2px', lineHeight: '1.3' }}>
+          <span style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginTop: '2px', lineHeight: '1.2' }}>
             {activeView === 'vermoegen' && 'Schereneffekt zwischen steigendem Objektwert und sinkender Restschuld'}
             {activeView === 'cashflow' && 'Gegenüberstellung von Mieteinnahmen, Bankrate und Netto-Ertrag'}
             {activeView === 'amortisation' && 'Gesamtertrag (NAV + Kum. Cashflow) vs. Eigenkapitaleinsatz'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', background: '#FAF8F5', padding: '4px', borderRadius: '8px', border: '1px solid #E2D9CE', gap: '4px' }}>
+        {/* TAB LEISTE - FIXED SIZES & STABLE FONT-WEIGHT */}
+        <div style={{
+          display: 'flex',
+          background: '#FAF8F5',
+          padding: '4px',
+          borderRadius: '8px',
+          border: '1px solid #E2D9CE',
+          gap: '4px',
+          flexShrink: 0
+        }}>
           {[
             { id: 'vermoegen', label: 'Vermögen & Schulden' },
             { id: 'cashflow', label: 'Cashflow' },
@@ -161,10 +169,11 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                 border: 'none',
                 background: activeView === tab.id ? '#13381A' : 'transparent',
                 color: activeView === tab.id ? 'white' : '#4A5568',
-                fontWeight: activeView === tab.id ? '800' : '600',
+                fontWeight: '700',
                 fontSize: '0.75rem',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease-in-out'
+                transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out',
+                whiteSpace: 'nowrap'
               }}
             >
               {tab.label}
@@ -177,7 +186,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       <div style={{ width: '100%', height: '340px', position: 'relative' }}>
         <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%' }}>
           
-          {/* Y-ACHSE & GRID MIT TRANSITIONS */}
+          {/* Y-ACHSE & GRID */}
           {yTicks.map((tickVal, i) => {
             const y = getY(tickVal);
             const isZero = tickVal === 0;
@@ -211,7 +220,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           <line x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} stroke="#E2D9CE" strokeWidth="1" />
 
           {/* ANSICHT 1: VERMÖGEN & SCHULDEN */}
-          <g style={{ opacity: activeView === 'vermoegen' ? 1 : 0, transition: 'opacity 0.25s ease-in-out', pointerEvents: activeView === 'vermoegen' ? 'auto' : 'none' }}>
+          <g style={{ opacity: activeView === 'vermoegen' ? 1 : 0, transition: 'opacity 0.2s ease-in-out', pointerEvents: activeView === 'vermoegen' ? 'auto' : 'none' }}>
             <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" style={{ transition: 'd 0.3s ease-in-out' }} />
             <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" style={{ transition: 'd 0.3s ease-in-out' }} />
 
@@ -223,7 +232,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           </g>
 
           {/* ANSICHT 2: CASHFLOW */}
-          <g style={{ opacity: activeView === 'cashflow' ? 1 : 0, transition: 'opacity 0.25s ease-in-out', pointerEvents: activeView === 'cashflow' ? 'auto' : 'none' }}>
+          <g style={{ opacity: activeView === 'cashflow' ? 1 : 0, transition: 'opacity 0.2s ease-in-out', pointerEvents: activeView === 'cashflow' ? 'auto' : 'none' }}>
             {chartData.map((d, i) => {
               const barW = Math.max(6, (innerPlotWidth / chartData.length) * 0.35);
               const x = getX(i);
@@ -242,7 +251,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           </g>
 
           {/* ANSICHT 3: AMORTISATION & BREAK-EVEN */}
-          <g style={{ opacity: activeView === 'amortisation' ? 1 : 0, transition: 'opacity 0.25s ease-in-out', pointerEvents: activeView === 'amortisation' ? 'auto' : 'none' }}>
+          <g style={{ opacity: activeView === 'amortisation' ? 1 : 0, transition: 'opacity 0.2s ease-in-out', pointerEvents: activeView === 'amortisation' ? 'auto' : 'none' }}>
             {ekBase > 0 && (
               <g>
                 <line

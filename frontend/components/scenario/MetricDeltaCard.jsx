@@ -8,7 +8,8 @@ export default function MetricDeltaCard({
   unit = '', 
   compareValue, 
   isBaseline = false, 
-  invertColor = false 
+  invertColor = false,
+  customColor = null
 }) {
   const formatValue = (v) => {
     if (v === null || v === undefined || isNaN(v)) return '—';
@@ -42,6 +43,16 @@ export default function MetricDeltaCard({
     return `${sign}${d.toFixed(2).replace('.', ',')} ${unit}`.trim();
   };
 
+  // Dynamische Farbgebung nach Executive Dashboard Standard
+  const getValueColor = () => {
+    if (customColor) return customColor;
+    if (type === 'currency') {
+      if (invertColor) return '#9B2C2C'; // Rate / Kosten
+      return value >= 0 ? '#276749' : '#9B2C2C'; // Cashflow & Vermögen
+    }
+    return '#13381A';
+  };
+
   return (
     <div style={{
       background: 'white',
@@ -51,7 +62,7 @@ export default function MetricDeltaCard({
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      minHeight: '100px',
+      minHeight: '105px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
       <div style={{
@@ -68,10 +79,10 @@ export default function MetricDeltaCard({
       </div>
       
       <div style={{
-        fontSize: '1.3rem',
+        fontSize: '1.35rem',
         fontWeight: '900',
         margin: '4px 0',
-        color: '#13381A'
+        color: getValueColor()
       }}>
         {formatValue(value)}
       </div>

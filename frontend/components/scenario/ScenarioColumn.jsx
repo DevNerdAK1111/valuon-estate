@@ -1,8 +1,11 @@
+'use client';
 import React, { useState } from 'react';
-import StepperInput from '../ui/StepperInput';
 import MetricDeltaCard from './MetricDeltaCard';
-import { grid2Style, labelStyle, inputStyle, selectContainerStyle, selectStyle } from '../../styles/formStyles';
-import { OBJEKTARTEN, BUNDESLAENDER_DEFAULT } from '../../constants/realEstate';
+import SectionBasisdaten from '../analyse/sections/SectionBasisdaten';
+import SectionBewirtschaftung from '../analyse/sections/SectionBewirtschaftung';
+import SectionFinanzierung from '../analyse/sections/SectionFinanzierung';
+import SectionSteuern from '../analyse/sections/SectionSteuern';
+import { BUNDESLAENDER_DEFAULT } from '../../constants/realEstate';
 
 export default function ScenarioColumn({ 
   title, 
@@ -22,18 +25,97 @@ export default function ScenarioColumn({
     steuer: false
   });
 
-  const [openSub, setOpenSub] = useState({
-    nebenkosten: false,
-    kfw: false
+  const [openSubSections, setOpenSubSections] = useState({
+    hausgeld: false,
+    folgefinanzierung: false,
+    kfw: false,
+    capex: false
   });
 
   const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-  const toggleSub = (key) => setOpenSub(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleSubSection = (key) => setOpenSubSections(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const updateField = (field, value) => {
+  const onFieldChange = (field, value) => {
     setData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  // Berechnung dynamischer Parameter für die Sektionen
+  const kaufpreis = Number(data?.kaufpreis || 0);
+  const grwtP = Number(data?.grwt_p ?? 5.0);
+  const notarP = Number(data?.notar_p ?? 2.0);
+  const maklerP = Number(data?.makler_p ?? 3.57);
+  const sonstNk = Number(data?.sonst_nk ?? 0);
+
+  const displayGrwtEuro = kaufpreis * (grwtP / 100);
+  const displayNotarEuro = kaufpreis * (notarP / 100);
+  const displayMaklerEuro = kaufpreis * (maklerP / 100);
+  const displayNkTotal = displayGrwtEuro + displayNotarEuro + displayMaklerEuro + sonstNk;
+  const isEkCoveringNk = Math.round(data?.ek_euro || 0) >= Math.round(displayNkTotal);
+
+  const bundeslaenderList = Object.keys(BUNDESLAENDER_DEFAULT);
+
+  // Helper-Handler für Synchrone Miete- & Hausgeld-Berechnungen
+  const handleBundeslandChange = (bl) => {
+    onFieldChange('bundesland', bl);
+    if (BUNDESLAENDER_DEFAULT[bl] !== undefined) {
+      onFieldChange('grwt_p', BUNDESLAENDER_DEFAULT[bl]);
+    }
+  };
+
+  const handleQmChange = (qm) => onFieldChange('qm', qm);
+
+  const handleLocalIstMonat = (val) => {
+    const qm = Number(data?.qm || 0);
+    const sqmVal = qm > 0 ? val / qm : 0;
+    setData(prev => ({ ...prev, kaltmiete_monat: val, ist_sqm: sqmVal, target_monat: val, target_sqm: sqmVal }));
+  };
+
+  const handleLocalIstSqm = (val) => {
+    const qm = Number(data?.qm || 0);
+    const monatVal = val * qm;
+    setData(prev => ({ ...prev, ist_sqm: val, kaltmiete_monat: monatVal, target_monat: monatVal, target_sqm: val }));
+  };
+
+  const handleLocalZielMonat = (val) => {
+    const qm = Number(data?.qm || 0);
+    setData(prev => ({ ...prev, target_monat: val, target_sqm: qm > 0 ? val / qm : 0 }));
+  };
+
+  const handleLocalZielSqm = (val) => {
+    const qm = Number(data?.qm || 0);
+    setData(prev => ({ ...prev, target_sqm: val, target_monat: val * qm }));
+  };
+
+  const handleLocalHausgeldGesamt = (val) => {
+    const nichtUmlegbar = Math.round(val * 0.25 * 100) / 100;
+    setData(prev => ({ ...prev, hausgeld: val, hausgeld_nicht_umlegbar: nichtUmlegbar }));
+  };
+
+  const handleLocalHausgeldNichtUmlegbar = (val) => onFieldChange('hausgeld_nicht_umlegbar', val);
+
+  // CapEx-Handler
+  const handleCapexChange = (index, field, value) => {
+    setData(prev => {
+      const updated = [...(prev.capex_list || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, capex_list: updated };
+    });
+  };
+
+  const addCapexRow = () => {
+    setData(prev => ({
+      ...prev,
+      capex_list: [...(prev.capex_list || []), { year: (prev.capex_list || []).length + 1, amount: 0 }]
+    }));
+  };
+
+  const removeCapexRow = (index) => {
+    setData(prev => ({
+      ...prev,
+      capex_list: (prev.capex_list || []).filter((_, idx) => idx !== index)
     }));
   };
 
@@ -45,7 +127,7 @@ export default function ScenarioColumn({
       padding: '1.25rem',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between',
+      justify: 'space-between',
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
       opacity: loading ? 0.75 : 1,
       transition: 'opacity 0.15s ease'
@@ -69,429 +151,70 @@ export default function ScenarioColumn({
           </span>
         </div>
 
-        {/* ========================================== */}
-        {/* SEKTION 1: BASISDATEN & KAUFPREIS          */}
-        {/* ========================================== */}
-        <div style={{ border: '1px solid #E2D9CE', borderRadius: '10px', overflow: 'hidden' }}>
-          <button
-            type="button"
-            onClick={() => toggleSection('basisdaten')}
-            style={sectionHeaderStyle}
-          >
-            <span>1. Basisdaten & Kaufpreis</span>
-            <span>{openSections.basisdaten ? '▲' : '▼'}</span>
-          </button>
+        {/* 1. Basisdaten */}
+        <SectionBasisdaten
+          formData={data}
+          isOpen={openSections.basisdaten}
+          onToggle={() => toggleSection('basisdaten')}
+          onFieldChange={onFieldChange}
+          handleBundeslandChange={handleBundeslandChange}
+          handleQmChange={handleQmChange}
+          bundeslaenderList={bundeslaenderList}
+        />
 
-          {openSections.basisdaten && (
-            <div style={sectionContentStyle}>
-              <div>
-                <label style={labelStyle}>Objektbezeichnung</label>
-                <input
-                  type="text"
-                  value={data?.obj_name || ''}
-                  onChange={(e) => updateField('obj_name', e.target.value)}
-                  style={inputStyle}
-                />
-              </div>
+        {/* 2. Bewirtschaftung & Nebenkosten */}
+        <SectionBewirtschaftung
+          formData={data}
+          isOpen={openSections.bewirtschaftung}
+          onToggle={() => toggleSection('bewirtschaftung')}
+          openSubSections={openSubSections}
+          toggleSubSection={toggleSubSection}
+          onFieldChange={onFieldChange}
+          handleLocalIstMonat={handleLocalIstMonat}
+          handleLocalIstSqm={handleLocalIstSqm}
+          handleLocalZielMonat={handleLocalZielMonat}
+          handleLocalZielSqm={handleLocalZielSqm}
+          handleLocalHausgeldGesamt={handleLocalHausgeldGesamt}
+          handleLocalHausgeldNichtUmlegbar={handleLocalHausgeldNichtUmlegbar}
+          grwtP={grwtP}
+          notarP={notarP}
+          maklerP={maklerP}
+          sonstNk={sonstNk}
+          displayNkTotal={displayNkTotal}
+          displayGrwtEuro={displayGrwtEuro}
+          displayNotarEuro={displayNotarEuro}
+          displayMaklerEuro={displayMaklerEuro}
+        />
 
-              <div style={grid2Style}>
-                <div>
-                  <label style={labelStyle}>Objektart</label>
-                  <div style={selectContainerStyle}>
-                    <select
-                      value={data?.objektart || 'Eigentumswohnung'}
-                      onChange={(e) => updateField('objektart', e.target.value)}
-                      style={selectStyle}
-                    >
-                      {OBJEKTARTEN.map((art) => (
-                        <option key={art} value={art}>{art}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+        {/* 3. Finanzierung & Eigenkapital */}
+        <SectionFinanzierung
+          formData={data}
+          isOpen={openSections.finanzierung}
+          onToggle={() => toggleSection('finanzierung')}
+          openSubSections={openSubSections}
+          toggleSubSection={toggleSubSection}
+          onFieldChange={onFieldChange}
+          isEkCoveringNk={isEkCoveringNk}
+          displayNkTotal={displayNkTotal}
+        />
 
-                <div>
-                  <label style={labelStyle}>Bundesland</label>
-                  <div style={selectContainerStyle}>
-                    <select
-                      value={data?.bundesland || 'Niedersachsen'}
-                      onChange={(e) => {
-                        updateField('bundesland', e.target.value);
-                        if (BUNDESLAENDER_DEFAULT[e.target.value] !== undefined) {
-                          updateField('grwt_p', BUNDESLAENDER_DEFAULT[e.target.value]);
-                        }
-                      }}
-                      style={selectStyle}
-                    >
-                      {Object.keys(BUNDESLAENDER_DEFAULT).map((bl) => (
-                        <option key={bl} value={bl}>{bl}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <StepperInput
-                label="Kaufpreis (€)"
-                value={data?.kaufpreis || 0}
-                onChange={(v) => updateField('kaufpreis', v)}
-                step={5000}
-                isCurrency={true}
-              />
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Wohnfläche (m²)"
-                  value={data?.qm || 0}
-                  onChange={(v) => updateField('qm', v)}
-                  step={5}
-                  isSqm={true}
-                />
-                <div>
-                  <label style={labelStyle}>Baujahr</label>
-                  <input
-                    type="number"
-                    value={data?.baujahr || 2000}
-                    onChange={(e) => updateField('baujahr', parseInt(e.target.value, 10) || 2000)}
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ========================================== */}
-        {/* SEKTION 2: BEWIRTSCHAFTUNG & NEBENKOSTEN  */}
-        {/* ========================================== */}
-        <div style={{ border: '1px solid #E2D9CE', borderRadius: '10px', overflow: 'hidden' }}>
-          <button
-            type="button"
-            onClick={() => toggleSection('bewirtschaftung')}
-            style={sectionHeaderStyle}
-          >
-            <span>2. Bewirtschaftung & Nebenkosten</span>
-            <span>{openSections.bewirtschaftung ? '▲' : '▼'}</span>
-          </button>
-
-          {openSections.bewirtschaftung && (
-            <div style={sectionContentStyle}>
-              <StepperInput
-                label="Ist-Kaltmiete (€ / Mo)"
-                value={data?.kaltmiete_monat || 0}
-                onChange={(v) => updateField('kaltmiete_monat', v)}
-                step={25}
-                isCurrency={true}
-              />
-
-              <StepperInput
-                label="Hausgeld gesamt (€ / Mo)"
-                value={data?.hausgeld || 0}
-                onChange={(v) => {
-                  updateField('hausgeld', v);
-                  updateField('hausgeld_nicht_umlegbar', Math.round(v * 0.25));
-                }}
-                step={10}
-                isCurrency={true}
-              />
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Nicht umlegbar (€ / Mo)"
-                  value={data?.hausgeld_nicht_umlegbar ?? (data?.hausgeld ? Math.round(data.hausgeld * 0.25) : 0)}
-                  onChange={(v) => updateField('hausgeld_nicht_umlegbar', v)}
-                  step={5}
-                  isCurrency={true}
-                />
-                <StepperInput
-                  label="Verwaltung (€ / Mo)"
-                  value={data?.mgt_monat ?? 30}
-                  onChange={(v) => updateField('mgt_monat', v)}
-                  step={5}
-                  isCurrency={true}
-                />
-              </div>
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Instandhaltung (€ / m²)"
-                  value={data?.inst_sqm ?? 12}
-                  onChange={(v) => updateField('inst_sqm', v)}
-                  step={1}
-                />
-                <StepperInput
-                  label="Mietausfallwagnis (%)"
-                  value={data?.vac_rate_pct ?? 2.0}
-                  onChange={(v) => updateField('vac_rate_pct', v)}
-                  step={0.5}
-                  isPercent={true}
-                />
-              </div>
-
-              <StepperInput
-                label="Sanierung / Umbau (€)"
-                value={data?.sanierung || 0}
-                onChange={(v) => updateField('sanierung', v)}
-                step={1000}
-                isCurrency={true}
-              />
-
-              {/* UNTER-AKKORDEON: KAUFNEBENKOSTEN */}
-              <button
-                type="button"
-                onClick={() => toggleSub('nebenkosten')}
-                style={subHeaderStyle}
-              >
-                <span>Details Kaufnebenkosten ({data?.grwt_p ?? 5}% GrESt etc.)</span>
-                <span>{openSub.nebenkosten ? '▲' : '▼'}</span>
-              </button>
-
-              {openSub.nebenkosten && (
-                <div style={subContentStyle}>
-                  <div style={grid2Style}>
-                    <StepperInput
-                      label="Grunderwerbsteuer (%)"
-                      value={data?.grwt_p ?? 5.0}
-                      onChange={(v) => updateField('grwt_p', v)}
-                      step={0.25}
-                      isPercent={true}
-                    />
-                    <StepperInput
-                      label="Notar & Grundbuch (%)"
-                      value={data?.notar_p ?? 2.0}
-                      onChange={(v) => updateField('notar_p', v)}
-                      step={0.1}
-                      isPercent={true}
-                    />
-                  </div>
-
-                  <div style={grid2Style}>
-                    <StepperInput
-                      label="Maklercourtage (%)"
-                      value={data?.makler_p ?? 3.57}
-                      onChange={(v) => updateField('makler_p', v)}
-                      step={0.01}
-                      isPercent={true}
-                    />
-                    <StepperInput
-                      label="Sonstige Nebenkosten (€)"
-                      value={data?.sonst_nk ?? 0}
-                      onChange={(v) => updateField('sonst_nk', v)}
-                      step={250}
-                      isCurrency={true}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ========================================== */}
-        {/* SEKTION 3: FINANZIERUNG & EIGENKAPITAL     */}
-        {/* ========================================== */}
-        <div style={{ border: '1px solid #E2D9CE', borderRadius: '10px', overflow: 'hidden' }}>
-          <button
-            type="button"
-            onClick={() => toggleSection('finanzierung')}
-            style={sectionHeaderStyle}
-          >
-            <span>3. Finanzierung & Eigenkapital</span>
-            <span>{openSections.finanzierung ? '▲' : '▼'}</span>
-          </button>
-
-          {openSections.finanzierung && (
-            <div style={sectionContentStyle}>
-              <StepperInput
-                label="Eigenkapital-Einsatz (€)"
-                value={data?.ek_euro || 0}
-                onChange={(v) => updateField('ek_euro', v)}
-                step={2500}
-                isCurrency={true}
-              />
-
-              <div>
-                <label style={labelStyle}>Darlehensart</label>
-                <div style={selectContainerStyle}>
-                  <select
-                    value={data?.loan_type || 'Annuitätendarlehen'}
-                    onChange={(e) => updateField('loan_type', e.target.value)}
-                    style={selectStyle}
-                  >
-                    <option value="Annuitätendarlehen">Annuitätendarlehen</option>
-                    <option value="Endfälliges Darlehen">Endfälliges Darlehen</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Sollzins Hausbank (%)"
-                  value={data?.hb_zins ?? 3.8}
-                  onChange={(v) => updateField('hb_zins', v)}
-                  step={0.1}
-                  isPercent={true}
-                />
-                <StepperInput
-                  label="Anfängliche Tilgung (%)"
-                  value={data?.hb_tilg ?? 2.0}
-                  onChange={(v) => updateField('hb_tilg', v)}
-                  step={0.1}
-                  isPercent={true}
-                />
-              </div>
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Zinsbindung (Jahre)"
-                  value={data?.zinsbindung || 10}
-                  onChange={(v) => updateField('zinsbindung', v)}
-                  step={1}
-                />
-                <StepperInput
-                  label="Sondertilgung (€ / J.)"
-                  value={data?.sondertilg || 0}
-                  onChange={(v) => updateField('sondertilg', v)}
-                  step={500}
-                  isCurrency={true}
-                />
-              </div>
-
-              {/* UNTER-AKKORDEON: KFW */}
-              <button
-                type="button"
-                onClick={() => toggleSub('kfw')}
-                style={subHeaderStyle}
-              >
-                <span>KfW-Darlehen & Förderungen</span>
-                <span>{openSub.kfw ? '▲' : '▼'}</span>
-              </button>
-
-              {openSub.kfw && (
-                <div style={subContentStyle}>
-                  <StepperInput
-                    label="KfW-Darlehensbetrag (€)"
-                    value={data?.kfw_amt || 0}
-                    onChange={(v) => updateField('kfw_amt', v)}
-                    step={5000}
-                    isCurrency={true}
-                  />
-                  <div style={grid2Style}>
-                    <StepperInput
-                      label="KfW Zins (%)"
-                      value={data?.kfw_zins ?? 2.1}
-                      onChange={(v) => updateField('kfw_zins', v)}
-                      step={0.1}
-                      isPercent={true}
-                    />
-                    <StepperInput
-                      label="KfW Tilgung (%)"
-                      value={data?.kfw_tilg ?? 3.0}
-                      onChange={(v) => updateField('kfw_tilg', v)}
-                      step={0.1}
-                      isPercent={true}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ========================================== */}
-        {/* SEKTION 4: STEUERN, MAKRO & EXIT           */}
-        {/* ========================================== */}
-        <div style={{ border: '1px solid #E2D9CE', borderRadius: '10px', overflow: 'hidden' }}>
-          <button
-            type="button"
-            onClick={() => toggleSection('steuer')}
-            style={sectionHeaderStyle}
-          >
-            <span>4. Steuern, Makro & Exit</span>
-            <span>{openSections.steuer ? '▲' : '▼'}</span>
-          </button>
-
-          {openSections.steuer && (
-            <div style={sectionContentStyle}>
-              <StepperInput
-                label="Grenzsteuersatz (%)"
-                value={data?.tax_rate_pct ?? 42.0}
-                onChange={(v) => updateField('tax_rate_pct', v)}
-                step={0.5}
-                isPercent={true}
-              />
-
-              <div>
-                <label style={labelStyle}>AfA-Modell</label>
-                <div style={selectContainerStyle}>
-                  <select
-                    value={data?.afa_model || 'Linear Standard'}
-                    onChange={(e) => {
-                      const m = e.target.value;
-                      updateField('afa_model', m);
-                      if (m === 'Linear Standard') updateField('afa_lin', 2.0);
-                      else if (m === 'Linear Neubau') updateField('afa_lin', 3.0);
-                      else if (m === 'Degressiv') updateField('afa_lin', 5.0);
-                      else if (m === 'Denkmalgeschützt') updateField('afa_lin', 9.0);
-                    }}
-                    style={selectStyle}
-                  >
-                    <option value="Linear Standard">Linear Standard (2,0 % p.a.)</option>
-                    <option value="Linear Neubau">Linear Neubau (3,0 % p.a.)</option>
-                    <option value="Degressiv">Degressiv (5,0 %)</option>
-                    <option value="Denkmalgeschützt">Denkmalgeschützt (§ 7h/7i - 9,0 %)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Gebäudeanteil (%)"
-                  value={data?.gebaeude_anteil_pct ?? 80}
-                  onChange={(v) => updateField('gebaeude_anteil_pct', v)}
-                  step={5}
-                  isPercent={true}
-                />
-                <StepperInput
-                  label="AfA-Satz (%)"
-                  value={data?.afa_lin ?? 2.0}
-                  onChange={(v) => updateField('afa_lin', v)}
-                  step={0.5}
-                  isPercent={true}
-                />
-              </div>
-
-              <div style={grid2Style}>
-                <StepperInput
-                  label="Mietsteigerung p.a. (%)"
-                  value={data?.miet_inc ?? 1.0}
-                  onChange={(v) => updateField('miet_inc', v)}
-                  step={0.1}
-                  isPercent={true}
-                />
-                <StepperInput
-                  label="Wertsteigerung p.a. (%)"
-                  value={data?.val_inc ?? 1.0}
-                  onChange={(v) => updateField('val_inc', v)}
-                  step={0.1}
-                  isPercent={true}
-                />
-              </div>
-
-              <StepperInput
-                label="Verkaufsnebenkosten / Exit (%)"
-                value={data?.exit_cost || 0.0}
-                onChange={(v) => updateField('exit_cost', v)}
-                step={0.5}
-                isPercent={true}
-              />
-            </div>
-          )}
-        </div>
+        {/* 4. Steuern, Makro & Exit */}
+        <SectionSteuern
+          formData={data}
+          isOpen={openSections.steuer}
+          onToggle={() => toggleSection('steuer')}
+          openSubSections={openSubSections}
+          toggleSubSection={toggleSubSection}
+          onFieldChange={onFieldChange}
+          capexList={data?.capex_list || []}
+          handleCapexChange={handleCapexChange}
+          removeCapexRow={removeCapexRow}
+          addCapexRow={addCapexRow}
+        />
 
       </div>
 
-      {/* Ergebnis-Metriken aus der offiziellen Backend-Berechnung */}
+      {/* Ergebnis-Metriken */}
       <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2D9CE' }}>
         <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Ergebnis-Analyse (Backend)
@@ -547,52 +270,3 @@ export default function ScenarioColumn({
     </div>
   );
 }
-
-const sectionHeaderStyle = {
-  width: '100%',
-  padding: '12px 14px',
-  background: '#FAF8F5',
-  border: 'none',
-  borderBottom: '1px solid #E2D9CE',
-  fontSize: '0.85rem',
-  fontWeight: '800',
-  color: '#13381A',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  cursor: 'pointer'
-};
-
-const sectionContentStyle = {
-  padding: '1rem',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.85rem',
-  background: 'white'
-};
-
-const subHeaderStyle = {
-  width: '100%',
-  padding: '8px 10px',
-  background: 'transparent',
-  border: 'none',
-  borderTop: '1px dashed #E2D9CE',
-  fontSize: '0.78rem',
-  fontWeight: '800',
-  color: '#A37841',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  cursor: 'pointer',
-  marginTop: '0.25rem'
-};
-
-const subContentStyle = {
-  padding: '0.75rem',
-  background: '#FAF8F5',
-  borderRadius: '8px',
-  border: '1px solid #E2D9CE',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.75rem'
-};

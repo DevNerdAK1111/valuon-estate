@@ -1,38 +1,19 @@
 import math
 from typing import List, Dict, Any
+import numpy_financial as npf
 
 
 def calculate_irr(cashflows: List[float]) -> float:
-    """Berechnet den internen Zinsfuß (IRR) mittels Newton-Raphson-Verfahren."""
+    """Berechnet den internen Zinsfuß (IRR) mittels numpy-financial."""
     if not cashflows or len(cashflows) < 2:
         return 0.0
-
-    def npv(rate: float, cfs: List[float]) -> float:
-        val = 0.0
-        for t, cf in enumerate(cfs):
-            val += cf / ((1.0 + rate) ** t)
-        return val
-
-    def npv_prime(rate: float, cfs: List[float]) -> float:
-        val = 0.0
-        for t, cf in enumerate(cfs):
-            val -= t * cf / ((1.0 + rate) ** (t + 1))
-        return val
-
-    rate = 0.05
-    for _ in range(100):
-        f_val = npv(rate, cashflows)
-        if abs(f_val) < 1e-6:
-            return rate
-        f_prime = npv_prime(rate, cashflows)
-        if abs(f_prime) < 1e-12:
-            break
-        new_rate = rate - f_val / f_prime
-        if new_rate <= -0.99 or new_rate > 5.0:
-            break
-        rate = new_rate
-
-    return rate if not math.isnan(rate) else 0.0
+    try:
+        val = npf.irr(cashflows)
+        if val is None or math.isnan(val) or math.isinf(val):
+            return 0.0
+        return float(val)
+    except Exception:
+        return 0.0
 
 
 def _get_val(payload: Any, key: str, default: Any = None) -> Any:
@@ -230,7 +211,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         if year == 1:
             capex_current += sanierung
 
-        # HAUSBANK LOAN ANNUITÄT (FACHLICH KORRIGIERT)
+        # HAUSBANK LOAN ANNUITÄT
         hb_zins_rate = hb_zins if year <= zinsbindung else folge_zins
         hb_interest = hb_rest * hb_zins_rate
 
@@ -239,7 +220,6 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
             hb_interest = 0.0
         elif year <= grace_years:
             hb_principal = 0.0
-            # Zins bleibt berechnet (hb_interest = hb_rest * hb_zins_rate)
         else:
             loan_type = str(_get_val(payload, "loan_type", "Annuitätendarlehen") or "Annuitätendarlehen")
             if loan_type == "Endfälliges Darlehen":
@@ -259,14 +239,13 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         hb_debt_service = hb_interest + hb_principal
         hb_rest = max(0.0, hb_rest - hb_principal)
 
-        # KFW LOAN ANNUITÄT (FACHLICH KORRIGIERT)
+        # KFW LOAN ANNUITÄT
         kfw_interest = kfw_rest * kfw_zins
         if kfw_rest <= 0:
             kfw_principal = 0.0
             kfw_interest = 0.0
         elif year <= kfw_grace_years:
             kfw_principal = 0.0
-            # Zins bleibt berechnet (kfw_interest = kfw_rest * kfw_zins)
         else:
             calculated_kfw_principal = max(0.0, kfw_annuity_constant - kfw_interest)
             kfw_principal = min(kfw_rest, calculated_kfw_principal)
@@ -279,7 +258,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         total_debt_service = hb_debt_service + kfw_debt_service
         total_remaining_debt = hb_rest + kfw_rest
 
-        # AFA BERECHNUNG (VOLLSTÄNDIG ERHALTEN)
+        # AFA BERECHNUNG
         afa_amount = 0.0
         if afa_model == "Linear Standard":
             afa_amount = gebaeude_wert * afa_lin
@@ -321,7 +300,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
 
         cashflows_for_irr.append(net_cashflow)
 
-        # SPALTENMAPPING (VOLLSTÄNDIG & FRONTEND-KOMPATIBEL)
+        # SPALTENMAPPING
         projection.append({
             "Jahr": year,
             "jahr": year,

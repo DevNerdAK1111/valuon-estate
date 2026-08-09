@@ -1,3 +1,5 @@
+import './globals.css';
+
 export const metadata = {
   title: 'Valuon Estate',
   description: 'Institutional Grade Investment Suite',
@@ -6,7 +8,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
-      <body style={{ margin: 0, padding: 0, background: '#F7F4EC', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <body className="m-0 p-0 bg-valuon-bg text-valuon-green font-sans min-h-screen">
         {children}
       </body>
     </html>

@@ -133,7 +133,7 @@ export default function Home() {
       setDbProperties(userList);
     } catch (err) {
       console.error('Fehler beim Laden der Datenbank:', err);
-    } fontally {
+    } finally {
       setLoadingDb(false);
     }
   };

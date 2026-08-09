@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Header from '../components/layout/Header';
+import LandingPage from '../components/landing/LandingPage';
 import StartseiteView from '../components/landing/StartseiteView';
 import Parametrisierung from '../components/analyse/Parametrisierung';
 import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
@@ -15,13 +16,16 @@ import { BUNDESLAENDER_DEFAULT } from '../constants/realEstate';
 
 export default function Home() {
   const [navChoice, setNavChoice] = useState('Startseite');
-  const [backendStatus, setBackendStatus] = useState('ready'); // 'ready' | 'waking' | 'sleeping'
-  
+  const [backendStatus, setBackendStatus] = useState('ready');
+
   const {
     user,
     userEmail,
+    setUserEmail,
     userProfile,
+    setUserProfile,
     loadingProfile,
+    updateUserProfile,
     handleLogout
   } = useAuthProfile();
 
@@ -51,11 +55,10 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(null);
 
-  const pingBackend = async () => {
-    // Backend Status-Prüfung bei Formularänderungen
-  };
+  const pingBackend = async () => {};
 
   const fetchDatabaseProperties = async () => {
+    if (!userEmail) return;
     setLoadingDb(true);
     try {
       const data = await fetchPropertiesApi(userEmail);
@@ -69,7 +72,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchDatabaseProperties();
+    if (userEmail) {
+      fetchDatabaseProperties();
+    }
   }, [userEmail]);
 
   const handleCalculate = async (e) => {
@@ -116,6 +121,13 @@ export default function Home() {
       alert(`Fehler beim Löschen: ${err.message}`);
     }
   };
+
+  // -------------------------------------------------------------
+  // AUTH GATE: BIST DU NICHT EINGELOGGT? -> SHOW LANDING PAGE
+  // -------------------------------------------------------------
+  if (!loadingProfile && !userEmail) {
+    return <LandingPage onLoginSuccess={() => window.location.reload()} />;
+  }
 
   return (
     <div className="min-h-screen bg-valuon-bg text-valuon-green p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto box-border">
@@ -195,8 +207,10 @@ export default function Home() {
         {navChoice === 'Profil' && (
           <ProfileView
             userEmail={userEmail}
+            setUserEmail={setUserEmail}
             userProfile={userProfile}
-            loadingProfile={loadingProfile}
+            setUserProfile={setUserProfile}
+            onSaveProfile={updateUserProfile}
             onLogout={handleLogout}
           />
         )}

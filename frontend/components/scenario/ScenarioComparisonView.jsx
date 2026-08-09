@@ -7,25 +7,38 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
   const initialData = useMemo(() => {
     return {
       obj_name: 'Musterobjekt',
+      objektart: 'Eigentumswohnung',
+      bundesland: 'Niedersachsen',
       kaufpreis: 250000,
+      qm: 65,
+      baujahr: 2000,
       ek_euro: 50000,
       hb_zins: 3.8,
       hb_tilg: 2.0,
       zinsbindung: 10,
+      sondertilg: 0,
+      loan_type: 'Annuitätendarlehen',
       kaltmiete_monat: 1100,
+      hausgeld: 250,
+      hausgeld_nicht_umlegbar: 60,
       inst_sqm: 12,
       mgt_monat: 30,
       vac_rate_pct: 2.0,
-      miet_inc: 1.0,
-      val_inc: 1.0,
-      tax_rate_pct: 42,
-      qm: 65,
+      sanierung: 0,
       grwt_p: 5.0,
-      notar_p: 1.5,
+      notar_p: 2.0,
       makler_p: 3.57,
       sonst_nk: 0,
-      afa_lin: 2.0,
+      tax_rate_pct: 42.0,
+      afa_model: 'Linear Standard',
       gebaeude_anteil_pct: 80.0,
+      afa_lin: 2.0,
+      miet_inc: 1.0,
+      val_inc: 1.0,
+      exit_cost: 0.0,
+      kfw_amt: 0,
+      kfw_zins: 2.1,
+      kfw_tilg: 3.0,
       ...basePropertyData
     };
   }, [basePropertyData]);
@@ -55,10 +68,12 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     const gesamtinvestition = kaufpreis + kaufnebenkosten;
 
     const ek = Number(d.ek_euro || 0);
-    const kreditsumme = Math.max(0, gesamtinvestition - ek);
+    const kfwAmt = Number(d.kfw_amt || 0);
+    const kreditsumme = Math.max(0, gesamtinvestition - ek - kfwAmt);
+
     const zinsP = Number(d.hb_zins ?? 3.8);
     const tilgungP = Number(d.hb_tilg ?? 2.0);
-    const monatlicheRate = (kreditsumme * ((zinsP + tilgungP) / 100)) / 12;
+    const monatlicheRate = (kreditsumme * ((zinsP + tilgungP) / 100)) / 12 + (kfwAmt * ((Number(d.kfw_zins ?? 2.1) + Number(d.kfw_tilg ?? 3.0)) / 100)) / 12;
 
     const kaltmieteMonat = Number(d.kaltmiete_monat || 0);
     const mietausfallP = Number(d.vac_rate_pct ?? 2.0);
@@ -67,10 +82,11 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     const verwaltungMonat = Number(d.mgt_monat ?? 30);
     const wohnflaeche = Number(d.qm || 50);
     const instandhaltungMonat = (wohnflaeche * Number(d.inst_sqm ?? 12)) / 12;
-    const bewirtschaftung = verwaltungMonat + instandhaltungMonat;
+    const hausgeldNichtUmlegbar = Number(d.hausgeld_nicht_umlegbar ?? (d.hausgeld ? d.hausgeld * 0.25 : 0));
+    const bewirtschaftung = verwaltungMonat + instandhaltungMonat + hausgeldNichtUmlegbar;
 
     const cashflowVorSteuer = effektiveMiete - bewirtschaftung - monatlicheRate;
-    const zinsMonat = (kreditsumme * (zinsP / 100)) / 12;
+    const zinsMonat = (kreditsumme * (zinsP / 100) + kfwAmt * (Number(d.kfw_zins ?? 2.1) / 100)) / 12;
     const afaMonat = (kaufpreis * (Number(d.gebaeude_anteil_pct ?? 80) / 100) * (Number(d.afa_lin ?? 2) / 100)) / 12;
     const zuVersteuern = effektiveMiete - bewirtschaftung - zinsMonat - afaMonat;
     const taxRate = Number(d.tax_rate_pct ?? 42) / 100;
@@ -241,7 +257,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
           <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Cashflow-Differenz (Monat)</span>
-            <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (resultsB.cashflowNachSteuer - resultsA.cashflowNachSteuer) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
               {(resultsB.cashflowNachSteuer - resultsA.cashflowNachSteuer) >= 0 ? '+' : ''}{formatEuroInt(resultsB.cashflowNachSteuer - resultsA.cashflowNachSteuer)} €
             </div>
             <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Cashflow</span>
@@ -249,7 +265,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
 
           <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Rendite-Abweichung (Netto)</span>
-            <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
               {(resultsB.nettoMietrendite - resultsA.nettoMietrendite) >= 0 ? '+' : ''}{(resultsB.nettoMietrendite - resultsA.nettoMietrendite).toFixed(2).replace('.', ',')} %
             </div>
             <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Mietrendite</span>
@@ -257,7 +273,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
 
           <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Vermögenszuwachs-Delta (10 J.)</span>
-            <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (resultsB.vermoegen10Jahre - resultsA.vermoegen10Jahre) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
               {(resultsB.vermoegen10Jahre - resultsA.vermoegen10Jahre) >= 0 ? '+' : ''}{formatEuroInt(resultsB.vermoegen10Jahre - resultsA.vermoegen10Jahre)} €
             </div>
             <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Kumuliertes Vermögens-Delta</span>

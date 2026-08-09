@@ -27,13 +27,22 @@ export default function ProfileView({
   const [saveStatus, setSaveStatus] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Ladeschutz: Falls das Profil aus Supabase noch lädt
+  if (!userProfile) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: '#13381A', fontWeight: '700' }}>
+        Profil wird geladen...
+      </div>
+    );
+  }
+
   const handleProfileChange = (field, value) => {
     setUserProfile((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    onSaveProfile(userProfile);
+    if (onSaveProfile) onSaveProfile(userProfile);
     setSaveStatus('Profildaten erfolgreich gespeichert!');
     setTimeout(() => setSaveStatus(null), 3000);
   };
@@ -44,7 +53,7 @@ export default function ProfileView({
       setEmailStatus({ type: 'error', text: 'Bitte gib eine gültige E-Mail-Adresse ein.' });
       return;
     }
-    setUserEmail(emailForm.newEmail);
+    if (setUserEmail) setUserEmail(emailForm.newEmail);
     setEmailStatus({ type: 'success', text: 'E-Mail-Adresse erfolgreich aktualisiert!' });
     setTimeout(() => setEmailStatus(null), 3000);
   };
@@ -60,13 +69,13 @@ export default function ProfileView({
       return;
     }
     
-    onPasswordChange(pwdForm.oldPwd, pwdForm.newPwd);
+    if (onPasswordChange) onPasswordChange(pwdForm.oldPwd, pwdForm.newPwd);
     setPwdStatus({ type: 'success', text: 'Passwort erfolgreich geändert!' });
     setPwdForm({ oldPwd: '', newPwd: '', confirmPwd: '' });
     setTimeout(() => setPwdStatus(null), 4000);
   };
 
-  const displayName = userProfile.profilname || (userProfile.vorname ? `${userProfile.vorname} ${userProfile.nachname || ''}` : 'Nutzerprofil');
+  const displayName = userProfile?.profilname || (userProfile?.vorname ? `${userProfile.vorname} ${userProfile.nachname || ''}` : 'Nutzerprofil');
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

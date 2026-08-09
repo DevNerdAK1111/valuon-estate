@@ -23,7 +23,8 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
   const ekEuro = Number(formData?.ek_euro || 0);
   const baujahr = Number(formData?.baujahr || 2000);
 
-  // INITIALER ZUSTAND (SOLANGE NOCH KEINE BACKEND-ANTWORT DA IST)
+  // INITIALER ZUSTAND (WENN NOCH KEIN BACKEND-ERGEBNIS VORLIEGT)
+  // Das Backend ist Single Source of Truth; das Frontend führt keine parallele Rechendublette durch.
   if (!rawBackendResult) {
     const grwtP = Number(formData?.grwt_p ?? 5.0);
     const notarP = Number(formData?.notar_p ?? 2.0);

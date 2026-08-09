@@ -121,7 +121,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite') && showApp) {
+    if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite' || navChoice === 'Szenario-Vergleich') && showApp) {
       fetchDatabaseProperties();
     }
   }, [navChoice, showApp, userEmail]);
@@ -310,7 +310,11 @@ export default function Home() {
           )}
 
           {navChoice === 'Szenario-Vergleich' && (
-            <ScenarioComparisonView basePropertyData={formData} />
+            <ScenarioComparisonView 
+              basePropertyData={formData} 
+              dbProperties={dbProperties} 
+              setFormData={setFormData}
+            />
           )}
 
           {navChoice === 'Objekt Datenbank' && <DatabaseView loadingDb={loadingDb} dbProperties={dbProperties} fetchDatabaseProperties={fetchDatabaseProperties} loadPropertyFromDb={loadPropertyFromDb} deletePropertyFromDb={deletePropertyFromDb} />}

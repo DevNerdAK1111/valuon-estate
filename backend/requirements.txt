@@ -10,3 +10,4 @@ requests
 plotly
 beautifulsoup4
 pytest
+httpx

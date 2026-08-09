@@ -11,6 +11,7 @@ import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
 import ProfileView from '../components/profile/ProfileView';
 import OnboardingView from '../components/profile/OnboardingView';
+import ScenarioComparisonView from '../components/scenario/ScenarioComparisonView';
 
 import { IconGear } from '../components/ui/Icons';
 import { supabase } from '../lib/supabaseClient';
@@ -132,7 +133,7 @@ export default function Home() {
       setDbProperties(userList);
     } catch (err) {
       console.error('Fehler beim Laden der Datenbank:', err);
-    } finally {
+    } fontally {
       setLoadingDb(false);
     }
   };
@@ -306,6 +307,10 @@ export default function Home() {
                 <ExecutiveDashboard formData={formData} result={result} projectionHorizon={projectionHorizon} setProjectionHorizon={setProjectionHorizon} handleSaveToDatabase={handleSaveToDatabase} saving={saving} saveSuccess={saveSuccess} calcError={calcError} monthlyCashflow={monthlyCashflow} bruttoMietrendite={bruttoMietrendite} actualHorizonYears={actualHorizonYears} gesamtGewinnHorizon={gesamtGewinnHorizon} activeDashboardTab={activeDashboardTab} setActiveDashboardTab={setActiveDashboardTab} chartView={chartView} setChartView={setChartView} slicedProjection={slicedProjection} summe_nk={summe_nk} tableTheme={tableTheme} setTableTheme={setTableTheme} cumulatedCashflowHorizon={cumulatedCashflowHorizon} endNav={endNav} />
               </div>
             </form>
+          )}
+
+          {navChoice === 'Szenario-Vergleich' && (
+            <ScenarioComparisonView basePropertyData={formData} />
           )}
 
           {navChoice === 'Objekt Datenbank' && <DatabaseView loadingDb={loadingDb} dbProperties={dbProperties} fetchDatabaseProperties={fetchDatabaseProperties} loadPropertyFromDb={loadPropertyFromDb} deletePropertyFromDb={deletePropertyFromDb} />}

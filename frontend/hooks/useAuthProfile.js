@@ -8,7 +8,6 @@ export function useAuthProfile() {
   const [userProfile, setUserProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  // 1. Profil-Daten aus Supabase-Tabelle 'profiles' laden
   const fetchUserProfile = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -17,9 +16,6 @@ export function useAuthProfile() {
         .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Fehler beim Laden des Profils:', error);
-      }
       if (data) {
         setUserProfile(data);
       }
@@ -28,7 +24,6 @@ export function useAuthProfile() {
     }
   };
 
-  // 2. Auth Status Initialisierung & Listener
   useEffect(() => {
     const getInitialSession = async () => {
       try {
@@ -39,7 +34,7 @@ export function useAuthProfile() {
           await fetchUserProfile(session.user.id);
         }
       } catch (err) {
-        console.error('Fehler beim Abrufen der Session:', err);
+        console.error('Session Error:', err);
       } finally {
         setLoadingProfile(false);
       }
@@ -65,7 +60,26 @@ export function useAuthProfile() {
     };
   }, []);
 
-  // 3. Profil aktualisieren / speichern
+  // Manueller Login-Handler, der den "missing email"-Fehler abfängt
+  const handleLogin = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      if (data?.user) {
+        setUser(data.user);
+        setUserEmail(data.user.email);
+        await fetchUserProfile(data.user.id);
+        return { success: true };
+      }
+    } catch (err) {
+      console.error('Login Fehler:', err.message);
+      return { success: false, error: err.message };
+    }
+  };
+
   const updateUserProfile = async (updatedFields) => {
     if (!user) return { success: false, error: 'Nicht eingeloggt' };
     try {
@@ -84,24 +98,19 @@ export function useAuthProfile() {
       setUserProfile(data);
       return { success: true, data };
     } catch (err) {
-      console.error('Fehler beim Aktualisieren des Profils:', err);
       return { success: false, error: err.message };
     }
   };
 
-  // 4. Sicheres Abmelden
   const handleLogout = async () => {
     try {
-      setLoadingProfile(true);
       await supabase.auth.signOut();
     } catch (err) {
-      console.error('Fehler beim Supabase-SignOut:', err);
+      console.error('Logout Error:', err);
     } finally {
       setUser(null);
       setUserEmail(null);
       setUserProfile(null);
-      setLoadingProfile(false);
-
       if (typeof window !== 'undefined') {
         window.localStorage.clear();
         window.location.href = '/';
@@ -112,8 +121,11 @@ export function useAuthProfile() {
   return {
     user,
     userEmail,
+    setUserEmail,
     userProfile,
+    setUserProfile,
     loadingProfile,
+    handleLogin,
     updateUserProfile,
     handleLogout
   };

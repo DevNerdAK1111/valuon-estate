@@ -1,20 +1,24 @@
 import React from 'react';
-import { formatCurrency, formatPercent } from '../../utils/formatters';
 
 export default function MetricDeltaCard({ 
   label, 
   value, 
   unit = '', 
-  type = 'number', // 'currency' | 'percent' | 'number'
+  type = 'currency', // 'currency' | 'percent' | 'number'
   compareValue, 
   isBaseline = false, 
   invertColor = false 
 }) {
-  const formatVal = (v) => {
+  const formatValue = (v) => {
     if (v === null || v === undefined || isNaN(v)) return '—';
-    if (type === 'currency') return formatCurrency(v);
-    if (type === 'percent') return formatPercent(v);
-    return typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : v;
+    const num = Number(v);
+    if (type === 'currency') {
+      return num.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    }
+    if (type === 'percent') {
+      return `${num.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} %`;
+    }
+    return num.toLocaleString('de-DE', { maximumFractionDigits: 2 });
   };
 
   let delta = null;
@@ -28,30 +32,51 @@ export default function MetricDeltaCard({
   const formatDelta = (d) => {
     if (d === null || isNaN(d)) return '';
     const sign = d > 0 ? '+' : '';
-    if (type === 'currency') return `${sign}${formatCurrency(d)}`;
-    if (type === 'percent') return `${sign}${formatPercent(d)}`;
+    if (type === 'currency') {
+      return `${sign}${d.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}`;
+    }
+    if (type === 'percent') {
+      return `${sign}${d.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} %`;
+    }
     return `${sign}${d.toFixed(2)} ${unit}`.trim();
   };
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between shadow-sm hover:border-slate-700 transition">
-      <span className="text-xs font-medium text-slate-400">{label}</span>
+    <div style={{
+      background: '#ffffff',
+      border: '1px solid #E2D9CE',
+      borderRadius: '12px',
+      padding: '12px 14px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+    }}>
+      <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#718096' }}>{label}</span>
       
-      <div className="mt-1.5 flex items-baseline justify-between">
-        <span className="text-base sm:text-lg font-bold text-white tracking-tight">
-          {formatVal(value)} {type === 'number' && unit ? <span className="text-xs font-normal text-slate-400">{unit}</span> : null}
+      <div style={{ marginTop: '6px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
+          {formatValue(value)} {type === 'number' && unit ? <span style={{ fontSize: '0.75rem', fontWeight: '400', color: '#718096' }}>{unit}</span> : null}
         </span>
       </div>
 
-      {!isBaseline && delta !== null && Math.abs(delta) > 0.0001 ? (
-        <div className={`mt-1.5 text-xs font-semibold flex items-center gap-1 ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+      {!isBaseline && delta !== null && Math.abs(delta) > 0.001 ? (
+        <div style={{
+          marginTop: '6px',
+          fontSize: '0.75rem',
+          fontWeight: '700',
+          color: isPositive ? '#2F855A' : '#C53030',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
+        }}>
           <span>{formatDelta(delta)}</span>
           <span>{isPositive ? '▲' : '▼'}</span>
         </div>
       ) : !isBaseline ? (
-        <div className="mt-1.5 text-xs text-slate-500">Identisch zur Basis</div>
+        <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#A0AEC0' }}>Identisch zur Basis</div>
       ) : (
-        <div className="mt-1.5 text-xs text-slate-500">Basis-Szenario (Referenz)</div>
+        <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#A0AEC0' }}>Basis-Szenario</div>
       )}
     </div>
   );

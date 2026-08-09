@@ -65,6 +65,7 @@ export default function StartseiteView({
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
           
+          {/* Modul 1: Investitions-Analyse */}
           <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(19,56,26,0.08)' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -80,6 +81,7 @@ export default function StartseiteView({
             </button>
           </div>
 
+          {/* Modul 2: Objekt-Datenbank */}
           <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -95,6 +97,23 @@ export default function StartseiteView({
             </button>
           </div>
 
+          {/* Modul 3: Szenario-Vergleich (JETZT AKTIV) */}
+          <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ color: '#38A169', fontSize: '0.8rem', fontWeight: '800' }}>● Aktiv</span>
+              </div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Szenario-Vergleich</h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
+                Stressteste deine Deals: Simuliere steigende Zinsen, Mietausfälle und unterschiedliche Eigenkapital-Einsätze.
+              </p>
+            </div>
+            <button onClick={() => setNavChoice('Szenario-Vergleich')} style={{ marginTop: '1.5rem', padding: '11px', background: '#FAF8F5', color: '#13381A', border: '1px solid #E2D9CE', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>
+              Zum Szenario-Vergleich →
+            </button>
+          </div>
+
+          {/* In Entwicklung 1 */}
           <div onClick={() => setDevNotice('Multi-Objekt Portfolio-Dashboard')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -108,19 +127,7 @@ export default function StartseiteView({
             <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
           </div>
 
-          <div onClick={() => setDevNotice('Szenario-Vergleich & Stresstest')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ color: '#A37841', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><IconLock /> In Entwicklung</span>
-              </div>
-              <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', color: '#13381A', fontWeight: '800' }}>Szenario-Vergleich</h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#4A5568', lineHeight: '1.5' }}>
-                Stressteste deine Deals: Simuliere steigende Zinsen, Mietausfälle und unterschiedliche Eigenkapital-Einsätze.
-              </p>
-            </div>
-            <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
-          </div>
-
+          {/* In Entwicklung 2 */}
           <div onClick={() => setDevNotice('Bank-Exposé PDF-Generator')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>
@@ -134,6 +141,7 @@ export default function StartseiteView({
             <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#A37841', fontWeight: '800' }}>Vorschau anzeigen →</div>
           </div>
 
+          {/* In Entwicklung 3 */}
           <div onClick={() => setDevNotice('KI-Exposé Scanner & Text-Parser')} style={{ background: 'white', border: '1px dashed #A37841', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '12px' }}>

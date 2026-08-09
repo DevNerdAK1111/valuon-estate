@@ -197,7 +197,7 @@ export default function Home() {
         )}
 
         {navChoice === 'Szenario-Vergleich' && (
-          <ScenarioView
+          <ScenarioComparisonView
             dbProperties={dbProperties}
             currentFormData={formData}
           />

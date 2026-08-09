@@ -43,12 +43,12 @@ export default function MetricDeltaCard({
     return `${sign}${d.toFixed(2).replace('.', ',')} ${unit}`.trim();
   };
 
-  // Dynamische Farbgebung nach Executive Dashboard Standard
+  // Farbgebung nach Executive Dashboard Standard
   const getValueColor = () => {
     if (customColor) return customColor;
     if (type === 'currency') {
-      if (invertColor) return '#9B2C2C'; // Rate / Kosten
-      return value >= 0 ? '#276749' : '#9B2C2C'; // Cashflow & Vermögen
+      if (invertColor) return '#9B2C2C'; // Rate / Ausgaben
+      return value >= 0 ? '#276749' : '#9B2C2C'; // Cashflow & Ertrag
     }
     return '#13381A';
   };

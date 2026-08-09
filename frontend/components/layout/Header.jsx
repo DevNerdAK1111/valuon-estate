@@ -7,42 +7,34 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
   const displayName = userProfile?.profilname || userProfile?.vorname || (userEmail ? userEmail.split('@')[0] : 'Konto');
 
   return (
-    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <header className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4 lg:gap-0">
       
       {/* BRANDING / LOGO */}
       <div 
         onClick={() => setNavChoice('Startseite')} 
-        style={{ cursor: 'pointer', userSelect: 'none' }}
+        className="cursor-pointer select-none text-center lg:text-left"
       >
-        <div style={{ fontSize: '2rem', fontWeight: '900', color: '#13381A', letterSpacing: '-0.8px', lineHeight: '1' }}>
+        <div className="text-3xl font-black text-valuon-green tracking-tight leading-none">
           Valuon Estate
         </div>
-        <div style={{ fontSize: '0.7rem', color: '#A37841', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1.8px', marginTop: '4px' }}>
+        <div className="text-[0.7rem] text-valuon-gold font-extrabold uppercase tracking-[1.8px] mt-1">
           INVESTMENT SUITE
         </div>
       </div>
 
       {/* NAVIGATION TABS */}
-      <nav style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.6)', padding: '5px', borderRadius: '30px', border: '1px solid #E2D9CE', backdropFilter: 'blur(8px)' }}>
+      <nav className="flex gap-2 bg-white/60 p-1.5 rounded-full border border-valuon-border backdrop-blur-md overflow-x-auto max-w-full">
         {navItems.map((item) => {
           const isActive = navChoice === item;
           return (
             <button
               key={item}
               onClick={() => setNavChoice(item)}
-              style={{
-                padding: '8px 20px',
-                background: isActive ? '#13381A' : 'transparent',
-                color: isActive ? '#F7F4EC' : '#4A5568',
-                border: 'none',
-                borderRadius: '20px',
-                fontWeight: '700',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
-                boxShadow: isActive ? '0 2px 8px rgba(19,56,26,0.18)' : 'none',
-                whiteSpace: 'nowrap'
-              }}
+              className={`px-5 py-2 rounded-full font-bold text-[0.85rem] cursor-pointer transition-all duration-150 whitespace-nowrap ${
+                isActive
+                  ? 'bg-valuon-green text-valuon-bg shadow-md'
+                  : 'bg-transparent text-slate-600 hover:text-valuon-green'
+              }`}
             >
               {item}
             </button>
@@ -51,39 +43,26 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
       </nav>
 
       {/* RECHTE TOOLBAR */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="flex items-center gap-2.5">
         
         {/* BACKEND STATUS BADGE */}
-        <div style={{
-          height: '38px',
-          padding: '0 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'white',
-          borderRadius: '20px',
-          border: '1px solid #E2D9CE',
-          fontSize: '0.8rem',
-          fontWeight: '700',
-          color: '#13381A',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-        }}>
+        <div className="h-[38px] px-3.5 flex items-center gap-2 bg-white rounded-full border border-valuon-border text-[0.8rem] font-bold text-valuon-green shadow-sm">
           {backendStatus === 'ready' && (
             <>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38A169', display: 'inline-block' }}></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>
               <span>Backend Bereit</span>
             </>
           )}
           {backendStatus === 'waking' && (
             <>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#D69E2E', display: 'inline-block' }}></span>
-              <span style={{ color: '#D69E2E' }}>Startet...</span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+              <span className="text-amber-600">Startet...</span>
             </>
           )}
           {backendStatus === 'sleeping' && (
             <>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#E53E3E', display: 'inline-block' }}></span>
-              <span style={{ color: '#E53E3E' }}>Inaktiv</span>
+              <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+              <span className="text-red-600">Inaktiv</span>
             </>
           )}
         </div>
@@ -92,20 +71,11 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         <button
           onClick={() => setNavChoice('Einstellungen')}
           title="Einstellungen"
-          style={{
-            width: '38px',
-            height: '38px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: navChoice === 'Einstellungen' ? '#13381A' : 'white',
-            color: navChoice === 'Einstellungen' ? 'white' : '#13381A',
-            border: '1px solid #E2D9CE',
-            borderRadius: '20px',
-            cursor: 'pointer',
-            transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-          }}
+          className={`w-[38px] h-[38px] flex items-center justify-center border border-valuon-border rounded-full cursor-pointer transition-colors duration-150 shadow-sm ${
+            navChoice === 'Einstellungen'
+              ? 'bg-valuon-green text-white'
+              : 'bg-white text-valuon-green hover:bg-valuon-cream'
+          }`}
         >
           <IconGear />
         </button>
@@ -114,37 +84,20 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         <div 
           onClick={() => setNavChoice('Profil')}
           title="Nutzerprofil öffnen"
-          style={{
-            height: '38px',
-            padding: '0 12px 0 8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: navChoice === 'Profil' ? '#13381A' : 'white',
-            color: navChoice === 'Profil' ? 'white' : '#13381A',
-            borderRadius: '20px',
-            border: '1px solid #E2D9CE',
-            cursor: 'pointer',
-            fontSize: '0.8rem',
-            fontWeight: '700',
-            transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-          }}
+          className={`h-[38px] px-3 pl-2 flex items-center gap-2 rounded-full border border-valuon-border cursor-pointer text-[0.8rem] font-bold transition-colors duration-150 shadow-sm ${
+            navChoice === 'Profil'
+              ? 'bg-valuon-green text-white'
+              : 'bg-white text-valuon-green hover:bg-valuon-cream'
+          }`}
         >
-          <div style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '50%',
-            background: navChoice === 'Profil' ? '#A37841' : '#FAF8F5',
-            border: '1px solid #E2D9CE',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: navChoice === 'Profil' ? 'white' : '#13381A'
-          }}>
+          <div className={`w-6 h-6 rounded-full border border-valuon-border flex items-center justify-center ${
+            navChoice === 'Profil'
+              ? 'bg-valuon-gold text-white'
+              : 'bg-valuon-cream text-valuon-green'
+          }`}>
             <IconUser />
           </div>
-          <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span className="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">
             {displayName}
           </span>
         </div>

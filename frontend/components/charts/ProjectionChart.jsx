@@ -29,13 +29,12 @@ function getNiceTicks(minVal, maxVal, maxTicks = 5) {
 }
 
 export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
-  const [activeView, setActiveView] = useState('vermoegen');
+  const [activeView, setActiveView] = useState('vermoegen'); // 'vermoegen' | 'cashflow' | 'amortisation'
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const rawList = slicedProjection || [];
   let runningCumCashflow = 0;
   
-  // Eigenkapital-Einsatz als mathematische Referenz
   const ekBase = Number(ekEuroInput) || 0;
 
   const chartData = rawList.map((d, index) => {
@@ -51,9 +50,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
     runningCumCashflow += cfNetto;
 
-    // Gesamtertrag = Netto-Eigenkapital (NAV) + kumulierter Cashflow
     const totalRet = netEq + runningCumCashflow;
-    // Reingewinn = Gesamtertrag - Ursprünglicher Eigenkapital-Einsatz
     const netGain = totalRet - ekBase;
 
     return {
@@ -119,46 +116,27 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
     return `${linePath} L ${getX(chartData.length - 1)} ${baseY} L ${getX(0)} ${baseY} Z`;
   };
 
-  // Break-Even: Erstes Jahr, in dem der Reingewinn >= 0 ist (Gesamtertrag >= EK-Einsatz)
   const breakEvenIndex = chartData.findIndex(d => d.netGain >= 0);
 
   return (
-    <div style={{
-      background: 'white',
-      border: '1px solid #E2D9CE',
-      borderRadius: '12px',
-      padding: '1.25rem',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-    }}>
+    <div className="bg-white border border-valuon-border rounded-xl p-5 flex flex-col gap-4 shadow-sm">
       
-      {/* HEADER & TAB-UMSCHALTER OHNE LAYOUT-SHIFTS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', minHeight: '46px' }}>
+      {/* HEADER & TAB UMSCHALTER */}
+      <div className="flex justify-between items-center flex-wrap gap-3 min-h-[46px]">
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A', lineHeight: '1.2' }}>
+          <h3 className="m-0 text-base sm:text-lg font-black text-valuon-green leading-tight">
             {activeView === 'vermoegen' && 'Vermögensaufbau & Schuldenabbau'}
             {activeView === 'cashflow' && 'Cashflow & Mieteinnahmen p.a.'}
             {activeView === 'amortisation' && 'Amortisation & Break-Even-Verlauf'}
           </h3>
-          <span style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginTop: '2px', lineHeight: '1.2' }}>
+          <span className="text-xs text-slate-500 block mt-0.5 leading-tight">
             {activeView === 'vermoegen' && 'Schereneffekt zwischen steigendem Objektwert und sinkender Restschuld'}
             {activeView === 'cashflow' && 'Gegenüberstellung von Mieteinnahmen, Bankrate und Netto-Ertrag'}
             {activeView === 'amortisation' && 'Gesamtertrag (NAV + Kum. Cashflow) vs. Eigenkapitaleinsatz'}
           </span>
         </div>
 
-        {/* TAB LEISTE */}
-        <div style={{
-          display: 'flex',
-          background: '#FAF8F5',
-          padding: '4px',
-          borderRadius: '8px',
-          border: '1px solid #E2D9CE',
-          gap: '4px',
-          flexShrink: 0
-        }}>
+        <div className="flex bg-valuon-cream p-1 rounded-lg border border-valuon-border gap-1 shrink-0">
           {[
             { id: 'vermoegen', label: 'Vermögen & Schulden' },
             { id: 'cashflow', label: 'Cashflow' },
@@ -168,18 +146,11 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
               key={tab.id}
               type="button"
               onClick={() => setActiveView(tab.id)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: 'none',
-                background: activeView === tab.id ? '#13381A' : 'transparent',
-                color: activeView === tab.id ? 'white' : '#4A5568',
-                fontWeight: '700',
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out',
-                whiteSpace: 'nowrap'
-              }}
+              className={`py-1.5 px-3 rounded-md border-none font-bold text-xs cursor-pointer transition-colors whitespace-nowrap ${
+                activeView === tab.id
+                  ? 'bg-valuon-green text-white font-extrabold'
+                  : 'bg-transparent text-slate-600 hover:text-valuon-green'
+              }`}
             >
               {tab.label}
             </button>
@@ -188,8 +159,8 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
       </div>
 
       {/* SVG DIAGRAMM CONTAINER */}
-      <div style={{ width: '100%', height: '340px', position: 'relative' }}>
-        <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%' }}>
+      <div className="w-full h-[340px] relative">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
           
           {/* Y-ACHSE & GRID */}
           {yTicks.map((tickVal, i) => {
@@ -205,7 +176,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                   stroke={isZero ? '#2D3748' : '#E2D9CE'}
                   strokeWidth={isZero ? 1.5 : 1}
                   strokeDasharray={isZero ? 'none' : '3 3'}
-                  style={{ transition: 'all 0.3s ease-in-out' }}
+                  className="transition-all duration-300 ease-in-out"
                 />
                 <text
                   x={padding.left - 12}
@@ -214,7 +185,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                   fontWeight={isZero ? '800' : '500'}
                   fill={isZero ? '#2D3748' : '#718096'}
                   textAnchor="end"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
+                  className="transition-all duration-300 ease-in-out"
                 >
                   {formatEuroInt(tickVal)} €
                 </text>
@@ -225,19 +196,19 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
           <line x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} stroke="#E2D9CE" strokeWidth="1" />
 
           {/* ANSICHT 1: VERMÖGEN & SCHULDEN */}
-          <g style={{ opacity: activeView === 'vermoegen' ? 1 : 0, transition: 'opacity 0.2s ease-in-out', pointerEvents: activeView === 'vermoegen' ? 'auto' : 'none' }}>
-            <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" style={{ transition: 'd 0.3s ease-in-out' }} />
-            <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" style={{ transition: 'd 0.3s ease-in-out' }} />
+          <g className={`transition-opacity duration-200 ${activeView === 'vermoegen' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+            <path d={makeAreaPath('immobilienwert', 0)} fill="#13381A" fillOpacity="0.12" className="transition-all duration-300" />
+            <path d={makePath('immobilienwert')} fill="none" stroke="#13381A" strokeWidth="2.5" className="transition-all duration-300" />
 
-            <path d={makeAreaPath('netEquity', 0)} fill="#A37841" fillOpacity="0.18" style={{ transition: 'd 0.3s ease-in-out' }} />
-            <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makeAreaPath('netEquity', 0)} fill="#A37841" fillOpacity="0.18" className="transition-all duration-300" />
+            <path d={makePath('netEquity')} fill="none" stroke="#A37841" strokeWidth="2" className="transition-all duration-300" />
 
-            <path d={makeAreaPath('restschuld', 0)} fill="#9B2C2C" fillOpacity="0.12" style={{ transition: 'd 0.3s ease-in-out' }} />
-            <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makeAreaPath('restschuld', 0)} fill="#9B2C2C" fillOpacity="0.12" className="transition-all duration-300" />
+            <path d={makePath('restschuld')} fill="none" stroke="#9B2C2C" strokeWidth="2" className="transition-all duration-300" />
           </g>
 
           {/* ANSICHT 2: CASHFLOW */}
-          <g style={{ opacity: activeView === 'cashflow' ? 1 : 0, transition: 'opacity 0.2s ease-in-out', pointerEvents: activeView === 'cashflow' ? 'auto' : 'none' }}>
+          <g className={`transition-opacity duration-200 ${activeView === 'cashflow' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
             {chartData.map((d, i) => {
               const barW = Math.max(6, (innerPlotWidth / chartData.length) * 0.35);
               const x = getX(i);
@@ -247,16 +218,16 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
               return (
                 <g key={i}>
-                  <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.max(2, Math.abs(zeroY - mieteY))} fill="#13381A" rx="2" style={{ transition: 'all 0.3s ease-in-out' }} />
-                  <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.max(2, Math.abs(zeroY - kapY))} fill="#A37841" rx="2" style={{ transition: 'all 0.3s ease-in-out' }} />
+                  <rect x={x - barW - 1} y={Math.min(zeroY, mieteY)} width={barW} height={Math.max(2, Math.abs(zeroY - mieteY))} fill="#13381A" rx="2" className="transition-all duration-300" />
+                  <rect x={x + 1} y={Math.min(zeroY, kapY)} width={barW} height={Math.max(2, Math.abs(zeroY - kapY))} fill="#A37841" rx="2" className="transition-all duration-300" />
                 </g>
               );
             })}
-            <path d={makePath('nettoCashflow')} fill="none" stroke="#276749" strokeWidth="3" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makePath('nettoCashflow')} fill="none" stroke="#276749" strokeWidth="3" className="transition-all duration-300" />
           </g>
 
-          {/* ANSICHT 3: AMORTISATION & BREAK-EVEN */}
-          <g style={{ opacity: activeView === 'amortisation' ? 1 : 0, transition: 'opacity 0.2s ease-in-out', pointerEvents: activeView === 'amortisation' ? 'auto' : 'none' }}>
+          {/* ANSICHT 3: AMORTISATION */}
+          <g className={`transition-opacity duration-200 ${activeView === 'amortisation' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
             {ekBase > 0 && (
               <g>
                 <line
@@ -267,7 +238,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                   stroke="#A37841"
                   strokeWidth="2"
                   strokeDasharray="6 4"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
+                  className="transition-all duration-300"
                 />
                 <text
                   x={width - padding.right - 8}
@@ -276,16 +247,16 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
                   fontWeight="800"
                   fill="#A37841"
                   textAnchor="end"
-                  style={{ transition: 'all 0.3s ease-in-out' }}
+                  className="transition-all duration-300"
                 >
                   EK-Einsatz ({formatEuroInt(ekBase)} €)
                 </text>
               </g>
             )}
 
-            <path d={makeAreaPath('totalReturn', ekBase > 0 ? ekBase : 0)} fill="#276749" fillOpacity="0.15" style={{ transition: 'd 0.3s ease-in-out' }} />
-            <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" style={{ transition: 'd 0.3s ease-in-out' }} />
-            <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" style={{ transition: 'd 0.3s ease-in-out' }} />
+            <path d={makeAreaPath('totalReturn', ekBase > 0 ? ekBase : 0)} fill="#276749" fillOpacity="0.15" className="transition-all duration-300" />
+            <path d={makePath('totalReturn')} fill="none" stroke="#13381A" strokeWidth="3" className="transition-all duration-300" />
+            <path d={makePath('cumCashflow')} fill="none" stroke="#A37841" strokeWidth="2" strokeDasharray="4 4" className="transition-all duration-300" />
 
             {breakEvenIndex !== -1 && (() => {
               const pointX = getX(breakEvenIndex);
@@ -295,43 +266,10 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
               
               return (
                 <g>
-                  <circle
-                    cx={pointX}
-                    cy={pointY}
-                    r="6"
-                    fill="#276749"
-                    stroke="white"
-                    strokeWidth="2"
-                    style={{ transition: 'all 0.3s ease-in-out' }}
-                  />
-                  <line
-                    x1={pointX}
-                    y1={padding.top + 20}
-                    x2={pointX}
-                    y2={height - padding.bottom}
-                    stroke="#276749"
-                    strokeWidth="1.5"
-                    strokeDasharray="2 2"
-                    style={{ transition: 'all 0.3s ease-in-out' }}
-                  />
-                  <rect
-                    x={badgeX}
-                    y={padding.top - 2}
-                    width={badgeW}
-                    height="20"
-                    rx="5"
-                    fill="#13381A"
-                    style={{ transition: 'all 0.3s ease-in-out' }}
-                  />
-                  <text
-                    x={badgeX + badgeW / 2}
-                    y={padding.top + 12}
-                    fontSize="9.5"
-                    fontWeight="800"
-                    fill="white"
-                    textAnchor="middle"
-                    style={{ transition: 'all 0.3s ease-in-out' }}
-                  >
+                  <circle cx={pointX} cy={pointY} r="6" fill="#276749" stroke="white" strokeWidth="2" className="transition-all duration-300" />
+                  <line x1={pointX} y1={padding.top + 20} x2={pointX} y2={height - padding.bottom} stroke="#276749" strokeWidth="1.5" strokeDasharray="2 2" className="transition-all duration-300" />
+                  <rect x={badgeX} y={padding.top - 2} width={badgeW} height="20" rx="5" fill="#13381A" className="transition-all duration-300" />
+                  <text x={badgeX + badgeW / 2} y={padding.top + 12} fontSize="9.5" fontWeight="800" fill="white" textAnchor="middle" className="transition-all duration-300">
                     Break-Even Jahr {chartData[breakEvenIndex].jahr}
                   </text>
                 </g>
@@ -341,7 +279,7 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
           {/* X-ACHSE & HOVER TARGETS */}
           {chartData.map((d, i) => (
-            <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} style={{ cursor: 'pointer' }}>
+            <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} className="cursor-pointer">
               <text x={getX(i)} y={height - 15} fontSize="11" fontWeight="600" fill="#4A5568" textAnchor="middle">
                 {d.jahrLabel}
               </text>
@@ -356,40 +294,29 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
         {/* TOOLTIP BEI HOVER */}
         {hoveredIndex !== null && chartData[hoveredIndex] && (
-          <div style={{
-            position: 'absolute',
-            top: '15px',
-            right: '25px',
-            background: 'white',
-            border: '1px solid #E2D9CE',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            fontSize: '0.8rem',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            zIndex: 10
-          }}>
-            <div style={{ fontWeight: '800', color: '#13381A', marginBottom: '4px', borderBottom: '1px solid #E2D9CE', paddingBottom: '3px' }}>
+          <div className="absolute top-4 right-6 bg-white border border-valuon-border rounded-lg p-3 text-xs shadow-lg z-10">
+            <div className="font-extrabold text-valuon-green pb-1 mb-1 border-b border-valuon-border">
               Jahr {chartData[hoveredIndex].jahr}
             </div>
             {activeView === 'vermoegen' && (
               <>
-                <div style={{ color: '#13381A' }}>Immobilienwert: <strong>{formatEuroInt(chartData[hoveredIndex].immobilienwert)} €</strong></div>
-                <div style={{ color: '#A37841' }}>Netto-Eigenkapital: <strong>{formatEuroInt(chartData[hoveredIndex].netEquity)} €</strong></div>
-                <div style={{ color: '#9B2C2C' }}>Restschuld: <strong>{formatEuroInt(chartData[hoveredIndex].restschuld)} €</strong></div>
+                <div className="text-valuon-green">Immobilienwert: <strong>{formatEuroInt(chartData[hoveredIndex].immobilienwert)} €</strong></div>
+                <div className="text-valuon-gold">Netto-Eigenkapital: <strong>{formatEuroInt(chartData[hoveredIndex].netEquity)} €</strong></div>
+                <div className="text-valuon-red">Restschuld: <strong>{formatEuroInt(chartData[hoveredIndex].restschuld)} €</strong></div>
               </>
             )}
             {activeView === 'cashflow' && (
               <>
-                <div style={{ color: '#13381A' }}>Kaltmiete p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].miete)} €</strong></div>
-                <div style={{ color: '#A37841' }}>Kapitaldienst p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].kapitaldienst)} €</strong></div>
-                <div style={{ color: '#276749' }}>Netto-Cashflow p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].nettoCashflow)} €</strong></div>
+                <div className="text-valuon-green">Kaltmiete p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].miete)} €</strong></div>
+                <div className="text-valuon-gold">Kapitaldienst p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].kapitaldienst)} €</strong></div>
+                <div className="text-emerald-800">Netto-Cashflow p.a.: <strong>{formatEuroInt(chartData[hoveredIndex].nettoCashflow)} €</strong></div>
               </>
             )}
             {activeView === 'amortisation' && (
               <>
-                <div style={{ color: '#13381A' }}>Gesamtertrag (NAV + CF): <strong>{formatEuroInt(chartData[hoveredIndex].totalReturn)} €</strong></div>
-                <div style={{ color: '#A37841' }}>Kum. Netto-Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].cumCashflow)} €</strong></div>
-                <div style={{ color: chartData[hoveredIndex].netGain >= 0 ? '#276749' : '#9B2C2C', fontWeight: '800', marginTop: '2px' }}>
+                <div className="text-valuon-green">Gesamtertrag (NAV + CF): <strong>{formatEuroInt(chartData[hoveredIndex].totalReturn)} €</strong></div>
+                <div className="text-valuon-gold">Kum. Netto-Cashflow: <strong>{formatEuroInt(chartData[hoveredIndex].cumCashflow)} €</strong></div>
+                <div className={`font-bold mt-0.5 ${chartData[hoveredIndex].netGain >= 0 ? 'text-emerald-800' : 'text-valuon-red'}`}>
                   Reingewinn n. EK: {formatEuroInt(chartData[hoveredIndex].netGain)} €
                 </div>
               </>
@@ -398,33 +325,20 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
         )}
       </div>
 
-      {/* LEGENDEN CONTAINER MIT FIXIERTER HÖHE */}
-      <div style={{
-        display: 'flex',
-        justify: 'center',
-        alignItems: 'center',
-        gap: '1.5rem',
-        flexWrap: 'wrap',
-        paddingTop: '0.5rem',
-        borderTop: '1px solid #E2D9CE',
-        fontSize: '0.8rem',
-        fontWeight: '700',
-        color: '#4A5568',
-        minHeight: '32px',
-        boxSizing: 'border-box'
-      }}>
+      {/* LEGENDE BAR */}
+      <div className="flex justify-center items-center gap-6 flex-wrap pt-2 border-t border-valuon-border text-xs font-bold text-slate-600 min-h-[32px] box-border">
         {activeView === 'vermoegen' && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#13381A' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-valuon-green inline-block"></span>
               <span>Immobilienwert</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A37841' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-valuon-gold inline-block"></span>
               <span>Netto-Eigenkapital (NAV)</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#9B2C2C' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-valuon-red inline-block"></span>
               <span>Restschuld (Bank)</span>
             </div>
           </>
@@ -432,16 +346,16 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
         {activeView === 'cashflow' && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#13381A' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-valuon-green inline-block"></span>
               <span>Kaltmiete p.a.</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#A37841' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-valuon-gold inline-block"></span>
               <span>Kapitaldienst p.a.</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '18px', height: '3px', background: '#276749', borderRadius: '2px' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-1 bg-emerald-800 rounded-full inline-block"></span>
               <span>Netto-Cashflow p.a.</span>
             </div>
           </>
@@ -449,18 +363,18 @@ export default function ProjectionChart({ slicedProjection, ekEuroInput = 0 }) {
 
         {activeView === 'amortisation' && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '18px', height: '3px', background: '#13381A', borderRadius: '2px' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-1 bg-valuon-green rounded-full inline-block"></span>
               <span>Gesamtertrag (NAV + Kum. Cashflow)</span>
             </div>
             {ekBase > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '18px', height: '3px', strokeDasharray: '3 3', borderTop: '2px dashed #A37841' }}></span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-0 border-t-2 border-dashed border-valuon-gold inline-block"></span>
                 <span>EK-Referenzlinie ({formatEuroInt(ekBase)} €)</span>
               </div>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '18px', height: '3px', strokeDasharray: '2 2', borderTop: '2px dashed #A37841' }}></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-0 border-t-2 border-dashed border-valuon-gold inline-block"></span>
               <span>Kum. Netto-Cashflow</span>
             </div>
           </>

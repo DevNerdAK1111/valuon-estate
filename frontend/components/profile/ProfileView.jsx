@@ -18,7 +18,7 @@ export default function ProfileView({
 }) {
   const [activeTab, setActiveTab] = useState('persoenlich'); // 'persoenlich' | 'steuer' | 'sicherheit'
   
-  const [emailForm, setEmailForm] = useState({ newEmail: userEmail });
+  const [emailForm, setEmailForm] = useState({ newEmail: userEmail || '' });
   const [emailStatus, setEmailStatus] = useState(null);
 
   const [pwdForm, setPwdForm] = useState({ oldPwd: '', newPwd: '', confirmPwd: '' });
@@ -27,22 +27,28 @@ export default function ProfileView({
   const [saveStatus, setSaveStatus] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Ladeschutz: Falls das Profil aus Supabase noch lädt
-  if (!userProfile) {
-    return (
-      <div style={{ padding: '3rem', textAlign: 'center', color: '#13381A', fontWeight: '700' }}>
-        Profil wird geladen...
-      </div>
-    );
-  }
+  // Fallback: Falls userProfile noch null ist, nutzen wir ein lokales Standard-Objekt
+  const activeProfile = userProfile || {
+    profilname: userEmail ? userEmail.split('@')[0] : 'Nutzer',
+    vorname: '',
+    nachname: '',
+    bruttoEinkommen: 65000,
+    steuerklasse: '1',
+    familienstand: 'Ledig',
+    kinderAnzahl: 0,
+    kirchensteuer: false,
+    grenzsteuersatz: 42.0
+  };
 
   const handleProfileChange = (field, value) => {
-    setUserProfile((prev) => ({ ...prev, [field]: value }));
+    if (setUserProfile) {
+      setUserProfile((prev) => ({ ...(prev || activeProfile), [field]: value }));
+    }
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (onSaveProfile) onSaveProfile(userProfile);
+    if (onSaveProfile) onSaveProfile(activeProfile);
     setSaveStatus('Profildaten erfolgreich gespeichert!');
     setTimeout(() => setSaveStatus(null), 3000);
   };
@@ -75,14 +81,14 @@ export default function ProfileView({
     setTimeout(() => setPwdStatus(null), 4000);
   };
 
-  const displayName = userProfile?.profilname || (userProfile?.vorname ? `${userProfile.vorname} ${userProfile.nachname || ''}` : 'Nutzerprofil');
+  const displayName = activeProfile.profilname || (activeProfile.vorname ? `${activeProfile.vorname} ${activeProfile.nachname || ''}` : 'Nutzerprofil');
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* HEADER DES PROFILS */}
       <div style={{ background: 'white', padding: '1.8rem', borderRadius: '16px', border: '1px solid #E2D9CE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+        <div style={{ display: 'flex', itemsCenter: 'center', gap: '1.2rem' }}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#13381A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: '900' }}>
             {displayName.charAt(0).toUpperCase()}
           </div>
@@ -145,28 +151,28 @@ export default function ProfileView({
           
           <div>
             <label style={labelStyle}>Profilname / Anzeigename *</label>
-            <input type="text" required value={userProfile.profilname || ''} onChange={(e) => handleProfileChange('profilname', e.target.value)} style={inputTextStyle} placeholder="z.B. ImmoInvestor99" />
+            <input type="text" required value={activeProfile.profilname || ''} onChange={(e) => handleProfileChange('profilname', e.target.value)} style={inputTextStyle} placeholder="z.B. ImmoInvestor99" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Vorname *</label>
-              <input type="text" required value={userProfile.vorname || ''} onChange={(e) => handleProfileChange('vorname', e.target.value)} style={inputTextStyle} placeholder="Max" />
+              <input type="text" required value={activeProfile.vorname || ''} onChange={(e) => handleProfileChange('vorname', e.target.value)} style={inputTextStyle} placeholder="Max" />
             </div>
             <div>
               <label style={labelStyle}>Nachname *</label>
-              <input type="text" required value={userProfile.nachname || ''} onChange={(e) => handleProfileChange('nachname', e.target.value)} style={inputTextStyle} placeholder="Mustermann" />
+              <input type="text" required value={activeProfile.nachname || ''} onChange={(e) => handleProfileChange('nachname', e.target.value)} style={inputTextStyle} placeholder="Mustermann" />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Geburtsdatum</label>
-              <input type="date" value={userProfile.geburtsdatum || ''} onChange={(e) => handleProfileChange('geburtsdatum', e.target.value)} style={inputTextStyle} />
+              <input type="date" value={activeProfile.geburtsdatum || ''} onChange={(e) => handleProfileChange('geburtsdatum', e.target.value)} style={inputTextStyle} />
             </div>
             <div>
               <label style={labelStyle}>Telefonnummer</label>
-              <input type="tel" value={userProfile.telefon || ''} onChange={(e) => handleProfileChange('telefon', e.target.value)} style={inputTextStyle} placeholder="+49 170 1234567" />
+              <input type="tel" value={activeProfile.telefon || ''} onChange={(e) => handleProfileChange('telefon', e.target.value)} style={inputTextStyle} placeholder="+49 170 1234567" />
             </div>
           </div>
 
@@ -175,22 +181,22 @@ export default function ProfileView({
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Straße & Hausnummer</label>
-              <input type="text" value={userProfile.strasse || ''} onChange={(e) => handleProfileChange('strasse', e.target.value)} style={inputTextStyle} placeholder="Musterstraße 12" />
+              <input type="text" value={activeProfile.strasse || ''} onChange={(e) => handleProfileChange('strasse', e.target.value)} style={inputTextStyle} placeholder="Musterstraße 12" />
             </div>
             <div>
               <label style={labelStyle}>Postleitzahl (PLZ)</label>
-              <input type="text" value={userProfile.plz || ''} onChange={(e) => handleProfileChange('plz', e.target.value)} style={inputTextStyle} placeholder="10115" />
+              <input type="text" value={activeProfile.plz || ''} onChange={(e) => handleProfileChange('plz', e.target.value)} style={inputTextStyle} placeholder="10115" />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <div>
               <label style={labelStyle}>Ort / Stadt</label>
-              <input type="text" value={userProfile.ort || ''} onChange={(e) => handleProfileChange('ort', e.target.value)} style={inputTextStyle} placeholder="Berlin" />
+              <input type="text" value={activeProfile.ort || ''} onChange={(e) => handleProfileChange('ort', e.target.value)} style={inputTextStyle} placeholder="Berlin" />
             </div>
             <div>
               <label style={labelStyle}>Land</label>
-              <input type="text" value={userProfile.land || 'Deutschland'} onChange={(e) => handleProfileChange('land', e.target.value)} style={inputTextStyle} placeholder="Deutschland" />
+              <input type="text" value={activeProfile.land || 'Deutschland'} onChange={(e) => handleProfileChange('land', e.target.value)} style={inputTextStyle} placeholder="Deutschland" />
             </div>
           </div>
 
@@ -217,7 +223,7 @@ export default function ProfileView({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
             <StepperInput
               label="Bruttojahreseinkommen (€) *"
-              value={userProfile.bruttoEinkommen || 65000}
+              value={activeProfile.bruttoEinkommen || 65000}
               onChange={(v) => handleProfileChange('bruttoEinkommen', v)}
               step={2500}
               isCurrency={true}
@@ -226,7 +232,7 @@ export default function ProfileView({
             <div>
               <label style={labelStyle}>Steuerklasse *</label>
               <select
-                value={userProfile.steuerklasse || '1'}
+                value={activeProfile.steuerklasse || '1'}
                 onChange={(e) => handleProfileChange('steuerklasse', e.target.value)}
                 style={inputTextStyle}
               >
@@ -244,7 +250,7 @@ export default function ProfileView({
             <div>
               <label style={labelStyle}>Familienstand</label>
               <select
-                value={userProfile.familienstand || 'Ledig'}
+                value={activeProfile.familienstand || 'Ledig'}
                 onChange={(e) => handleProfileChange('familienstand', e.target.value)}
                 style={inputTextStyle}
               >
@@ -257,7 +263,7 @@ export default function ProfileView({
 
             <StepperInput
               label="Kinderfreibeträge (Anzahl Kinder)"
-              value={userProfile.kinderAnzahl || 0}
+              value={activeProfile.kinderAnzahl || 0}
               onChange={(v) => handleProfileChange('kinderAnzahl', v)}
               step={0.5}
             />
@@ -267,7 +273,7 @@ export default function ProfileView({
             <div>
               <label style={labelStyle}>Kirchensteuerpflichtig?</label>
               <select
-                value={userProfile.kirchensteuer ? 'ja' : 'nein'}
+                value={activeProfile.kirchensteuer ? 'ja' : 'nein'}
                 onChange={(e) => handleProfileChange('kirchensteuer', e.target.value === 'ja')}
                 style={inputTextStyle}
               >
@@ -276,11 +282,11 @@ export default function ProfileView({
               </select>
             </div>
 
-            {userProfile.kirchensteuer ? (
+            {activeProfile.kirchensteuer ? (
               <div>
                 <label style={labelStyle}>Kirchensteuersatz (Bundesland)</label>
                 <select
-                  value={userProfile.kirchensteuersatz || 9.0}
+                  value={activeProfile.kirchensteuersatz || 9.0}
                   onChange={(e) => handleProfileChange('kirchensteuersatz', parseFloat(e.target.value))}
                   style={inputTextStyle}
                 >
@@ -291,7 +297,7 @@ export default function ProfileView({
             ) : (
               <StepperInput
                 label="Individueller Grenzsteuersatz (%) *"
-                value={userProfile.grenzsteuersatz || 42.0}
+                value={activeProfile.grenzsteuersatz || 42.0}
                 onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
                 step={0.5}
                 isPercent={true}
@@ -299,11 +305,11 @@ export default function ProfileView({
             )}
           </div>
 
-          {userProfile.kirchensteuer && (
+          {activeProfile.kirchensteuer && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.2rem' }}>
               <StepperInput
                 label="Individueller Grenzsteuersatz (%) *"
-                value={userProfile.grenzsteuersatz || 42.0}
+                value={activeProfile.grenzsteuersatz || 42.0}
                 onChange={(v) => handleProfileChange('grenzsteuersatz', v)}
                 step={0.5}
                 isPercent={true}

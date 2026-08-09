@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-// Relative Imports
+// Components
 import Header from '../components/layout/Header';
 import LandingPage from '../components/landing/LandingPage';
 import StartseiteView from '../components/landing/StartseiteView';
@@ -14,41 +14,13 @@ import OnboardingView from '../components/profile/OnboardingView';
 import ScenarioComparisonView from '../components/scenario/ScenarioComparisonView';
 
 import { IconGear } from '../components/ui/Icons';
-import { supabase } from '../lib/supabaseClient';
-import { loadUserProfileFromSupabase, saveUserProfileToSupabase } from '../lib/profileApi';
-import {
-  pingBackendApi,
-  calculateInvestmentApi,
-  fetchPropertiesApi,
-  savePropertyApi,
-  deletePropertyApi
-} from '../lib/propertyApi';
+import { pingBackendApi, calculateInvestmentApi, savePropertyApi } from '../lib/propertyApi';
 import { usePropertyForm } from '../hooks/usePropertyForm';
+import { useAuthProfile } from '../hooks/useAuthProfile';
+import { usePropertiesManager } from '../hooks/usePropertiesManager';
 
 export default function Home() {
-  const [showApp, setShowApp] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [userId, setUserId] = useState(null);
   const [navChoice, setNavChoice] = useState('Startseite');
-
-  const [userProfile, setUserProfile] = useState({
-    profilname: '', vorname: '', nachname: '', geburtsdatum: '', telefon: '', strasse: '', plz: '', ort: '', land: 'Deutschland',
-    bruttoEinkommen: 65000, steuerklasse: '1', familienstand: 'Ledig', kinderAnzahl: 0, kirchensteuer: false,
-    kirchensteuersatz: 9.0, grenzsteuersatz: 42.0, onboarded: false
-  });
-
-  const {
-    formData,
-    setFormData,
-    capexList,
-    setCapexList,
-    handleReset: resetPropertyForm,
-    addCapexRow,
-    removeCapexRow,
-    handleCapexChange
-  } = usePropertyForm(userProfile.grenzsteuersatz || 42.0);
-
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
   const [tableTheme, setTableTheme] = useState('Kapitaldienst & Steuern');
   const [projectionHorizon, setProjectionHorizon] = useState('10');
@@ -62,8 +34,23 @@ export default function Home() {
   const [calcError, setCalcError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(null);
-  const [dbProperties, setDbProperties] = useState([]);
-  const [loadingDb, setLoadingDb] = useState(false);
+
+  // Formular-Hook
+  const {
+    formData, setFormData, capexList, setCapexList, handleReset: resetPropertyForm,
+    addCapexRow, removeCapexRow, handleCapexChange
+  } = usePropertyForm(42.0);
+
+  // Auth & Profil Custom Hook
+  const {
+    showApp, setShowApp, authenticated, setAuthenticated, userEmail, setUserEmail,
+    userProfile, setUserProfile, handleSaveProfile, handleCompleteOnboarding, handleLogout: authLogout
+  } = useAuthProfile(setFormData);
+
+  // Datenbank Custom Hook
+  const {
+    dbProperties, loadingDb, fetchDatabaseProperties, deletePropertyFromDb
+  } = usePropertiesManager(userEmail);
 
   const pingBackend = async () => {
     if (backendStatus === 'ready') return;
@@ -72,71 +59,15 @@ export default function Home() {
     setBackendStatus(isOk ? 'ready' : 'sleeping');
   };
 
-  const fetchProfileFromSupabase = async (uid) => {
-    const dbProfile = await loadUserProfileFromSupabase(uid);
-    if (dbProfile) {
-      const formatted = {
-        profilname: dbProfile.profilname || '', vorname: dbProfile.vorname || '', nachname: dbProfile.nachname || '',
-        geburtsdatum: dbProfile.geburtsdatum || '', telefon: dbProfile.telefon || '', strasse: dbProfile.strasse || '',
-        plz: dbProfile.plz || '', ort: dbProfile.ort || '', land: dbProfile.land || 'Deutschland',
-        bruttoEinkommen: dbProfile.brutto_einkommen || 65000, steuerklasse: dbProfile.steuerklasse || '1',
-        familienstand: dbProfile.familienstand || 'Ledig', kinderAnzahl: dbProfile.kinder_anzahl || 0,
-        kirchensteuer: !!dbProfile.kirchensteuer, kirchensteuersatz: dbProfile.kirchensteuersatz || 9.0,
-        grenzsteuersatz: dbProfile.grenzsteuersatz || 42.0, onboarded: dbProfile.onboarded
-      };
-      setUserProfile(formatted);
-      setFormData((prev) => ({ ...prev, tax_rate_pct: formatted.grenzsteuersatz || prev.tax_rate_pct }));
-    } else {
-      setUserProfile((prev) => ({ ...prev, onboarded: false }));
-    }
-  };
-
   useEffect(() => {
     pingBackend();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUserEmail(session.user.email);
-        setUserId(session.user.id);
-        setAuthenticated(true);
-        setShowApp(true);
-        fetchProfileFromSupabase(session.user.id);
-      }
-    });
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setUserEmail(session.user.email);
-        setUserId(session.user.id);
-        setAuthenticated(true);
-        setShowApp(true);
-        fetchProfileFromSupabase(session.user.id);
-      } else {
-        setAuthenticated(false);
-        setShowApp(false);
-        setUserId(null);
-      }
-    });
-
-    return () => authListener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     if ((navChoice === 'Objekt Datenbank' || navChoice === 'Startseite' || navChoice === 'Szenario-Vergleich') && showApp) {
       fetchDatabaseProperties();
     }
-  }, [navChoice, showApp, userEmail]);
-
-  const fetchDatabaseProperties = async () => {
-    setLoadingDb(true);
-    try {
-      const userList = await fetchPropertiesApi(userEmail);
-      setDbProperties(userList);
-    } catch (err) {
-      console.error('Fehler beim Laden der Datenbank:', err);
-    } finally {
-      setLoadingDb(false);
-    }
-  };
+  }, [navChoice, showApp, userEmail, fetchDatabaseProperties]);
 
   const handleCalculate = async (e) => {
     if (e) e.preventDefault();
@@ -172,24 +103,8 @@ export default function Home() {
     }
   };
 
-  const handleSaveProfile = async (updatedProfile) => {
-    setUserProfile(updatedProfile);
-    if (userId) await saveUserProfileToSupabase(userId, userEmail, updatedProfile);
-    setFormData((prev) => ({ ...prev, tax_rate_pct: updatedProfile.grenzsteuersatz || prev.tax_rate_pct }));
-  };
-
-  const handleCompleteOnboarding = async (completedProfile) => {
-    const updated = { ...completedProfile, onboarded: true };
-    setUserProfile(updated);
-    if (userId) await saveUserProfileToSupabase(userId, userEmail, updated);
-    setFormData((prev) => ({ ...prev, tax_rate_pct: updated.grenzsteuersatz || prev.tax_rate_pct }));
-    setNavChoice('Startseite');
-  };
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setShowApp(false);
-    setAuthenticated(false);
+    await authLogout();
     setNavChoice('Startseite');
     setResult(null);
   };
@@ -204,16 +119,6 @@ export default function Home() {
     }
   };
 
-  const deletePropertyFromDb = async (id) => {
-    if (!confirm('Möchtest du dieses Objekt wirklich aus deiner Datenbank löschen?')) return;
-    try {
-      await deletePropertyApi(id);
-      fetchDatabaseProperties();
-    } catch (err) {
-      alert('Fehler beim Löschen des Objekts.');
-    }
-  };
-
   const handleReset = () => {
     resetPropertyForm(userProfile.grenzsteuersatz || 42.0);
     setResult(null);
@@ -221,33 +126,12 @@ export default function Home() {
     setSaveSuccess(null);
   };
 
-  // KAUFNEBENKOSTEN FÜR DASHBOARD-SUMMEN
+  // Kaufnebenkosten Summe für Dashboard Donut
   const grwt_euro = (formData.kaufpreis * (formData.grwt_p || 0)) / 100;
   const notar_euro = (formData.kaufpreis * (formData.notar_p || 0)) / 100;
   const makler_euro = (formData.kaufpreis * (formData.makler_p || 0)) / 100;
   const summe_nk = grwt_euro + notar_euro + makler_euro + Number(formData.sonst_nk || 0);
 
-  const firstYearCashflow = result?.projection?.[0]?.['Cashflow Netto'] || 0;
-  const monthlyCashflow = firstYearCashflow / 12;
-  const bruttoMietrendite = formData.kaufpreis > 0 ? ((formData.kaltmiete_monat * 12) / formData.kaufpreis) * 100 : 0;
-
-  let slicedProjection = [];
-  let actualHorizonYears = 10;
-  if (result?.projection && result.projection.length > 0) {
-    if (projectionHorizon === 'payoff') {
-      const payoffIdx = result.projection.findIndex(r => (r['Restschuld'] || 0) <= 0);
-      slicedProjection = payoffIdx !== -1 ? result.projection.slice(0, payoffIdx + 1) : result.projection;
-    } else {
-      const numYears = parseInt(projectionHorizon, 10) || 10;
-      slicedProjection = result.projection.slice(0, numYears);
-    }
-    actualHorizonYears = slicedProjection.length;
-  }
-
-  const cumulatedCashflowHorizon = slicedProjection.reduce((acc, curr) => acc + (curr['Cashflow Netto'] || 0), 0);
-  const endYearObj = slicedProjection[slicedProjection.length - 1];
-  const endNav = endYearObj ? ((endYearObj['Immobilienwert'] || 0) - (endYearObj['Restschuld'] || 0)) : 0;
-  const gesamtGewinnHorizon = cumulatedCashflowHorizon + (endNav - (formData.ek_euro || 0));
   const greetingName = userProfile.profilname || userProfile.vorname || (userEmail ? userEmail.split('@')[0] : 'Investor');
 
   if (!showApp) return <LandingPage setShowApp={setShowApp} setAuthenticated={setAuthenticated} userEmail={userEmail} setUserEmail={setUserEmail} />;
@@ -304,7 +188,23 @@ export default function Home() {
                   pingBackend={pingBackend} 
                   handleReset={handleReset} 
                 />
-                <ExecutiveDashboard formData={formData} result={result} projectionHorizon={projectionHorizon} setProjectionHorizon={setProjectionHorizon} handleSaveToDatabase={handleSaveToDatabase} saving={saving} saveSuccess={saveSuccess} calcError={calcError} monthlyCashflow={monthlyCashflow} bruttoMietrendite={bruttoMietrendite} actualHorizonYears={actualHorizonYears} gesamtGewinnHorizon={gesamtGewinnHorizon} activeDashboardTab={activeDashboardTab} setActiveDashboardTab={setActiveDashboardTab} chartView={chartView} setChartView={setChartView} slicedProjection={slicedProjection} summe_nk={summe_nk} tableTheme={tableTheme} setTableTheme={setTableTheme} cumulatedCashflowHorizon={cumulatedCashflowHorizon} endNav={endNav} />
+                <ExecutiveDashboard 
+                  formData={formData} 
+                  result={result} 
+                  projectionHorizon={projectionHorizon} 
+                  setProjectionHorizon={setProjectionHorizon} 
+                  handleSaveToDatabase={handleSaveToDatabase} 
+                  saving={saving} 
+                  saveSuccess={saveSuccess} 
+                  calcError={calcError} 
+                  activeDashboardTab={activeDashboardTab} 
+                  setActiveDashboardTab={setActiveDashboardTab} 
+                  chartView={chartView} 
+                  setChartView={setChartView} 
+                  summe_nk={summe_nk} 
+                  tableTheme={tableTheme} 
+                  setTableTheme={setTableTheme} 
+                />
               </div>
             </form>
           )}

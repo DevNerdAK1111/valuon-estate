@@ -122,11 +122,44 @@ export default function Home() {
     }
   };
 
+  // Handler für den Developer Direktzugang / Quick Login
+  const handleDevLogin = (mockEmail = 'developer@valuon.de') => {
+    if (setUserEmail) setUserEmail(mockEmail);
+    if (setUserProfile) {
+      setUserProfile({
+        profilname: 'Dev-User',
+        vorname: 'Developer',
+        nachname: 'Mode',
+        bruttoEinkommen: 80000,
+        steuerklasse: '1',
+        grenzsteuersatz: 42.0
+      });
+    }
+  };
+
   // -------------------------------------------------------------
-  // AUTH GATE: BIST DU NICHT EINGELOGGT? -> SHOW LANDING PAGE
+  // AUTH GATEKEEPER
   // -------------------------------------------------------------
-  if (!loadingProfile && !userEmail) {
-    return <LandingPage onLoginSuccess={() => window.location.reload()} />;
+  // Solange Supabase den Auth-State prüft, Ladeanzeige zeigen
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-valuon-bg flex items-center justify-center text-valuon-green font-bold text-sm">
+        Authentifizierung wird geprüft...
+      </div>
+    );
+  }
+
+  // Wenn weder Session noch manuell gesetzte E-Mail vorhanden ist -> LandingPage
+  if (!userEmail) {
+    return (
+      <LandingPage
+        onLoginSuccess={(email) => {
+          if (email && setUserEmail) setUserEmail(email);
+          else window.location.reload();
+        }}
+        onDevLogin={handleDevLogin}
+      />
+    );
   }
 
   return (

@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import ScenarioColumn from './ScenarioColumn';
 import { calculateInvestmentApi } from '../../lib/propertyApi';
@@ -53,7 +54,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
   const [loadingA, setLoadingA] = useState(false);
   const [loadingB, setLoadingB] = useState(false);
 
-  // Trigger Backend-Berechnung für Szenario A bei Parameter-Änderung
   useEffect(() => {
     let isMounted = true;
     const timer = setTimeout(async () => {
@@ -74,7 +74,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     };
   }, [scenarioA]);
 
-  // Trigger Backend-Berechnung für Szenario B bei Parameter-Änderung
   useEffect(() => {
     let isMounted = true;
     const timer = setTimeout(async () => {
@@ -95,7 +94,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     };
   }, [scenarioB]);
 
-  // Offizielles Modell aus dem Executive Dashboard ableiten
   const modelA = useMemo(() => {
     if (!resultA) return null;
     return calculateInvestmentModel(scenarioA, '10', resultA);
@@ -106,7 +104,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     return calculateInvestmentModel(scenarioB, '10', resultB);
   }, [scenarioB, resultB]);
 
-  // Kennzahlen-Extraktion exakt aus dem Executive Dashboard
   const kpisA = useMemo(() => {
     if (!modelA) return null;
     const firstRow = modelA.slicedProjection?.[0] || {};
@@ -167,24 +164,12 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+    <div className="flex flex-col gap-6 w-full">
       
-      {/* Head-Bar im Executive Dashboard Style */}
-      <div style={{
-        background: 'white',
-        border: '1px solid #E2D9CE',
-        padding: '1.2rem 1.5rem',
-        borderRadius: '12px',
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#13381A', color: '#FAF8F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* HEADER BAR */}
+      <div className="bg-white border border-valuon-border p-5 rounded-xl flex flex-row items-center justify-between flex-wrap gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-valuon-green text-valuon-cream flex items-center justify-center font-black">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>
               <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -192,21 +177,21 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
             </svg>
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '900', color: '#13381A', letterSpacing: '-0.5px' }}>
+            <h2 className="text-xl font-black text-valuon-green m-0 tracking-tight">
               Szenario-Vergleich
             </h2>
-            <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#718096', fontWeight: '500' }}>
+            <p className="text-xs text-slate-500 font-medium m-0 mt-0.5">
               Simultane Backend-Analyse & Stresstest in Echtzeit
             </p>
           </div>
         </div>
 
-        {/* Database Selector Dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#13381A' }}>
+        {/* DATABASE SELECTOR */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-extrabold text-valuon-green">
             Basis-Objekt laden:
           </label>
-          <div style={{ width: '220px' }}>
+          <div className="w-56">
             <select
               onChange={(e) => handleSelectDbProperty(e.target.value)}
               style={selectStyle}
@@ -221,14 +206,14 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           </div>
         </div>
 
-        {/* Quick Presets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', marginRight: '4px' }}>Presets für B:</span>
+        {/* QUICK PRESETS */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-extrabold text-slate-500 mr-1">Presets für B:</span>
           
           <button 
             type="button"
             onClick={() => applyPreset('interest_plus')}
-            style={{ padding: '6px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
+            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
           >
             Zins +1,5 %
           </button>
@@ -236,7 +221,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           <button 
             type="button"
             onClick={() => applyPreset('discount_price')}
-            style={{ padding: '6px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
+            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
           >
             Kaufpreis -10 %
           </button>
@@ -244,7 +229,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           <button 
             type="button"
             onClick={() => applyPreset('rent_plus')}
-            style={{ padding: '6px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
+            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
           >
             Miete +10 %
           </button>
@@ -252,7 +237,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           <button 
             type="button"
             onClick={() => applyPreset('vacancy_risk')}
-            style={{ padding: '6px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer' }}
+            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
           >
             1 Mo. Leerstand
           </button>
@@ -260,15 +245,15 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           <button 
             type="button"
             onClick={() => applyPreset('reset')}
-            style={{ padding: '6px 14px', background: '#13381A', border: 'none', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', color: '#F7F4EC', cursor: 'pointer' }}
+            className="py-1.5 px-3.5 bg-valuon-green border-none rounded-full text-xs font-extrabold text-white cursor-pointer hover:bg-valuon-green-light transition-colors"
           >
             Szenario A kopieren
           </button>
         </div>
       </div>
 
-      {/* Grid: 2 Szenario-Spalten */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+      {/* GRID: 2 SZENARIO SPALTEN */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScenarioColumn 
           title="Szenario A (Basis)"
           badgeBg="#EBF8FF"
@@ -294,36 +279,40 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
         />
       </div>
 
-      {/* Direct Delta Highlights */}
+      {/* DELTA HIGHLIGHTS */}
       {kpisA && kpisB && (
-        <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-          <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: '800', color: '#13381A' }}>
+        <div className="bg-white border border-valuon-border rounded-xl p-5 shadow-sm">
+          <h3 className="m-0 mb-4 text-sm font-black text-valuon-green">
             Gesamtauswirkung Backend-Prognose (Szenario B vs. Szenario A)
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Cashflow-Differenz (Monat)</span>
-              <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-valuon-cream border border-valuon-border rounded-xl p-4">
+              <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Cashflow-Differenz (Monat)</span>
+              <div className={`text-xl font-black mt-1 ${
+                (kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer) >= 0 ? 'text-emerald-800' : 'text-red-700'
+              }`}>
                 {(kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer) >= 0 ? '+' : ''}{formatEuroInt(kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer)} €
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Cashflow n. St.</span>
+              <span className="text-[0.72rem] text-slate-500 mt-0.5 block">Unterschied Netto-Cashflow n. St.</span>
             </div>
 
-            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Rendite-Abweichung (Netto)</span>
-              <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
+            <div className="bg-valuon-cream border border-valuon-border rounded-xl p-4">
+              <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Rendite-Abweichung (Netto)</span>
+              <div className="text-xl font-black text-valuon-green mt-1">
                 {(kpisB.nettoMietrendite - kpisA.nettoMietrendite) >= 0 ? '+' : ''}{(kpisB.nettoMietrendite - kpisA.nettoMietrendite).toFixed(2).replace('.', ',')} %
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Mietrendite</span>
+              <span className="text-[0.72rem] text-slate-500 mt-0.5 block">Unterschied Netto-Mietrendite</span>
             </div>
 
-            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Gesamtgewinn-Delta (10 J.)</span>
-              <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (kpisB.gesamtGewinn - kpisA.gesamtGewinn) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+            <div className="bg-valuon-cream border border-valuon-border rounded-xl p-4">
+              <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Gesamtgewinn-Delta (10 J.)</span>
+              <div className={`text-xl font-black mt-1 ${
+                (kpisB.gesamtGewinn - kpisA.gesamtGewinn) >= 0 ? 'text-emerald-800' : 'text-red-700'
+              }`}>
                 {(kpisB.gesamtGewinn - kpisA.gesamtGewinn) >= 0 ? '+' : ''}{formatEuroInt(kpisB.gesamtGewinn - kpisA.gesamtGewinn)} €
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Kumulierter Vermögensgewinn</span>
+              <span className="text-[0.72rem] text-slate-500 mt-0.5 block">Kumulierter Vermögensgewinn</span>
             </div>
           </div>
         </div>

@@ -1,14 +1,23 @@
 'use client';
 import { formatEuroInt } from '../../utils/formatters';
 
-export default function DonutChart({ formData, summe_nk }) {
+export default function DonutChart({ formData, model, summe_nk }) {
   const kaufpreis = Number(formData?.kaufpreis || 0);
-  const nk = Number(summe_nk || 0);
-  const gesamtkosten = kaufpreis + nk;
 
-  const ek = Number(formData?.ek_euro || 0);
-  const kfwAmt = Number(formData?.kfw_amt || 0);
-  const hauptdarlehen = Math.max(0, gesamtkosten - ek - kfwAmt);
+  // 1. Nebenkosten bestimmen (aus Backend-Model, Prop oder direkt aus den Formular-Prozenten)
+  const grwtP = Number(formData?.grwt_p ?? 5.0);
+  const notarP = Number(formData?.notar_p ?? 2.0);
+  const maklerP = Number(formData?.makler_p ?? 3.57);
+  const sonstNk = Number(formData?.sonst_nk ?? 0);
+  const calculatedNk = kaufpreis * ((grwtP + notarP + maklerP) / 100) + sonstNk;
+
+  const nk = model?.kaufnebenkosten?.nkTotal ?? Number(summe_nk || calculatedNk);
+  const gesamtkosten = model?.kaufnebenkosten?.gesamtKosten ?? (kaufpreis + nk);
+
+  // 2. Eigenkapital, KfW und Hauptdarlehen aus der echten Finanzierungsstruktur
+  const ek = model?.finanzierung?.ekEuro ?? Number(formData?.ek_euro || 0);
+  const kfwAmt = model?.finanzierung?.kfwDarlehen ?? Number(formData?.kfw_amt || 0);
+  const hauptdarlehen = model?.finanzierung?.hauptDarlehen ?? Math.max(0, gesamtkosten - ek - kfwAmt);
 
   const slices = [
     { label: 'Eigenkapital', value: ek, color: '#A37841' },
@@ -23,14 +32,14 @@ export default function DonutChart({ formData, summe_nk }) {
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #E2D9CE', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', boxSizing: 'border-box' }}>
-      <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#13381A', fontWeight: '800' }}>
+    <div className="bg-white p-6 rounded-xl border border-valuon-border flex flex-col justify-between h-full box-border shadow-sm">
+      <h3 className="m-0 text-base font-black text-valuon-green">
         Finanzierungsstruktur & Mittelherkunft
       </h3>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', justifyContent: 'center' }}>
-        <div style={{ position: 'relative', width: '190px', height: '190px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="190" height="190" viewBox="0 0 190 190" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
+      <div className="flex flex-col items-center gap-4 justify-center my-auto py-4">
+        <div className="relative w-[190px] h-[190px] flex items-center justify-center">
+          <svg width="190" height="190" viewBox="0 0 190 190" className="-rotate-90 overflow-visible">
             {slices.map((slice, idx) => {
               const percent = slice.value / totalValue;
               if (percent <= 0) return null;
@@ -50,36 +59,27 @@ export default function DonutChart({ formData, summe_nk }) {
                   strokeDasharray={strokeDasharray}
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="butt"
-                  style={{ transition: 'stroke-dasharray 0.5s ease' }}
+                  className="transition-all duration-500 ease-in-out"
                 />
               );
             })}
           </svg>
-          <div style={{
-            position: 'absolute',
-            top: 0, left: 0, right: 0, bottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            pointerEvents: 'none'
-          }}>
-            <span style={{ fontSize: '0.7rem', color: '#718096', fontWeight: '700' }}>Gesamtkosten</span>
-            <span style={{ fontSize: '1.05rem', fontWeight: '900', color: '#13381A' }}>{formatEuroInt(gesamtkosten)} €</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+            <span className="text-[0.7rem] text-slate-500 font-bold">Gesamtkosten</span>
+            <span className="text-base font-black text-valuon-green">{formatEuroInt(gesamtkosten)} €</span>
           </div>
         </div>
 
-        {/* BÜNDIGE LEGENDE ÜBER EIN GEMEINSAMES GRID-LAYOUT */}
-        <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '14px 1fr auto', rowGap: '8px', columnGap: '8px', alignItems: 'center', fontSize: '0.82rem' }}>
+        {/* LEGENDE */}
+        <div className="w-full grid grid-cols-[14px_1fr_auto] gap-2 items-center text-xs">
           {slices.map((slice, idx) => {
             const pct = totalValue > 0 ? (slice.value / totalValue) * 100 : 0;
             return (
-              <div key={idx} style={{ display: 'contents' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: slice.color, display: 'inline-block' }} />
-                <span style={{ color: '#4A5568', fontWeight: '600' }}>{slice.label}</span>
-                <span style={{ fontWeight: '800', color: '#13381A', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {formatEuroInt(slice.value)} € <span style={{ color: '#718096', fontWeight: 'normal', fontSize: '0.75rem' }}>({pct.toFixed(1)}%)</span>
+              <div key={idx} className="contents">
+                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: slice.color }} />
+                <span className="text-slate-600 font-semibold">{slice.label}</span>
+                <span className="font-extrabold text-valuon-green text-right whitespace-nowrap">
+                  {formatEuroInt(slice.value)} € <span className="text-slate-500 font-normal text-[0.75rem]">({pct.toFixed(1)}%)</span>
                 </span>
               </div>
             );

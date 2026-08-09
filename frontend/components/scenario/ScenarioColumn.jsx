@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import StepperInput from '../ui/StepperInput';
 import MetricDeltaCard from './MetricDeltaCard';
 import { grid2Style, labelStyle, inputStyle, selectContainerStyle, selectStyle } from '../../styles/formStyles';
-import { formatEuroInt } from '../../utils/formatters';
 import { OBJEKTARTEN, BUNDESLAENDER_DEFAULT } from '../../constants/realEstate';
 
 export default function ScenarioColumn({ 
@@ -11,10 +10,11 @@ export default function ScenarioColumn({
   badgeColor, 
   data, 
   setData, 
+  kpis,
   baselineResults, 
-  isBaseline = false 
+  isBaseline = false,
+  loading = false
 }) {
-  // Einklapp-Zustände aller 4 Haupt-Sektionen
   const [openSections, setOpenSections] = useState({
     basisdaten: true,
     bewirtschaftung: true,
@@ -22,12 +22,9 @@ export default function ScenarioColumn({
     steuer: false
   });
 
-  // Einklapp-Zustände für Sub-Sektionen
   const [openSub, setOpenSub] = useState({
     nebenkosten: false,
-    folgefinanzierung: false,
-    kfw: false,
-    denkmal: false
+    kfw: false
   });
 
   const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -40,80 +37,6 @@ export default function ScenarioColumn({
     }));
   };
 
-  // Mathematisch vollständiges Modell für das Szenario
-  const kpis = useMemo(() => {
-    if (!data) return null;
-
-    const kaufpreis = Number(data.kaufpreis || 0);
-    const qm = Number(data.qm || 50);
-
-    // Kaufnebenkosten
-    const grwtP = Number(data.grwt_p ?? 5.0);
-    const notarP = Number(data.notar_p ?? 2.0);
-    const maklerP = Number(data.makler_p ?? 3.57);
-    const sonstNk = Number(data.sonst_nk ?? 0);
-    const kaufnebenkosten = (kaufpreis * (grwtP + notarP + maklerP) / 100) + sonstNk;
-    const gesamtinvestition = kaufpreis + kaufnebenkosten;
-
-    // Finanzierung & Fremdkapital
-    const ek = Number(data.ek_euro || 0);
-    const kfwAmt = Number(data.kfw_amt || 0);
-    const hauptDarlehen = Math.max(0, gesamtinvestition - ek - kfwAmt);
-
-    const hbZins = Number(data.hb_zins ?? 3.8);
-    const hbTilg = Number(data.hb_tilg ?? 2.0);
-    const hauptRateMonat = (hauptDarlehen * ((hbZins + hbTilg) / 100)) / 12;
-
-    const kfwZins = Number(data.kfw_zins ?? 2.1);
-    const kfwTilg = Number(data.kfw_tilg ?? 3.0);
-    const kfwRateMonat = (kfwAmt * ((kfwZins + kfwTilg) / 100)) / 12;
-
-    const monatlicheRateGesamt = hauptRateMonat + kfwRateMonat;
-
-    // Einnahmen & Bewirtschaftung
-    const kaltmieteMonat = Number(data.kaltmiete_monat || 0);
-    const mietausfallP = Number(data.vac_rate_pct ?? 2.0);
-    const effektiveMiete = kaltmieteMonat * (1 - mietausfallP / 100);
-
-    const hausgeldNichtUmlegbar = Number(data.hausgeld_nicht_umlegbar ?? (data.hausgeld ? data.hausgeld * 0.25 : 0));
-    const verwaltungMonat = Number(data.mgt_monat ?? 30);
-    const instandhaltungMonat = (qm * Number(data.inst_sqm ?? 12)) / 12;
-    const bewirtschaftungMonat = verwaltungMonat + instandhaltungMonat + hausgeldNichtUmlegbar;
-
-    // Cashflow vor Steuer
-    const cashflowVorSteuer = effektiveMiete - bewirtschaftungMonat - monatlicheRateGesamt;
-
-    // Steuerliche Betrachtung
-    const zinsMonat = ((hauptDarlehen * (hbZins / 100)) + (kfwAmt * (kfwZins / 100))) / 12;
-    const afaPct = Number(data.afa_lin ?? 2.0) / 100;
-    const gebaeudeanteilPct = Number(data.gebaeude_anteil_pct ?? 80.0) / 100;
-    const afaMonat = (kaufpreis * gebaeudeanteilPct * afaPct) / 12;
-    
-    const zuVersteuern = effektiveMiete - bewirtschaftungMonat - zinsMonat - afaMonat;
-    const taxRate = Number(data.tax_rate_pct ?? 42) / 100;
-    const steuerMonat = zuVersteuern > 0 ? zuVersteuern * taxRate : 0;
-    const cashflowNachSteuer = cashflowVorSteuer - steuerMonat;
-
-    // Renditen
-    const nettoMietrendite = gesamtinvestition > 0 ? (((effektiveMiete - bewirtschaftungMonat) * 12) / gesamtinvestition) * 100 : 0;
-    const ekRendite = ek > 0 ? ((cashflowVorSteuer * 12) / ek) * 100 : 0;
-
-    // Vermögensaufbau (10 Jahre)
-    const wertsteigerungP = Number(data.val_inc ?? 1.0);
-    const wertNach10Jahren = kaufpreis * Math.pow(1 + wertsteigerungP / 100, 10);
-    const tilgung10Jahre = ((hauptDarlehen * (hbTilg / 100)) + (kfwAmt * (kfwTilg / 100))) * 10;
-    const vermoegen10Jahre = tilgung10Jahre + (wertNach10Jahren - kaufpreis);
-
-    return {
-      monatlicheRate: monatlicheRateGesamt,
-      cashflowVorSteuer,
-      cashflowNachSteuer,
-      nettoMietrendite,
-      ekRendite,
-      vermoegen10Jahre
-    };
-  }, [data]);
-
   return (
     <div style={{
       background: 'white',
@@ -123,7 +46,9 @@ export default function ScenarioColumn({
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+      opacity: loading ? 0.75 : 1,
+      transition: 'opacity 0.15s ease'
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         
@@ -137,10 +62,10 @@ export default function ScenarioColumn({
             background: badgeBg,
             color: badgeColor
           }}>
-            {title}
+            {title} {loading ? '(Berechne...)' : ''}
           </span>
           <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
-            {data?.obj_name ? data.obj_name : 'Muster-Objekt'}
+            {data?.obj_name || 'Muster-Objekt'}
           </span>
         </div>
 
@@ -432,7 +357,7 @@ export default function ScenarioColumn({
                 />
               </div>
 
-              {/* UNTER-AKKORDEON: KFW & ANSCHLUSS */}
+              {/* UNTER-AKKORDEON: KFW */}
               <button
                 type="button"
                 onClick={() => toggleSub('kfw')}
@@ -566,62 +491,59 @@ export default function ScenarioColumn({
 
       </div>
 
-      {/* Ergebnis-Metriken im Executive Dashboard Style */}
-      {kpis && (
-        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2D9CE' }}>
-          <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Ergebnis-Analyse
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <MetricDeltaCard 
-              label="Cashflow n. St."
-              value={kpis.cashflowNachSteuer}
-              type="currency"
-              compareValue={baselineResults?.cashflowNachSteuer}
-              isBaseline={isBaseline}
-            />
-            <MetricDeltaCard 
-              label="Cashflow v. St."
-              value={kpis.cashflowVorSteuer}
-              type="currency"
-              compareValue={baselineResults?.cashflowVorSteuer}
-              isBaseline={isBaseline}
-            />
-            <MetricDeltaCard 
-              label="Netto-Mietrendite"
-              value={kpis.nettoMietrendite}
-              type="percent"
-              compareValue={baselineResults?.nettoMietrendite}
-              isBaseline={isBaseline}
-              customColor="#13381A"
-            />
-            <MetricDeltaCard 
-              label="EK-Rendite"
-              value={kpis.ekRendite}
-              type="percent"
-              compareValue={baselineResults?.ekRendite}
-              isBaseline={isBaseline}
-              customColor="#A37841"
-            />
-            <MetricDeltaCard 
-              label="Monatliche Rate"
-              value={kpis.monatlicheRate}
-              type="currency"
-              compareValue={baselineResults?.monatlicheRate}
-              isBaseline={isBaseline}
-              invertColor={true}
-            />
-            <MetricDeltaCard 
-              label="Vermögen (10 J.)"
-              value={kpis.vermoegen10Jahre}
-              type="currency"
-              compareValue={baselineResults?.vermoegen10Jahre}
-              isBaseline={isBaseline}
-              customColor="#13381A"
-            />
-          </div>
+      {/* Ergebnis-Metriken aus der offiziellen Backend-Berechnung */}
+      <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2D9CE' }}>
+        <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Ergebnis-Analyse (Backend)
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <MetricDeltaCard 
+            label="Cashflow n. St."
+            value={kpis?.cashflowNachSteuer}
+            type="currency"
+            compareValue={baselineResults?.cashflowNachSteuer}
+            isBaseline={isBaseline}
+          />
+          <MetricDeltaCard 
+            label="Cashflow v. St."
+            value={kpis?.cashflowVorSteuer}
+            type="currency"
+            compareValue={baselineResults?.cashflowVorSteuer}
+            isBaseline={isBaseline}
+          />
+          <MetricDeltaCard 
+            label="Netto-Mietrendite"
+            value={kpis?.nettoMietrendite}
+            type="percent"
+            compareValue={baselineResults?.nettoMietrendite}
+            isBaseline={isBaseline}
+            customColor="#13381A"
+          />
+          <MetricDeltaCard 
+            label="EK-Rendite (IRR)"
+            value={kpis?.ekRendite}
+            type="percent"
+            compareValue={baselineResults?.ekRendite}
+            isBaseline={isBaseline}
+            customColor="#A37841"
+          />
+          <MetricDeltaCard 
+            label="Monatliche Rate"
+            value={kpis?.monatlicheRate}
+            type="currency"
+            compareValue={baselineResults?.monatlicheRate}
+            isBaseline={isBaseline}
+            invertColor={true}
+          />
+          <MetricDeltaCard 
+            label="Gesamtgewinn (10 J.)"
+            value={kpis?.gesamtGewinn}
+            type="currency"
+            compareValue={baselineResults?.gesamtGewinn}
+            isBaseline={isBaseline}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 }

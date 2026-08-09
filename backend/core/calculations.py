@@ -3,6 +3,7 @@ from typing import List, Dict, Any
 
 
 def calculate_irr(cashflows: List[float]) -> float:
+    """Berechnet den internen Zinsfuß (IRR) mittels Newton-Raphson-Verfahren."""
     if not cashflows or len(cashflows) < 2:
         return 0.0
 
@@ -35,6 +36,7 @@ def calculate_irr(cashflows: List[float]) -> float:
 
 
 def _get_val(payload: Any, key: str, default: Any = None) -> Any:
+    """Sicheres Auslesen aus Dictionaries und Pydantic-Objekten."""
     if isinstance(payload, dict):
         return payload.get(key, default)
     return getattr(payload, key, default)
@@ -55,8 +57,16 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     sonst_nk = float(_get_val(payload, "sonst_nk", 0.0) or 0.0)
 
     grwt_proz = float(_get_val(payload, "grwt_proz", 0.0) or (grwt_p / 100.0))
+    if grwt_proz > 1.0:
+        grwt_proz /= 100.0
+
     notar_proz = float(_get_val(payload, "notar_proz", 0.0) or (notar_p / 100.0))
+    if notar_proz > 1.0:
+        notar_proz /= 100.0
+
     makler_proz = float(_get_val(payload, "makler_proz", 0.0) or (makler_p / 100.0))
+    if makler_proz > 1.0:
+        makler_proz /= 100.0
 
     grwt_euro = kaufpreis * grwt_proz
     notar_euro = kaufpreis * notar_proz
@@ -80,22 +90,42 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     ek_quote = (ek_euro / gesamt_kosten) * 100.0 if gesamt_kosten > 0 else 0.0
 
     hb_zins = float(_get_val(payload, "hb_zins", 0.04) or 0.04)
+    if hb_zins > 1.0:
+        hb_zins /= 100.0
+
     hb_tilg = float(_get_val(payload, "hb_tilg", 0.02) or 0.02)
+    if hb_tilg > 1.0:
+        hb_tilg /= 100.0
+
     grace_years = int(_get_val(payload, "grace_years", 0) or 0)
     zinsbindung = int(_get_val(payload, "zinsbindung", 10) or 10)
     sondertilg = float(_get_val(payload, "sondertilg", 0.0) or 0.0)
 
     folge_zins = float(_get_val(payload, "folge_zins", 0.038) or 0.038)
+    if folge_zins > 1.0:
+        folge_zins /= 100.0
+
     folge_mode = str(_get_val(payload, "folge_mode", "Rate konstant halten (Annuität)") or "Rate konstant halten (Annuität)")
+    
     folge_tilg = float(_get_val(payload, "folge_tilg", 0.02) or 0.02)
+    if folge_tilg > 1.0:
+        folge_tilg /= 100.0
 
     kfw_zins = float(_get_val(payload, "kfw_zins", 0.021) or 0.021)
+    if kfw_zins > 1.0:
+        kfw_zins /= 100.0
+
     kfw_tilg = float(_get_val(payload, "kfw_tilg", 0.03) or 0.03)
+    if kfw_tilg > 1.0:
+        kfw_tilg /= 100.0
+
     kfw_grace_years = int(_get_val(payload, "kfw_grace_years", 0) or 0)
 
     # 3. STEUER- & AFA-MODELL
     tax_rate_pct = float(_get_val(payload, "tax_rate_pct", 42.0) or 42.0)
     tax_rate = float(_get_val(payload, "tax_rate", 0.0) or (tax_rate_pct / 100.0))
+    if tax_rate > 1.0:
+        tax_rate /= 100.0
 
     gebaeude_anteil_pct = float(_get_val(payload, "gebaeude_anteil_pct", 80.0) or 80.0)
     gebaeude_wert = kaufpreis * (gebaeude_anteil_pct / 100.0)
@@ -103,6 +133,8 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
 
     afa_model = str(_get_val(payload, "afa_model", "Linear Standard") or "Linear Standard")
     afa_lin = float(_get_val(payload, "afa_lin", 0.02) or 0.02)
+    if afa_lin > 1.0:
+        afa_lin /= 100.0
 
     ist_sonder_afa_berechtigt = gebaeude_wert_pro_qm > 0 and gebaeude_wert_pro_qm <= 5200.0
     sonder_afa_bemessungsgrundlage = min(gebaeude_wert, 4000.0 * qm)
@@ -121,6 +153,8 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
 
     vac_rate_pct = float(_get_val(payload, "vac_rate_pct", 2.0) or 2.0)
     vac_rate = float(_get_val(payload, "vac_rate", 0.0) or (vac_rate_pct / 100.0))
+    if vac_rate > 1.0:
+        vac_rate /= 100.0
 
     vac_initial_pa = miete_initial_pa * vac_rate
     opex_initial_pa = (hausgeld_nicht_umlegbar + mgt_monat) * 12.0 + (inst_sqm * qm) + vac_initial_pa
@@ -161,8 +195,16 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
 
     adj_year = int(_get_val(payload, "adj_year", 1) or 1)
     miet_inc = float(_get_val(payload, "miet_inc", 0.01) or 0.01)
+    if miet_inc > 1.0:
+        miet_inc /= 100.0
+
     cost_inc = float(_get_val(payload, "cost_inc", 0.02) or 0.02)
+    if cost_inc > 1.0:
+        cost_inc /= 100.0
+
     val_inc = float(_get_val(payload, "val_inc", 0.01) or 0.01)
+    if val_inc > 1.0:
+        val_inc /= 100.0
 
     for year in range(1, 51):
         if year < adj_year:
@@ -188,13 +230,16 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         if year == 1:
             capex_current += sanierung
 
-        # HAUSBANK LOAN ANNUITÄT
+        # HAUSBANK LOAN ANNUITÄT (FACHLICH KORRIGIERT)
         hb_zins_rate = hb_zins if year <= zinsbindung else folge_zins
         hb_interest = hb_rest * hb_zins_rate
 
-        if year <= grace_years or hb_rest <= 0:
+        if hb_rest <= 0:
             hb_principal = 0.0
             hb_interest = 0.0
+        elif year <= grace_years:
+            hb_principal = 0.0
+            # Zins bleibt berechnet (hb_interest = hb_rest * hb_zins_rate)
         else:
             loan_type = str(_get_val(payload, "loan_type", "Annuitätendarlehen") or "Annuitätendarlehen")
             if loan_type == "Endfälliges Darlehen":
@@ -206,7 +251,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
                     if folge_mode == "Rate konstant halten (Annuität)":
                         target_annuity = hb_annuity_constant
                     else:
-                        target_annuity = hb_loan * (hb_zins_rate + folge_tilg)
+                        target_annuity = hb_rest * (hb_zins_rate + folge_tilg)
 
                 calculated_principal = max(0.0, target_annuity - hb_interest) + sondertilg
                 hb_principal = min(hb_rest, calculated_principal)
@@ -214,11 +259,14 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         hb_debt_service = hb_interest + hb_principal
         hb_rest = max(0.0, hb_rest - hb_principal)
 
-        # KFW LOAN ANNUITÄT
+        # KFW LOAN ANNUITÄT (FACHLICH KORRIGIERT)
         kfw_interest = kfw_rest * kfw_zins
-        if year <= kfw_grace_years or kfw_rest <= 0:
+        if kfw_rest <= 0:
             kfw_principal = 0.0
             kfw_interest = 0.0
+        elif year <= kfw_grace_years:
+            kfw_principal = 0.0
+            # Zins bleibt berechnet (kfw_interest = kfw_rest * kfw_zins)
         else:
             calculated_kfw_principal = max(0.0, kfw_annuity_constant - kfw_interest)
             kfw_principal = min(kfw_rest, calculated_kfw_principal)
@@ -231,7 +279,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         total_debt_service = hb_debt_service + kfw_debt_service
         total_remaining_debt = hb_rest + kfw_rest
 
-        # AFA BERECHNUNG
+        # AFA BERECHNUNG (VOLLSTÄNDIG ERHALTEN)
         afa_amount = 0.0
         if afa_model == "Linear Standard":
             afa_amount = gebaeude_wert * afa_lin
@@ -273,7 +321,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
 
         cashflows_for_irr.append(net_cashflow)
 
-        # SPALTENMAPPING (KOMPATIBEL MIT BEIDEN FRONTEND-COMPONENTS)
+        # SPALTENMAPPING (VOLLSTÄNDIG & FRONTEND-KOMPATIBEL)
         projection.append({
             "Jahr": year,
             "jahr": year,

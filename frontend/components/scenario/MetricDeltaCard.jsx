@@ -4,7 +4,7 @@ export default function MetricDeltaCard({
   label, 
   value, 
   unit = '', 
-  type = 'currency', // 'currency' | 'percent' | 'number'
+  type = 'currency', 
   compareValue, 
   isBaseline = false, 
   invertColor = false 
@@ -71,7 +71,9 @@ export default function MetricDeltaCard({
           gap: '4px'
         }}>
           <span>{formatDelta(delta)}</span>
-          <span>{isPositive ? '▲' : '▼'}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isPositive ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
         </div>
       ) : !isBaseline ? (
         <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#A0AEC0' }}>Identisch zur Basis</div>

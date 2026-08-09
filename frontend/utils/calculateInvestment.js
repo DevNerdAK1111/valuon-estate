@@ -23,7 +23,7 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
   const ekEuro = Number(formData?.ek_euro || 0);
   const baujahr = Number(formData?.baujahr || 2000);
 
-  // FALLBACK WENN NOCH KEIN BACKEND-ERGEBNIS VORLIEGT (INITIAL RENDER)
+  // INITIALER ZUSTAND (SOLANGE NOCH KEINE BACKEND-ANTWORT DA IST)
   if (!rawBackendResult) {
     const grwtP = Number(formData?.grwt_p ?? 5.0);
     const notarP = Number(formData?.notar_p ?? 2.0);
@@ -91,7 +91,7 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
     };
   }
 
-  // WENN BACKEND-ERGEBNIS VORLIEGT: VERWENDE DIE BACKEND-WERTE ALS SINGLE SOURCE OF TRUTH
+  // NORMALIERE DAS BACKEND-ERGEBNIS FÜR DIE FRONTEND-ANSICHT
   const fullProjection = rawBackendResult.projection || [];
 
   let horizonYears = 10;
@@ -105,7 +105,6 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
 
   const slicedProjection = fullProjection.slice(0, horizonYears);
 
-  // AGGREGATION DER SUMMEN FÜR DEN GEWÄHLTEN HORIZONT AUS DEN BACKEND-DATEN
   const totals = slicedProjection.reduce(
     (acc, r) => {
       acc.miete += r.miete || r['Mieteinnahmen IST'] || 0;
@@ -138,7 +137,6 @@ export function calculateInvestmentModel(formData, projectionHorizon = '10', raw
 
   const gesamtGewinn = totalNetCashflow + (netExitProceeds - ekEuro);
 
-  // KENNZAHLEN DIREKT AUS DEM BACKEND-ERGEBNIS ÜBERNEHMEN
   const backendKpis = rawBackendResult.kpis || {};
   const backendStamm = rawBackendResult.stammDaten || {};
   const backendNk = rawBackendResult.kaufnebenkosten || {};

@@ -1,10 +1,11 @@
 import React from 'react';
+import { formatEuroInt } from '../../utils/formatters';
 
 export default function MetricDeltaCard({ 
   label, 
   value, 
+  type = 'currency', // 'currency' | 'percent' | 'number'
   unit = '', 
-  type = 'currency', 
   compareValue, 
   isBaseline = false, 
   invertColor = false 
@@ -13,10 +14,10 @@ export default function MetricDeltaCard({
     if (v === null || v === undefined || isNaN(v)) return '—';
     const num = Number(v);
     if (type === 'currency') {
-      return num.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+      return `${formatEuroInt(num)} €`;
     }
     if (type === 'percent') {
-      return `${num.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} %`;
+      return `${num.toFixed(2).replace('.', ',')} %`;
     }
     return num.toLocaleString('de-DE', { maximumFractionDigits: 2 });
   };
@@ -33,39 +34,53 @@ export default function MetricDeltaCard({
     if (d === null || isNaN(d)) return '';
     const sign = d > 0 ? '+' : '';
     if (type === 'currency') {
-      return `${sign}${d.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}`;
+      return `${sign}${formatEuroInt(d)} €`;
     }
     if (type === 'percent') {
-      return `${sign}${d.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} %`;
+      return `${sign}${d.toFixed(2).replace('.', ',')} %`;
     }
-    return `${sign}${d.toFixed(2)} ${unit}`.trim();
+    return `${sign}${d.toFixed(2).replace('.', ',')} ${unit}`.trim();
   };
 
   return (
     <div style={{
-      background: '#ffffff',
+      background: 'white',
       border: '1px solid #E2D9CE',
-      borderRadius: '12px',
-      padding: '12px 14px',
+      borderRadius: '10px',
+      padding: '1rem',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
+      minHeight: '100px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
     }}>
-      <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#718096' }}>{label}</span>
+      <div style={{
+        fontSize: '0.75rem',
+        fontWeight: '800',
+        color: '#718096',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }}>
+        {label}
+      </div>
       
-      <div style={{ marginTop: '6px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#13381A' }}>
-          {formatValue(value)} {type === 'number' && unit ? <span style={{ fontSize: '0.75rem', fontWeight: '400', color: '#718096' }}>{unit}</span> : null}
-        </span>
+      <div style={{
+        fontSize: '1.3rem',
+        fontWeight: '900',
+        margin: '4px 0',
+        color: '#13381A'
+      }}>
+        {formatValue(value)}
       </div>
 
       {!isBaseline && delta !== null && Math.abs(delta) > 0.001 ? (
         <div style={{
-          marginTop: '6px',
           fontSize: '0.75rem',
-          fontWeight: '700',
-          color: isPositive ? '#2F855A' : '#C53030',
+          fontWeight: '800',
+          color: isPositive ? '#276749' : '#9B2C2C',
           display: 'flex',
           alignItems: 'center',
           gap: '4px'
@@ -76,9 +91,9 @@ export default function MetricDeltaCard({
           </svg>
         </div>
       ) : !isBaseline ? (
-        <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#A0AEC0' }}>Identisch zur Basis</div>
+        <div style={{ fontSize: '0.72rem', color: '#A0AEC0', fontWeight: '600' }}>Identisch zur Basis</div>
       ) : (
-        <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#A0AEC0' }}>Basis-Szenario</div>
+        <div style={{ fontSize: '0.72rem', color: '#A0AEC0', fontWeight: '600' }}>Basis-Szenario</div>
       )}
     </div>
   );

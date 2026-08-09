@@ -1,8 +1,12 @@
 'use client';
-import { IconFolder, IconPlus, IconTrendingUp, IconBuilding } from '../ui/Icons';
+import { useState } from 'react';
+import { IconFolder, IconPlus, IconTrendingUp, IconBuilding, IconLock, IconLightning } from '../ui/Icons';
+import DevNoticeModal from '../ui/DevNoticeModal';
 import { formatEuroInt } from '../../utils/formatters';
 
 export default function StartseiteView({ setNavChoice, dbProperties = [], loadPropertyFromDb }) {
+  const [devNotice, setDevNotice] = useState(null);
+
   const pipelineCount = dbProperties.filter(p => !p.status || p.status === 'pipeline').length;
   const bestandCount = dbProperties.filter(p => p.status === 'bestand').length;
   
@@ -16,9 +20,75 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
 
   const recentProperties = dbProperties.slice(0, 5);
 
+  const modules = [
+    {
+      id: 'analyse',
+      title: 'Immobilien-Analyse',
+      description: 'Detaillierte Cashflow-Prognosen, AfA-Modelle & Rendite-Kalkulation.',
+      badge: 'Aktiv',
+      badgeColor: 'bg-emerald-100 text-emerald-900',
+      action: () => setNavChoice('Analyse'),
+      icon: <IconPlus />,
+      isDev: false
+    },
+    {
+      id: 'database',
+      title: 'Objekt Datenbank',
+      description: 'Verwalte deine Such-Pipeline und dein reales Immobilien-Portfolio.',
+      badge: 'Aktiv',
+      badgeColor: 'bg-emerald-100 text-emerald-900',
+      action: () => setNavChoice('Objekt Datenbank'),
+      icon: <IconFolder />,
+      isDev: false
+    },
+    {
+      id: 'scenario',
+      title: 'Szenario-Vergleich',
+      description: 'Stresstests & Zwei-Spalten-Vergleich von Zinsen, Kaufpreisen und Mieten.',
+      badge: 'Aktiv',
+      badgeColor: 'bg-emerald-100 text-emerald-900',
+      action: () => setNavChoice('Szenario-Vergleich'),
+      icon: <IconTrendingUp />,
+      isDev: false
+    },
+    {
+      id: 'ai-parser',
+      title: 'KI Exposé-Parser',
+      description: 'Automatische Datenextraktion aus ImmoScout24-PDFs & Links via Gemini KI.',
+      badge: 'In Entwicklung',
+      badgeColor: 'bg-amber-100 text-amber-900',
+      action: () => setDevNotice('KI Exposé-Parser'),
+      icon: <IconLightning />,
+      isDev: true
+    },
+    {
+      id: 'portfolio-analytics',
+      title: 'Portfolio Benchmarking',
+      description: 'Konsolidierte Gesamtrendite, LTV-Verteilung & Cashflow-Aggregation.',
+      badge: 'In Entwicklung',
+      badgeColor: 'bg-amber-100 text-amber-900',
+      action: () => setDevNotice('Portfolio Benchmarking'),
+      icon: <IconBuilding />,
+      isDev: true
+    },
+    {
+      id: 'location-check',
+      title: 'Standort & Mikrolage',
+      description: 'Mietspiegel-Daten, Demografie-Entwicklung und Lagedaten-Analyse.',
+      badge: 'In Entwicklung',
+      badgeColor: 'bg-amber-100 text-amber-900',
+      action: () => setDevNotice('Standort & Mikrolage-Check'),
+      icon: <IconLock />,
+      isDev: true
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-8 w-full">
       
+      {/* DEV NOTICE MODAL */}
+      <DevNoticeModal devNotice={devNotice} onClose={() => setDevNotice(null)} />
+
       {/* HERO BANNER */}
       <div className="bg-gradient-to-r from-valuon-green to-emerald-900 text-white p-8 sm:p-10 rounded-2xl border border-valuon-border shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="max-w-2xl">
@@ -26,7 +96,7 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
             Willkommen bei Valuon Estate
           </span>
           <h1 className="text-2xl sm:text-4xl font-black text-white m-0 tracking-tight leading-tight">
-            Institutional Grade Immobilien-Analyse & Performance
+            Institutional Grade Immobilien-Analyse
           </h1>
           <p className="text-sm sm:text-base text-slate-200 mt-3 mb-0 leading-relaxed font-medium">
             Präzise Cashflow-Prognosen, IRR-Berechnungen, AfA-Optimierung und Portfolio-Steuerung auf Banken-Niveau.
@@ -41,19 +111,48 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
           >
             <IconPlus /> Neue Analyse starten
           </button>
-          <button
-            type="button"
-            onClick={() => setNavChoice('Objekt Datenbank')}
-            className="py-3.5 px-6 bg-white/15 text-white font-extrabold text-sm rounded-xl border border-white/20 cursor-pointer backdrop-blur-sm hover:bg-white/25 transition-colors flex items-center justify-center gap-2"
-          >
-            <IconFolder /> Datenbank öffnen
-          </button>
+        </div>
+      </div>
+
+      {/* MODULE GRID (AKTIVE & DEVELOPMENT KARTEN) */}
+      <div className="flex flex-col gap-4">
+        <h2 className="text-lg font-black text-valuon-green m-0">Analyse-Module & Suite Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {modules.map((mod) => (
+            <div
+              key={mod.id}
+              onClick={mod.action}
+              className={`bg-white border border-valuon-border rounded-xl p-5 flex flex-col justify-between shadow-sm transition-all duration-150 cursor-pointer hover:shadow-md hover:border-valuon-green ${
+                mod.isDev ? 'opacity-90' : ''
+              }`}
+            >
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <span className={`px-2.5 py-1 rounded-full text-[0.7rem] font-black uppercase ${mod.badgeColor}`}>
+                    {mod.badge}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-valuon-cream text-valuon-green flex items-center justify-center">
+                    {mod.icon}
+                  </div>
+                </div>
+                <h3 className="text-base font-black text-valuon-green m-0 mb-1">{mod.title}</h3>
+                <p className="text-xs text-slate-500 font-medium m-0 leading-relaxed">
+                  {mod.description}
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-valuon-border/60 flex justify-end">
+                <span className="text-xs font-bold text-valuon-green flex items-center gap-1 group">
+                  {mod.isDev ? 'Vorschau öffnen' : 'Modul starten'} →
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* STATISTIK KARTEN GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
         <div className="bg-white p-5 rounded-xl border border-valuon-border shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Pipeline Objekte</span>
@@ -103,7 +202,6 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
             FastAPI & Supabase Bereit
           </div>
         </div>
-
       </div>
 
       {/* LETZTE OBJEKTE TABELLE */}

@@ -58,8 +58,9 @@ export default function Home() {
   const fetchDatabaseProperties = async () => {
     setLoadingDb(true);
     try {
-      const data = await fetchPropertiesApi();
-      setDbProperties(data?.properties || []);
+      const data = await fetchPropertiesApi(userEmail);
+      const list = Array.isArray(data) ? data : (data?.properties || []);
+      setDbProperties(list);
     } catch (err) {
       console.error('Fehler beim Laden der Objekte:', err);
     } finally {
@@ -69,7 +70,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchDatabaseProperties();
-  }, []);
+  }, [userEmail]);
 
   const handleCalculate = async (e) => {
     if (e) e.preventDefault();
@@ -89,19 +90,7 @@ export default function Home() {
     setSaving(true);
     setSaveSuccess(null);
     try {
-      const payload = {
-        name: formData.obj_name || 'Neues Objekt',
-        obj_name: formData.obj_name || 'Neues Objekt',
-        stadt: formData.stadt || '',
-        bundesland: formData.bundesland || '',
-        kaufpreis: Number(formData.kaufpreis || 0),
-        qm: Number(formData.qm || 0),
-        status: statusTarget,
-        form_data: formData,
-        capex_list: capexList,
-        irr: calcResult?.summary?.irr || 0
-      };
-      await savePropertyApi(payload);
+      await savePropertyApi(formData, capexList, calcResult, userEmail, statusTarget);
       setSaveSuccess(`Objekt erfolgreich in ${statusTarget === 'bestand' ? 'Bestand' : 'Pipeline'} gespeichert!`);
       await fetchDatabaseProperties();
     } catch (err) {

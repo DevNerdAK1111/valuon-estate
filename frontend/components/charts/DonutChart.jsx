@@ -32,7 +32,7 @@ export default function DonutChart({ formData, model, summe_nk }) {
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-valuon-border flex flex-col justify-between h-full box-border shadow-sm">
+    <div className="bg-white p-6 rounded-xl border border-valuon-border flex flex-col justify-between h-full shadow-sm">
       <h3 className="m-0 text-base font-black text-valuon-green">
         Finanzierungsstruktur & Mittelherkunft
       </h3>
@@ -86,8 +86,6 @@ export default function DonutChart({ formData, model, summe_nk }) {
           })}
         </div>
       </div>
-      
-      <div />
     </div>
   );
 }

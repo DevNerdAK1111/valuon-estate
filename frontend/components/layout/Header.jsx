@@ -1,15 +1,3 @@
-fontWeight: isActive ? '800' : '600'
-```[cite: 7]
-
-Wenn ein Menüpunkt aktiv wird, wird die Schrift von Semi-Bold (`600`) zu Extra-Bold (`800`)[cite: 7]. Dadurch verändert sich die Zeichenbreite des Wortes um einige Pixel. Das schiebt alle nachfolgenden Buttons und den Header-Container horizontal hin und her.
-
----
-
-### Der korrigierte Code für `Header.jsx`
-
-Durch eine durchgängige Schriftstärke von `700` (Bold) für alle Menüpunkte bleibt die Breite jedes Buttons absolut stabil[cite: 7]. Die aktive Unterscheidung erfolgt weiterhin über die grüne Hintergrundfarbe, die Textfarbe und den Schatten[cite: 7]:
-
-```jsx
 'use client';
 import { IconGear, IconUser } from '../ui/Icons';
 
@@ -34,7 +22,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         </div>
       </div>
 
-      {/* NAVIGATION TABS - SPRUNGFREI */}
+      {/* NAVIGATION TABS */}
       <nav style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.6)', padding: '5px', borderRadius: '30px', border: '1px solid #E2D9CE', backdropFilter: 'blur(8px)' }}>
         {navItems.map((item) => {
           const isActive = navChoice === item;
@@ -48,7 +36,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
                 color: isActive ? '#F7F4EC' : '#4A5568',
                 border: 'none',
                 borderRadius: '20px',
-                fontWeight: '700', // Stabile Schriftstärke verhindert Breitenänderung
+                fontWeight: '700',
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
@@ -62,7 +50,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         })}
       </nav>
 
-      {/* RECHTE TOOLBAR / STATUS, EINSTELLUNGEN & PROFIL */}
+      {/* RECHTE TOOLBAR */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         
         {/* BACKEND STATUS BADGE */}
@@ -122,7 +110,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
           <IconGear />
         </button>
 
-        {/* PROFIL / USER BADGE */}
+        {/* PROFIL BADGE */}
         <div 
           onClick={() => setNavChoice('Profil')}
           title="Nutzerprofil öffnen"

@@ -42,9 +42,11 @@ def analyze_text_with_gemini(raw_text: str, api_key: str = None) -> dict:
         Anzeigen-Text: {raw_text[:7000]}
         """
         model = genai.GenerativeModel('models/gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        cleaned = response.text.replace('```json', '').replace('```', '').strip()
-        return json.loads(cleaned[cleaned.find('{'):cleaned.rfind('}') + 1])
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        return json.loads(response.text)
     except Exception as e:
         print(f"Fehler bei KI-Analyse: {e}")
         return None

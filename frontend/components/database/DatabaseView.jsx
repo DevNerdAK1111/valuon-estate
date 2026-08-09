@@ -4,7 +4,6 @@ import { IconFolder, IconRefresh, IconTrash } from '../ui/Icons';
 import { formatEuroInt, formatPct } from '../../utils/formatters';
 import { updatePropertyStatusApi, calculateInvestmentApi } from '../../lib/propertyApi';
 import { calculateInvestmentModel } from '../../utils/calculateInvestment';
-import PdfReportTemplate from '../pdf/PdfReportTemplate';
 
 const DEFAULT_PDF_KPIS = [
   { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
@@ -23,7 +22,6 @@ export default function DatabaseView({
   const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' | 'bestand'
   const [updatingId, setUpdatingId] = useState(null);
   const [exportingId, setExportingId] = useState(null);
-  const [pdfPayload, setPdfPayload] = useState(null);
 
   const pipelineItems = dbProperties.filter(
     (item) => !item.status || item.status === 'pipeline'
@@ -70,52 +68,39 @@ export default function DatabaseView({
       const calcResult = await calculateInvestmentApi(formData, capexList);
       const model = calculateInvestmentModel(formData, '10', calcResult);
 
-      setPdfPayload({ formData, model });
+      // 2. Dynamischer Client-Import von @react-pdf/renderer und dem PDF-Template
+      const { pdf } = await import('@react-pdf/renderer');
+      const PdfReportTemplate = (await import('../pdf/PdfReportTemplate')).default;
 
-      // 2. Kurz warten, bis der DOM-Knoten für das PDF gerendert wurde
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // 3. Vektor-PDF als Blob generieren
+      const blob = await pdf(
+        <PdfReportTemplate
+          formData={formData}
+          model={model}
+          selectedKpis={DEFAULT_PDF_KPIS}
+        />
+      ).toBlob();
 
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
-      const element = document.getElementById('pdf-report-template');
-      if (!element) throw new Error('PDF-Template konnte nicht geladen werden.');
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#FAF8F5'
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, 297));
+      // 4. Download auslösen
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
       const fileName = (formData.obj_name || 'Immobilien_Analyse').replace(/\s+/g, '_');
-      pdf.save(`${fileName}_Valuon.pdf`);
+      link.download = `${fileName}_Valuon.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
       alert(`PDF Export fehlgeschlagen: ${err.message || 'Unbekannter Fehler'}`);
     } finally {
       setExportingId(null);
-      setPdfPayload(null);
     }
   };
 
   return (
     <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
       
-      {/* VERSTECKTES TEMPLATE FÜR DEN PDF DOWLOAD */}
-      {pdfPayload && (
-        <PdfReportTemplate
-          formData={pdfPayload.formData}
-          model={pdfPayload.model}
-          selectedKpis={DEFAULT_PDF_KPIS}
-        />
-      )}
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#13381A' }}>Objekt Datenbank & Portfolio</h2>

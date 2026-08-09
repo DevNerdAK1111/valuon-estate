@@ -2,12 +2,12 @@
 import { IconGear, IconUser } from '../ui/Icons';
 
 export default function Header({ navChoice, setNavChoice, backendStatus, userEmail, userProfile, onLogout }) {
-  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Immobilienwissen'];
+  const navItems = ['Startseite', 'Analyse', 'Objekt Datenbank', 'Szenario-Vergleich', 'Immobilienwissen'];
 
   const displayName = userProfile?.profilname || userProfile?.vorname || (userEmail ? userEmail.split('@')[0] : 'Konto');
 
   return (
-    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <header style={{ display: 'flex', justifyContents: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
       
       {/* BRANDING / LOGO */}
       <div 

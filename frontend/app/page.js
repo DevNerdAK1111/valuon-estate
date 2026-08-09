@@ -5,7 +5,7 @@ import StartseiteView from '../components/landing/StartseiteView';
 import Parametrisierung from '../components/analyse/Parametrisierung';
 import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
-import ScenarioView from '../components/scenario/ScenarioView';
+import ScenarioComparisonView from '../components/scenario/ScenarioComparisonView';
 import SettingsView from '../components/settings/SettingsView';
 import ProfileView from '../components/profile/ProfileView';
 

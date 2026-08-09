@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 
-export default function SettingsView() {
+export default function SettingsView({ userProfile }) {
   const [defaultTaxRate, setDefaultTaxRate] = useState(42);
   const [defaultBundesland, setDefaultBundesland] = useState('Niedersachsen');
   const [defaultInstandhaltung, setDefaultInstandhaltung] = useState(12);
@@ -28,7 +28,7 @@ export default function SettingsView() {
         </div>
         
         {savedSuccess && (
-          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-lg animate-fade-in">
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-lg">
             ✓ Einstellungen gespeichert
           </div>
         )}

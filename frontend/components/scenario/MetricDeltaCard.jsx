@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { formatEuroInt } from '../../utils/formatters';
 
@@ -43,68 +44,51 @@ export default function MetricDeltaCard({
     return `${sign}${d.toFixed(2).replace('.', ',')} ${unit}`.trim();
   };
 
-  // Farbgebung nach Executive Dashboard Standard
-  const getValueColor = () => {
-    if (customColor) return customColor;
+  const getValueColorClass = () => {
+    if (customColor) return '';
     if (type === 'currency') {
-      if (invertColor) return '#9B2C2C'; // Rate / Ausgaben
-      return value >= 0 ? '#276749' : '#9B2C2C'; // Cashflow & Ertrag
+      if (invertColor) return 'text-valuon-red';
+      return value >= 0 ? 'text-emerald-800' : 'text-valuon-red';
     }
-    return '#13381A';
+    return 'text-valuon-green';
   };
 
   return (
-    <div style={{
-      background: 'white',
-      border: '1px solid #E2D9CE',
-      borderRadius: '10px',
-      padding: '1rem',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      minHeight: '105px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-    }}>
-      <div style={{
-        fontSize: '0.75rem',
-        fontWeight: '800',
-        color: '#718096',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }}>
+    <div className="bg-white border border-valuon-border rounded-xl p-4 flex flex-col justify-between min-h-[105px] shadow-sm">
+      <div className="text-[0.72rem] font-extrabold text-slate-500 uppercase tracking-wider truncate">
         {label}
       </div>
       
-      <div style={{
-        fontSize: '1.35rem',
-        fontWeight: '900',
-        margin: '4px 0',
-        color: getValueColor()
-      }}>
+      <div 
+        className={`text-lg sm:text-xl font-black my-1 ${getValueColorClass()}`}
+        style={customColor ? { color: customColor } : {}}
+      >
         {formatValue(value)}
       </div>
 
       {!isBaseline && delta !== null && Math.abs(delta) > 0.001 ? (
-        <div style={{
-          fontSize: '0.75rem',
-          fontWeight: '800',
-          color: isPositive ? '#276749' : '#9B2C2C',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}>
+        <div className={`text-xs font-extrabold flex items-center gap-1 ${
+          isPositive ? 'text-emerald-800' : 'text-valuon-red'
+        }`}>
           <span>{formatDelta(delta)}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isPositive ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
+          <svg 
+            width="12" 
+            height="12" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className={`transition-transform duration-200 ${isPositive ? 'rotate-0' : 'rotate-180'}`}
+          >
             <polyline points="18 15 12 9 6 15"></polyline>
           </svg>
         </div>
       ) : !isBaseline ? (
-        <div style={{ fontSize: '0.72rem', color: '#A0AEC0', fontWeight: '600' }}>Identisch zur Basis</div>
+        <div className="text-[0.72rem] text-slate-400 font-semibold">Identisch zur Basis</div>
       ) : (
-        <div style={{ fontSize: '0.72rem', color: '#A0AEC0', fontWeight: '600' }}>Basis-Szenario</div>
+        <div className="text-[0.72rem] text-slate-400 font-semibold">Basis-Szenario</div>
       )}
     </div>
   );

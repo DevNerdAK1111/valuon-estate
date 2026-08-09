@@ -136,21 +136,29 @@ export default function Parametrisierung({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="flex flex-col gap-5">
       
       {/* KOPFZEILE */}
-      <div style={{ background: 'white', padding: '1.25rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
-        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: '#13381A' }}>Objekt-Parameter</h3>
-        <span style={{ fontSize: '0.8rem', color: '#718096', marginTop: '2px', display: 'block' }}>Eingabemaske für Kalkulation</span>
+      <div className="bg-white p-5 rounded-xl border border-valuon-border">
+        <h3 className="m-0 text-lg font-extrabold text-valuon-green">Objekt-Parameter</h3>
+        <span className="text-xs text-slate-500 mt-0.5 block">Eingabemaske für Kalkulation</span>
       </div>
 
       {/* BUTTONS */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <button type="button" onClick={toggleAllSections} style={{ flex: 1, padding: '0.6rem 1rem', background: 'white', border: '1px solid #E2D9CE', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#13381A', cursor: 'pointer', textAlign: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+      <div className="flex gap-3 items-center">
+        <button
+          type="button"
+          onClick={toggleAllSections}
+          className="flex-1 py-2.5 px-4 bg-white border border-valuon-border rounded-lg text-xs font-bold text-valuon-green cursor-pointer text-center shadow-sm hover:bg-valuon-cream transition-colors"
+        >
           {allSectionsOpen ? 'Alle einklappen' : 'Alle ausklappen'}
         </button>
         {handleReset && (
-          <button type="button" onClick={() => { setIsTargetCustomized(false); setIsHausgeldCustomized(false); handleReset(); }} style={{ padding: '0.6rem 1.25rem', background: '#FFF5F5', border: '1px solid #FEB2B2', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#9B2C2C', cursor: 'pointer' }}>
+          <button
+            type="button"
+            onClick={() => { setIsTargetCustomized(false); setIsHausgeldCustomized(false); handleReset(); }}
+            className="py-2.5 px-5 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-valuon-red cursor-pointer hover:bg-red-100 transition-colors"
+          >
             Reset
           </button>
         )}
@@ -224,7 +232,7 @@ export default function Parametrisierung({
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 100);
         }}
-        style={{ padding: '1rem', background: '#13381A', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1.05rem', fontWeight: '900', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(19,56,26,0.25)', marginTop: '0.5rem' }}
+        className="p-4 bg-valuon-green text-white border-none rounded-xl text-base font-black cursor-pointer shadow-lg shadow-valuon-green/25 mt-2 hover:bg-valuon-green-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Berechne Investment...' : 'Investition analysieren'}
       </button>

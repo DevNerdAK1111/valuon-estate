@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ScenarioColumn from './ScenarioColumn';
+import { calculateInvestmentApi } from '../../lib/propertyApi';
+import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { selectStyle } from '../../styles/formStyles';
 import { formatEuroInt } from '../../utils/formatters';
 
@@ -46,6 +48,91 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
   const [scenarioA, setScenarioA] = useState(initialData);
   const [scenarioB, setScenarioB] = useState(initialData);
 
+  const [resultA, setResultA] = useState(null);
+  const [resultB, setResultB] = useState(null);
+  const [loadingA, setLoadingA] = useState(false);
+  const [loadingB, setLoadingB] = useState(false);
+
+  // Trigger Backend-Berechnung für Szenario A bei Parameter-Änderung
+  useEffect(() => {
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      setLoadingA(true);
+      try {
+        const res = await calculateInvestmentApi(scenarioA, scenarioA.capexList || []);
+        if (isMounted) setResultA(res);
+      } catch (err) {
+        console.error('Fehler bei der Backend-Berechnung für Szenario A:', err);
+      } finally {
+        if (isMounted) setLoadingA(false);
+      }
+    }, 200);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [scenarioA]);
+
+  // Trigger Backend-Berechnung für Szenario B bei Parameter-Änderung
+  useEffect(() => {
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      setLoadingB(true);
+      try {
+        const res = await calculateInvestmentApi(scenarioB, scenarioB.capexList || []);
+        if (isMounted) setResultB(res);
+      } catch (err) {
+        console.error('Fehler bei der Backend-Berechnung für Szenario B:', err);
+      } finally {
+        if (isMounted) setLoadingB(false);
+      }
+    }, 200);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [scenarioB]);
+
+  // Offizielles Modell aus dem Executive Dashboard ableiten
+  const modelA = useMemo(() => {
+    if (!resultA) return null;
+    return calculateInvestmentModel(scenarioA, '10', resultA);
+  }, [scenarioA, resultA]);
+
+  const modelB = useMemo(() => {
+    if (!resultB) return null;
+    return calculateInvestmentModel(scenarioB, '10', resultB);
+  }, [scenarioB, resultB]);
+
+  // Kennzahlen-Extraktion exakt aus dem Executive Dashboard
+  const kpisA = useMemo(() => {
+    if (!modelA) return null;
+    const firstRow = modelA.slicedProjection?.[0] || {};
+    return {
+      cashflowNachSteuer: modelA.kpis?.avgMonthlyCashflow ?? firstRow.cashflowNachSteuerMo,
+      cashflowVorSteuer: firstRow.cashflowVorSteuerMo || 0,
+      nettoMietrendite: modelA.kpis?.nettoMietrenditeInitial || 0,
+      ekRendite: modelA.kpis?.validIrr || 0,
+      monatlicheRate: (firstRow.kapitaldienst || 0) / 12,
+      gesamtGewinn: modelA.kpis?.gesamtGewinn || 0
+    };
+  }, [modelA]);
+
+  const kpisB = useMemo(() => {
+    if (!modelB) return null;
+    const firstRow = modelB.slicedProjection?.[0] || {};
+    return {
+      cashflowNachSteuer: modelB.kpis?.avgMonthlyCashflow ?? firstRow.cashflowNachSteuerMo,
+      cashflowVorSteuer: firstRow.cashflowVorSteuerMo || 0,
+      nettoMietrendite: modelB.kpis?.nettoMietrenditeInitial || 0,
+      ekRendite: modelB.kpis?.validIrr || 0,
+      monatlicheRate: (firstRow.kapitaldienst || 0) / 12,
+      gesamtGewinn: modelB.kpis?.gesamtGewinn || 0
+    };
+  }, [modelB]);
+
   const handleSelectDbProperty = (propertyId) => {
     if (!propertyId) return;
     const found = dbProperties?.find(p => String(p.id) === String(propertyId));
@@ -56,51 +143,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
       if (setFormData) setFormData(merged);
     }
   };
-
-  const calculateQuickKpis = (d) => {
-    if (!d) return { cashflowNachSteuer: 0, nettoMietrendite: 0, vermoegen10Jahre: 0 };
-    const kaufpreis = Number(d.kaufpreis || 0);
-    const grwtP = Number(d.grwt_p ?? 5.0);
-    const notarP = Number(d.notar_p ?? 2.0);
-    const maklerP = Number(d.makler_p ?? 3.57);
-    const sonstNk = Number(d.sonst_nk ?? 0);
-    const kaufnebenkosten = (kaufpreis * (grwtP + notarP + maklerP) / 100) + sonstNk;
-    const gesamtinvestition = kaufpreis + kaufnebenkosten;
-
-    const ek = Number(d.ek_euro || 0);
-    const kfwAmt = Number(d.kfw_amt || 0);
-    const kreditsumme = Math.max(0, gesamtinvestition - ek - kfwAmt);
-
-    const zinsP = Number(d.hb_zins ?? 3.8);
-    const tilgungP = Number(d.hb_tilg ?? 2.0);
-    const monatlicheRate = (kreditsumme * ((zinsP + tilgungP) / 100)) / 12 + (kfwAmt * ((Number(d.kfw_zins ?? 2.1) + Number(d.kfw_tilg ?? 3.0)) / 100)) / 12;
-
-    const kaltmieteMonat = Number(d.kaltmiete_monat || 0);
-    const mietausfallP = Number(d.vac_rate_pct ?? 2.0);
-    const effektiveMiete = kaltmieteMonat * (1 - mietausfallP / 100);
-
-    const verwaltungMonat = Number(d.mgt_monat ?? 30);
-    const wohnflaeche = Number(d.qm || 50);
-    const instandhaltungMonat = (wohnflaeche * Number(d.inst_sqm ?? 12)) / 12;
-    const hausgeldNichtUmlegbar = Number(d.hausgeld_nicht_umlegbar ?? (d.hausgeld ? d.hausgeld * 0.25 : 0));
-    const bewirtschaftung = verwaltungMonat + instandhaltungMonat + hausgeldNichtUmlegbar;
-
-    const cashflowVorSteuer = effektiveMiete - bewirtschaftung - monatlicheRate;
-    const zinsMonat = (kreditsumme * (zinsP / 100) + kfwAmt * (Number(d.kfw_zins ?? 2.1) / 100)) / 12;
-    const afaMonat = (kaufpreis * (Number(d.gebaeude_anteil_pct ?? 80) / 100) * (Number(d.afa_lin ?? 2) / 100)) / 12;
-    const zuVersteuern = effektiveMiete - bewirtschaftung - zinsMonat - afaMonat;
-    const taxRate = Number(d.tax_rate_pct ?? 42) / 100;
-    const steuerMonat = zuVersteuern > 0 ? zuVersteuern * taxRate : 0;
-    
-    return {
-      cashflowNachSteuer: cashflowVorSteuer - steuerMonat,
-      nettoMietrendite: gesamtinvestition > 0 ? (((effektiveMiete - bewirtschaftung) * 12) / gesamtinvestition) * 100 : 0,
-      vermoegen10Jahre: ((kreditsumme * (tilgungP / 100)) * 10) + (kaufpreis * Math.pow(1 + (Number(d.val_inc ?? 1) / 100), 10) - kaufpreis)
-    };
-  };
-
-  const resultsA = useMemo(() => calculateQuickKpis(scenarioA), [scenarioA]);
-  const resultsB = useMemo(() => calculateQuickKpis(scenarioB), [scenarioB]);
 
   const applyPreset = (presetType) => {
     switch (presetType) {
@@ -154,12 +196,12 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
               Szenario-Vergleich
             </h2>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#718096', fontWeight: '500' }}>
-              Simultane Parameter-Analyse in Echtzeit
+              Simultane Backend-Analyse & Stresstest in Echtzeit
             </p>
           </div>
         </div>
 
-        {/* Database Selector Dropdown for Base Property */}
+        {/* Database Selector Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#13381A' }}>
             Basis-Objekt laden:
@@ -233,8 +275,10 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           badgeColor="#2B6CB0"
           data={scenarioA}
           setData={setScenarioA}
-          baselineResults={resultsA}
+          kpis={kpisA}
+          baselineResults={kpisA}
           isBaseline={true}
+          loading={loadingA}
         />
 
         <ScenarioColumn 
@@ -243,43 +287,47 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           badgeColor="#2F855A"
           data={scenarioB}
           setData={setScenarioB}
-          baselineResults={resultsA}
+          kpis={kpisB}
+          baselineResults={kpisA}
           isBaseline={false}
+          loading={loadingB}
         />
       </div>
 
       {/* Direct Delta Highlights */}
-      <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-        <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: '800', color: '#13381A' }}>
-          Gesamtauswirkung (Szenario B vs. Szenario A)
-        </h3>
+      {kpisA && kpisB && (
+        <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: '800', color: '#13381A' }}>
+            Gesamtauswirkung Backend-Prognose (Szenario B vs. Szenario A)
+          </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Cashflow-Differenz (Monat)</span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (resultsB.cashflowNachSteuer - resultsA.cashflowNachSteuer) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
-              {(resultsB.cashflowNachSteuer - resultsA.cashflowNachSteuer) >= 0 ? '+' : ''}{formatEuroInt(resultsB.cashflowNachSteuer - resultsA.cashflowNachSteuer)} €
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Cashflow-Differenz (Monat)</span>
+              <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+                {(kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer) >= 0 ? '+' : ''}{formatEuroInt(kpisB.cashflowNachSteuer - kpisA.cashflowNachSteuer)} €
+              </div>
+              <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Cashflow n. St.</span>
             </div>
-            <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Cashflow</span>
-          </div>
 
-          <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Rendite-Abweichung (Netto)</span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
-              {(resultsB.nettoMietrendite - resultsA.nettoMietrendite) >= 0 ? '+' : ''}{(resultsB.nettoMietrendite - resultsA.nettoMietrendite).toFixed(2).replace('.', ',')} %
+            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Rendite-Abweichung (Netto)</span>
+              <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#13381A', marginTop: '4px' }}>
+                {(kpisB.nettoMietrendite - kpisA.nettoMietrendite) >= 0 ? '+' : ''}{(kpisB.nettoMietrendite - kpisA.nettoMietrendite).toFixed(2).replace('.', ',')} %
+              </div>
+              <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Mietrendite</span>
             </div>
-            <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Unterschied Netto-Mietrendite</span>
-          </div>
 
-          <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Vermögenszuwachs-Delta (10 J.)</span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (resultsB.vermoegen10Jahre - resultsA.vermoegen10Jahre) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
-              {(resultsB.vermoegen10Jahre - resultsA.vermoegen10Jahre) >= 0 ? '+' : ''}{formatEuroInt(resultsB.vermoegen10Jahre - resultsA.vermoegen10Jahre)} €
+            <div style={{ background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '10px', padding: '1rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase' }}>Gesamtgewinn-Delta (10 J.)</span>
+              <div style={{ fontSize: '1.35rem', fontWeight: '900', color: (kpisB.gesamtGewinn - kpisA.gesamtGewinn) >= 0 ? '#276749' : '#9B2C2C', marginTop: '4px' }}>
+                {(kpisB.gesamtGewinn - kpisA.gesamtGewinn) >= 0 ? '+' : ''}{formatEuroInt(kpisB.gesamtGewinn - kpisA.gesamtGewinn)} €
+              </div>
+              <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Kumulierter Vermögensgewinn</span>
             </div>
-            <span style={{ fontSize: '0.72rem', color: '#718096', marginTop: '2px', display: 'block' }}>Kumuliertes Vermögens-Delta</span>
           </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

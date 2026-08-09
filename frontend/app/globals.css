@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable;
+  background-color: #F7F4EC;
+  color: #13381A;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+*, *:before, *:after {
+  box-sizing: border-box;
+}

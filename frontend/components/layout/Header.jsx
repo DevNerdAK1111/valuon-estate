@@ -1,3 +1,6 @@
+fontWeight: isActive ? '800' : '600'
+```[cite: 7]
+```jsx
 'use client';
 import { IconGear, IconUser } from '../ui/Icons';
 
@@ -22,7 +25,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
         </div>
       </div>
 
-      {/* NAVIGATION TABS */}
+      {/* NAVIGATION TABS - SPRUNGFREI */}
       <nav style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.6)', padding: '5px', borderRadius: '30px', border: '1px solid #E2D9CE', backdropFilter: 'blur(8px)' }}>
         {navItems.map((item) => {
           const isActive = navChoice === item;
@@ -36,11 +39,12 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
                 color: isActive ? '#F7F4EC' : '#4A5568',
                 border: 'none',
                 borderRadius: '20px',
-                fontWeight: isActive ? '800' : '600',
+                fontWeight: '700', // Stabile Schriftstärke verhindert Breitenänderung
                 fontSize: '0.85rem',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease-in-out',
-                boxShadow: isActive ? '0 2px 8px rgba(19,56,26,0.18)' : 'none'
+                transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
+                boxShadow: isActive ? '0 2px 8px rgba(19,56,26,0.18)' : 'none',
+                whiteSpace: 'nowrap'
               }}
             >
               {item}
@@ -102,7 +106,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
             border: '1px solid #E2D9CE',
             borderRadius: '20px',
             cursor: 'pointer',
-            transition: 'all 0.15s ease-in-out',
+            transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}
         >
@@ -126,7 +130,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
             cursor: 'pointer',
             fontSize: '0.8rem',
             fontWeight: '700',
-            transition: 'all 0.15s ease-in-out',
+            transition: 'background-color 0.15s ease-in-out, color 0.15s ease-in-out',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
           }}
         >

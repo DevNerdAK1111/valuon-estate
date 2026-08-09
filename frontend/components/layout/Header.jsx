@@ -1,5 +1,14 @@
 fontWeight: isActive ? '800' : '600'
 ```[cite: 7]
+
+Wenn ein Menüpunkt aktiv wird, wird die Schrift von Semi-Bold (`600`) zu Extra-Bold (`800`)[cite: 7]. Dadurch verändert sich die Zeichenbreite des Wortes um einige Pixel. Das schiebt alle nachfolgenden Buttons und den Header-Container horizontal hin und her.
+
+---
+
+### Der korrigierte Code für `Header.jsx`
+
+Durch eine durchgängige Schriftstärke von `700` (Bold) für alle Menüpunkte bleibt die Breite jedes Buttons absolut stabil[cite: 7]. Die aktive Unterscheidung erfolgt weiterhin über die grüne Hintergrundfarbe, die Textfarbe und den Schatten[cite: 7]:
+
 ```jsx
 'use client';
 import { IconGear, IconUser } from '../ui/Icons';

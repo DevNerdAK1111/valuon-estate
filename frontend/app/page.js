@@ -6,7 +6,6 @@ import Parametrisierung from '../components/analyse/Parametrisierung';
 import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
 import ScenarioComparisonView from '../components/scenario/ScenarioComparisonView';
-import SettingsView from '../components/settings/SettingsView';
 import ProfileView from '../components/profile/ProfileView';
 
 import { useAuthProfile } from '../hooks/useAuthProfile';
@@ -201,12 +200,6 @@ export default function Home() {
             basePropertyData={formData}
             dbProperties={dbProperties}
             setFormData={setFormData}
-          />
-        )}
-
-        {navChoice === 'Einstellungen' && (
-          <SettingsView
-            userProfile={userProfile}
           />
         )}
 

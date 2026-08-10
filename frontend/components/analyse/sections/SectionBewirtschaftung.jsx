@@ -2,7 +2,6 @@
 import StepperInput from '../../ui/StepperInput';
 import { MainCard, SubContainerCard } from '../../ui/CollapsibleCard';
 import { formatEuroInt } from '../../../utils/formatters';
-import { labelStyle, inputStyle, grid2Style, infoBoxStyle } from '../../../styles/formStyles';
 
 export default function SectionBewirtschaftung({
   formData,
@@ -28,7 +27,7 @@ export default function SectionBewirtschaftung({
 }) {
   return (
     <MainCard title="2. Bewirtschaftung & Nebenkosten" isOpen={isOpen} onToggle={onToggle}>
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Ist-Kaltmiete (€ / Mo)"
           value={formData?.kaltmiete_monat || 0}
@@ -44,7 +43,7 @@ export default function SectionBewirtschaftung({
         />
       </div>
 
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Ziel-Kaltmiete (€ / Mo)"
           value={formData?.target_monat || 0}
@@ -61,14 +60,14 @@ export default function SectionBewirtschaftung({
       </div>
 
       <div>
-        <label style={labelStyle}>Anpassung ab Jahr</label>
+        <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Anpassung ab Jahr</label>
         <input
           type="number"
           step="1"
           min="1"
           value={formData?.adj_year || 1}
           onChange={(e) => onFieldChange('adj_year', parseInt(e.target.value, 10) || 1)}
-          style={inputStyle}
+          className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
         />
       </div>
 
@@ -93,18 +92,17 @@ export default function SectionBewirtschaftung({
           isCurrency={true}
         />
 
-        <div style={infoBoxStyle}>
-          <div style={{ fontWeight: '800', fontSize: '0.8rem', color: '#13381A', marginBottom: '4px' }}>
+        <div className="bg-white border border-valuon-border rounded-lg p-3 text-[0.85rem] text-valuon-green">
+          <div className="font-extrabold text-[0.8rem] text-valuon-green mb-1">
             Faustformel (25 / 75 % Logik):
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#4A5568', lineHeight: '1.4' }}>
+          <div className="text-[0.75rem] text-slate-600 leading-relaxed">
             Im Durchschnitt sind ca. 75 % des Hausgeldes umlagefähige Betriebskosten. Die verbleibenden 25 % (Instandhaltungsrücklage & Hausverwaltung) trägt der Eigentümer.
           </div>
         </div>
       </SubContainerCard>
 
-      {/* ERWEITERTES TOOLTIP FÜR INSTANDHALTUNG */}
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Instandhaltung (€ / m²)"
           value={formData?.inst_sqm || 12}
@@ -123,7 +121,7 @@ export default function SectionBewirtschaftung({
         />
       </div>
 
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Mietausfallwagnis (%)"
           value={formData?.vac_rate_pct || 2.0}
@@ -140,13 +138,13 @@ export default function SectionBewirtschaftung({
         />
       </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid #E2D9CE', margin: '0.25rem 0' }} />
+      <hr className="border-none border-t border-valuon-border my-1" />
 
-      <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
+      <div className="text-[0.85rem] font-extrabold text-valuon-green">
         Kaufnebenkosten Parameter
       </div>
 
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Grunderwerbsteuer (%)"
           value={formData?.grwt_p ?? 5.0}
@@ -163,7 +161,7 @@ export default function SectionBewirtschaftung({
         />
       </div>
 
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Maklercourtage (%)"
           value={formData?.makler_p ?? 3.57}
@@ -180,15 +178,15 @@ export default function SectionBewirtschaftung({
         />
       </div>
 
-      <div style={infoBoxStyle}>
-        <div style={{ fontWeight: '800', fontSize: '0.95rem', marginBottom: '8px', borderBottom: '1px solid #E2D9CE', paddingBottom: '4px' }}>
+      <div className="bg-valuon-cream border border-valuon-border rounded-lg p-3.5 text-valuon-green">
+        <div className="font-extrabold text-[0.95rem] mb-2 border-b border-valuon-border pb-1">
           Kaufnebenkosten Gesamt: {formatEuroInt(displayNkTotal)} €
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8rem', color: '#4A5568' }}>
-          <div>• <strong>Grunderwerbsteuer ({grwtP}%):</strong> {formatEuroInt(displayGrwtEuro)} €</div>
-          <div>• <strong>Notar & Grundbuch ({notarP}%):</strong> {formatEuroInt(displayNotarEuro)} €</div>
-          <div>• <strong>Maklercourtage ({maklerP}%):</strong> {formatEuroInt(displayMaklerEuro)} €</div>
-          {sonstNk > 0 && <div>• <strong>Sonstige Nebenkosten:</strong> {formatEuroInt(sonstNk)} €</div>}
+        <div className="flex flex-col gap-1 text-[0.8rem] text-slate-600">
+          <div>• <strong className="text-valuon-green">Grunderwerbsteuer ({grwtP}%):</strong> {formatEuroInt(displayGrwtEuro)} €</div>
+          <div>• <strong className="text-valuon-green">Notar & Grundbuch ({notarP}%):</strong> {formatEuroInt(displayNotarEuro)} €</div>
+          <div>• <strong className="text-valuon-green">Maklercourtage ({maklerP}%):</strong> {formatEuroInt(displayMaklerEuro)} €</div>
+          {sonstNk > 0 && <div>• <strong className="text-valuon-green">Sonstige Nebenkosten:</strong> {formatEuroInt(sonstNk)} €</div>}
         </div>
       </div>
     </MainCard>

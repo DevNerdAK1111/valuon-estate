@@ -2,11 +2,19 @@
 import { useState } from 'react';
 import { formatEuro, formatEuroInt, formatPct } from '../../utils/formatters';
 
-const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4A5568' };
-const stepBtnStyle = { border: 'none', background: '#FAF8F5', color: '#13381A', width: '24px', height: '24px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', border: '1px solid #E2D9CE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' };
-const tooltipStyle = { cursor: 'pointer', fontSize: '0.75rem', color: '#718096', border: '1px solid #CBD5E0', borderRadius: '50%', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' };
-
-export default function StepperInput({ label, value, onChange, step = 1, isYear = false, isInteger = false, isCurrency = false, isPercent = false, disabled = false, tooltip = null, onFocus = null }) {
+export default function StepperInput({ 
+  label, 
+  value, 
+  onChange, 
+  step = 1, 
+  isYear = false, 
+  isInteger = false, 
+  isCurrency = false, 
+  isPercent = false, 
+  disabled = false, 
+  tooltip = null, 
+  onFocus = null 
+}) {
   const [isFocused, setIsFocused] = useState(false);
   const [localValue, setLocalValue] = useState('');
 
@@ -24,7 +32,6 @@ export default function StepperInput({ label, value, onChange, step = 1, isYear 
     const rawStr = value !== undefined && value !== null && !isNaN(value) ? String(value) : '';
     setLocalValue(rawStr);
     
-    // Automatisch allen Text markieren, damit Numpad-Eingaben sofort überschreiben
     if (e.target && typeof e.target.select === 'function') {
       setTimeout(() => e.target.select(), 10);
     }
@@ -73,11 +80,24 @@ export default function StepperInput({ label, value, onChange, step = 1, isYear 
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', height: '18px' }}>
-        <label style={labelStyle}>{label}</label>
-        {tooltip && <span title={tooltip} style={tooltipStyle}>?</span>}
+      <div className="flex justify-between items-center mb-1 h-[18px]">
+        <label className="block text-[0.8rem] font-semibold text-slate-600">
+          {label}
+        </label>
+        {tooltip && (
+          <span 
+            title={tooltip} 
+            className="cursor-pointer text-[0.75rem] text-slate-500 border border-slate-300 rounded-full w-4 h-4 inline-flex items-center justify-center hover:bg-slate-100 transition-colors"
+          >
+            ?
+          </span>
+        )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', background: disabled ? '#EDF2F7' : 'white', border: '1px solid #CBD5E0', borderRadius: '8px', padding: '0 8px', height: '42px', boxSizing: 'border-box' }}>
+      <div className={`flex items-center border rounded-lg px-2 h-[42px] box-border transition-colors ${
+        disabled 
+          ? 'bg-slate-100 border-slate-300' 
+          : 'bg-white border-slate-300 focus-within:border-valuon-green focus-within:ring-1 focus-within:ring-valuon-green'
+      }`}>
         <input
           type="text"
           disabled={disabled}
@@ -85,12 +105,26 @@ export default function StepperInput({ label, value, onChange, step = 1, isYear 
           onBlur={handleBlur}
           value={isFocused ? localValue : getFormattedValue(value)}
           onChange={handleChange}
-          style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', fontWeight: '500', color: disabled ? '#A0AEC0' : '#2D3748', fontVariantNumeric: 'tabular-nums' }}
+          className={`w-full border-none outline-none bg-transparent text-[0.9rem] font-medium tabular-nums ${
+            disabled ? 'text-slate-400' : 'text-slate-700'
+          }`}
         />
         {!disabled && (
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-            <button type="button" onClick={handleDecrement} style={stepBtnStyle}>–</button>
-            <button type="button" onClick={handleIncrement} style={stepBtnStyle}>+</button>
+          <div className="flex gap-1 items-center shrink-0">
+            <button 
+              type="button" 
+              onClick={handleDecrement} 
+              className="bg-valuon-cream text-valuon-green w-6 h-6 rounded cursor-pointer font-bold border border-valuon-border flex items-center justify-center text-[0.85rem] hover:bg-white transition-colors"
+            >
+              –
+            </button>
+            <button 
+              type="button" 
+              onClick={handleIncrement} 
+              className="bg-valuon-cream text-valuon-green w-6 h-6 rounded cursor-pointer font-bold border border-valuon-border flex items-center justify-center text-[0.85rem] hover:bg-white transition-colors"
+            >
+              +
+            </button>
           </div>
         )}
       </div>

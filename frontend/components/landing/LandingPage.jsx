@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { IconLightning } from '../ui/Icons';
 
-export default function LandingPage({ setShowApp, setAuthenticated, userEmail, setUserEmail }) {
+export default function LandingPage({ onLoginSuccess, onDevLogin }) {
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'forgot'
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   
@@ -18,7 +19,7 @@ export default function LandingPage({ setShowApp, setAuthenticated, userEmail, s
     setMessage(null);
 
     const { data, error } = await supabase.auth.signUp({
-      email: userEmail,
+      email: email,
       password: password,
       options: {
         emailRedirectTo: 'https://valuon-estate.vercel.app',
@@ -44,7 +45,7 @@ export default function LandingPage({ setShowApp, setAuthenticated, userEmail, s
     setMessage(null);
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: userEmail,
+      email: email,
       password: password,
     });
 
@@ -56,8 +57,7 @@ export default function LandingPage({ setShowApp, setAuthenticated, userEmail, s
         setMessage({ type: 'error', text: 'Login fehlgeschlagen: ' + error.message });
       }
     } else {
-      setAuthenticated(true);
-      setShowApp(true);
+      if (onLoginSuccess) onLoginSuccess(email);
     }
   };
 
@@ -67,7 +67,7 @@ export default function LandingPage({ setShowApp, setAuthenticated, userEmail, s
     setLoading(true);
     setMessage(null);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: 'https://valuon-estate.vercel.app',
     });
 
@@ -142,7 +142,7 @@ export default function LandingPage({ setShowApp, setAuthenticated, userEmail, s
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#A0AEC0', marginBottom: '4px', fontWeight: '600' }}>E-Mail-Adresse</label>
-                <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="deine@email.de" required style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="deine@email.de" required style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: 'white', outline: 'none', boxSizing: 'border-box' }} />
               </div>
 
               {authMode !== 'forgot' && (
@@ -185,7 +185,7 @@ export default function LandingPage({ setShowApp, setAuthenticated, userEmail, s
       {/* FOOTER */}
       <footer style={{ padding: '3rem 2rem', textAlign: 'center', borderTop: '1px solid rgba(226,217,206,0.1)', background: 'rgba(0,0,0,0.4)' }}>
         <div style={{ fontSize: '0.85rem', color: '#718096', marginBottom: '1rem' }}>Valuon Estate Investment Suite v2.4</div>
-        <button onClick={() => { setShowApp(true); setAuthenticated(true); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 28px', background: 'transparent', color: '#A37841', border: '2px dashed #A37841', borderRadius: '30px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer' }}>
+        <button onClick={() => { if (onDevLogin) onDevLogin(); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 28px', background: 'transparent', color: '#A37841', border: '2px dashed #A37841', borderRadius: '30px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer' }}>
           <IconLightning /> Developer Direktzugang (Ohne Login zur Analyse)
         </button>
       </footer>

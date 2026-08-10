@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { IconFolder, IconRefresh, IconTrash } from '../ui/Icons';
 import { formatEuroInt, formatPct } from '../../utils/formatters';
-import { updatePropertyStatusApi, calculateInvestmentApi } from '../../lib/propertyApi';
+import { calculateInvestmentApi } from '../../lib/propertyApi';
 import { calculateInvestmentModel } from '../../utils/calculateInvestment';
+import { useUpdatePropertyStatus } from '../../hooks/usePropertiesQuery';
 
 const DEFAULT_PDF_KPIS = [
   { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
@@ -13,6 +15,7 @@ const DEFAULT_PDF_KPIS = [
 ];
 
 export default function DatabaseView({
+  userEmail,
   loadingDb,
   dbProperties = [],
   fetchDatabaseProperties,
@@ -20,8 +23,9 @@ export default function DatabaseView({
   deletePropertyFromDb
 }) {
   const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' | 'bestand'
-  const [updatingId, setUpdatingId] = useState(null);
   const [exportingId, setExportingId] = useState(null);
+
+  const updateStatusMutation = useUpdatePropertyStatus(userEmail);
 
   const pipelineItems = dbProperties.filter(
     (item) => !item.status || item.status === 'pipeline'
@@ -32,27 +36,19 @@ export default function DatabaseView({
 
   const displayedProperties = activeTab === 'pipeline' ? pipelineItems : bestandItems;
 
-  const handleStatusChange = async (property, newStatus) => {
+  const handleStatusChange = (property, newStatus) => {
     const propId = property.id || property._id;
     if (!propId) {
-      alert('Fehler: Keine gültige Objekt-ID gefunden.');
+      toast.error('Fehler: Keine gültige Objekt-ID gefunden.');
       return;
     }
-
-    setUpdatingId(propId);
-    try {
-      await updatePropertyStatusApi(propId, newStatus);
-      await fetchDatabaseProperties();
-    } catch (err) {
-      alert(`Fehler beim Aktualisieren des Status: ${err.message || 'Unbekannter Fehler'}`);
-    } finally {
-      setUpdatingId(null);
-    }
+    updateStatusMutation.mutate({ propertyId: propId, newStatus });
   };
 
   const handleExportPdf = async (item) => {
     const itemId = item.id || item._id;
     setExportingId(itemId);
+    const toastId = toast.loading('Generiere PDF-Exposé...');
 
     try {
       const formData = item.form_data || {
@@ -71,11 +67,7 @@ export default function DatabaseView({
       const PdfReportTemplate = (await import('../pdf/PdfReportTemplate')).default;
 
       const blob = await pdf(
-        <PdfReportTemplate
-          formData={formData}
-          model={model}
-          selectedKpis={DEFAULT_PDF_KPIS}
-        />
+        <PdfReportTemplate formData={formData} model={model} selectedKpis={DEFAULT_PDF_KPIS} />
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
@@ -87,8 +79,10 @@ export default function DatabaseView({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      
+      toast.success('PDF erfolgreich exportiert!', { id: toastId });
     } catch (err) {
-      alert(`PDF Export fehlgeschlagen: ${err.message || 'Unbekannter Fehler'}`);
+      toast.error(`PDF Export fehlgeschlagen: ${err.message || 'Unbekannter Fehler'}`, { id: toastId });
     } finally {
       setExportingId(null);
     }
@@ -162,6 +156,7 @@ export default function DatabaseView({
               {displayedProperties.map((item, idx) => {
                 const itemId = item.id || item._id;
                 const isExportingThis = exportingId === itemId;
+                const isUpdatingThis = updateStatusMutation.isPending && updateStatusMutation.variables?.propertyId === itemId;
                 const isEven = idx % 2 === 0;
                 const bgClass = isEven ? 'bg-white' : 'bg-slate-50';
 
@@ -193,18 +188,18 @@ export default function DatabaseView({
                           isExportingThis ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-amber-700'
                         }`}
                       >
-                        {isExportingThis ? 'Lädt...' : 'PDF'}
+                        PDF
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleStatusChange(item, activeTab === 'pipeline' ? 'bestand' : 'pipeline')}
-                        disabled={updatingId === itemId}
+                        disabled={isUpdatingThis}
                         className={`py-1.5 px-3 bg-valuon-cream text-valuon-green border border-valuon-green rounded-md text-xs font-bold transition-colors ${
-                          updatingId === itemId ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-white'
+                          isUpdatingThis ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-white'
                         }`}
                       >
-                        {updatingId === itemId ? 'Speichert...' : (activeTab === 'pipeline' ? 'In Bestand' : 'In Pipeline')}
+                        {isUpdatingThis ? 'Lädt...' : (activeTab === 'pipeline' ? 'In Bestand' : 'In Pipeline')}
                       </button>
 
                       <button 

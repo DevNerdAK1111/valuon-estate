@@ -26,9 +26,7 @@ export default function ExecutiveDashboard({
   projectionHorizon,
   setProjectionHorizon,
   handleSaveToDatabase,
-  saving,
-  saveSuccess,
-  calcError,
+  isSaving,
   activeDashboardTab,
   setActiveDashboardTab,
   summe_nk
@@ -65,39 +63,23 @@ export default function ExecutiveDashboard({
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('pipeline')}
-              disabled={saving}
+              disabled={isSaving}
               className="py-2.5 px-4 bg-valuon-green text-white border-none rounded-lg font-extrabold text-xs cursor-pointer hover:bg-valuon-green-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
-              {saving ? 'Speichert...' : '+ In Pipeline speichern'}
+              {isSaving ? 'Speichert...' : '+ In Pipeline speichern'}
             </button>
 
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('bestand')}
-              disabled={saving}
+              disabled={isSaving}
               className="py-2.5 px-3.5 bg-valuon-cream text-valuon-green border border-valuon-green rounded-lg font-extrabold text-xs cursor-pointer hover:bg-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
-              {saving ? 'Speichert...' : 'In Bestand speichern'}
+              {isSaving ? 'Speichert...' : 'In Bestand speichern'}
             </button>
           </div>
         )}
       </div>
-
-      {saveSuccess && (
-        <div className={`p-3.5 rounded-lg text-xs font-bold border ${
-          saveSuccess.includes('Fehler') || saveSuccess.includes('fehlgeschlagen') 
-            ? 'bg-red-50 border-red-200 text-valuon-red' 
-            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-        }`}>
-          {saveSuccess}
-        </div>
-      )}
-
-      {calcError && (
-        <div className="p-3.5 rounded-lg text-xs font-bold bg-red-50 border border-red-200 text-valuon-red">
-          {calcError}
-        </div>
-      )}
 
       {result && (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border border-valuon-border gap-3 shadow-sm">
@@ -219,7 +201,7 @@ export default function ExecutiveDashboard({
 
       {result && (activeDashboardTab === 'Executive Dashboard' || !activeDashboardTab) && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
-         <ProjectionChart slicedProjection={model.slicedProjection} ekEuroInput={formData?.ek_euro} />
+         <ProjectionChart ekEuroInput={formData?.ek_euro} slicedProjection={model.slicedProjection} />
           <DonutChart formData={formData} model={model} summe_nk={summe_nk} />
         </div>
       )}

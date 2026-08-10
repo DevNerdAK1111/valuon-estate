@@ -42,7 +42,6 @@ export default function ScenarioColumn({
     }));
   };
 
-  // Berechnung dynamischer Parameter für die Sektionen
   const kaufpreis = Number(data?.kaufpreis || 0);
   const grwtP = Number(data?.grwt_p ?? 5.0);
   const notarP = Number(data?.notar_p ?? 2.0);
@@ -57,7 +56,6 @@ export default function ScenarioColumn({
 
   const bundeslaenderList = Object.keys(BUNDESLAENDER_DEFAULT);
 
-  // Helper-Handler für Synchrone Miete- & Hausgeld-Berechnungen
   const handleBundeslandChange = (bl) => {
     onFieldChange('bundesland', bl);
     if (BUNDESLAENDER_DEFAULT[bl] !== undefined) {
@@ -96,7 +94,6 @@ export default function ScenarioColumn({
 
   const handleLocalHausgeldNichtUmlegbar = (val) => onFieldChange('hausgeld_nicht_umlegbar', val);
 
-  // CapEx-Handler
   const handleCapexChange = (index, field, value) => {
     setData(prev => {
       const updated = [...(prev.capex_list || [])];
@@ -120,38 +117,22 @@ export default function ScenarioColumn({
   };
 
   return (
-    <div style={{
-      background: 'white',
-      border: '1px solid #E2D9CE',
-      borderRadius: '12px',
-      padding: '1.25rem',
-      display: 'flex',
-      flexDirection: 'column',
-      justify: 'space-between',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-      opacity: loading ? 0.75 : 1,
-      transition: 'opacity 0.15s ease'
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className={`bg-white border border-valuon-border rounded-xl p-5 flex flex-col shadow-sm transition-opacity duration-200 ${loading ? 'opacity-70 pointer-events-none' : 'opacity-100'}`}>
+      <div className="flex flex-col gap-4">
         
         {/* Head Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.75rem', borderBottom: '1px solid #E2D9CE' }}>
-          <span style={{
-            padding: '6px 16px',
-            borderRadius: '20px',
-            fontSize: '0.8rem',
-            fontWeight: '800',
-            background: badgeBg,
-            color: badgeColor
-          }}>
+        <div className="flex justify-between items-center pb-3 border-b border-valuon-border">
+          <span 
+            className="px-4 py-1.5 rounded-full text-xs font-extrabold"
+            style={{ background: badgeBg, color: badgeColor }}
+          >
             {title} {loading ? '(Berechne...)' : ''}
           </span>
-          <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#13381A' }}>
+          <span className="text-[0.85rem] font-extrabold text-valuon-green truncate max-w-[50%]">
             {data?.obj_name || 'Muster-Objekt'}
           </span>
         </div>
 
-        {/* 1. Basisdaten */}
         <SectionBasisdaten
           formData={data}
           isOpen={openSections.basisdaten}
@@ -162,7 +143,6 @@ export default function ScenarioColumn({
           bundeslaenderList={bundeslaenderList}
         />
 
-        {/* 2. Bewirtschaftung & Nebenkosten */}
         <SectionBewirtschaftung
           formData={data}
           isOpen={openSections.bewirtschaftung}
@@ -186,7 +166,6 @@ export default function ScenarioColumn({
           displayMaklerEuro={displayMaklerEuro}
         />
 
-        {/* 3. Finanzierung & Eigenkapital */}
         <SectionFinanzierung
           formData={data}
           isOpen={openSections.finanzierung}
@@ -198,7 +177,6 @@ export default function ScenarioColumn({
           displayNkTotal={displayNkTotal}
         />
 
-        {/* 4. Steuern, Makro & Exit */}
         <SectionSteuern
           formData={data}
           isOpen={openSections.steuer}
@@ -215,11 +193,11 @@ export default function ScenarioColumn({
       </div>
 
       {/* Ergebnis-Metriken */}
-      <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2D9CE' }}>
-        <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.75rem', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+      <div className="mt-5 pt-4 border-t border-valuon-border">
+        <h4 className="m-0 mb-3 text-xs font-extrabold text-slate-500 uppercase tracking-wide">
           Ergebnis-Analyse (Backend)
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="grid grid-cols-2 gap-3">
           <MetricDeltaCard 
             label="Cashflow n. St."
             value={kpis?.cashflowNachSteuer}

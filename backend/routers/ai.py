@@ -17,5 +17,9 @@ async def ai_analysis(payload: AiAnalysisRequest):
 
         result = analyze_text_with_gemini(raw_text)
         return {"status": "success", "data": result}
+    except HTTPException:
+        # Fange HTTPExceptions ab und reiche sie unverändert weiter, 
+        # damit sie nicht vom generellen Exception-Block in einen 500er verwandelt werden.
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"KI-Analysefehler: {str(e)}")

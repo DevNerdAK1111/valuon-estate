@@ -62,7 +62,6 @@ export default function Parametrisierung({
     if (rates[bl] !== undefined) onFieldChange('grwt_p', rates[bl]);
   };
 
-  // Kaufnebenkosten Dynamische Berechnung
   const kaufpreis = Number(formData?.kaufpreis || 0);
   const grwtP = Number(formData?.grwt_p ?? 5.0);
   const notarP = Number(formData?.notar_p ?? 2.0);
@@ -139,7 +138,7 @@ export default function Parametrisierung({
     <div className="flex flex-col gap-5">
       
       {/* KOPFZEILE */}
-      <div className="bg-white p-5 rounded-xl border border-valuon-border">
+      <div className="bg-white p-5 rounded-xl border border-valuon-border shadow-sm">
         <h3 className="m-0 text-lg font-extrabold text-valuon-green">Objekt-Parameter</h3>
         <span className="text-xs text-slate-500 mt-0.5 block">Eingabemaske für Kalkulation</span>
       </div>
@@ -157,7 +156,7 @@ export default function Parametrisierung({
           <button
             type="button"
             onClick={() => { setIsTargetCustomized(false); setIsHausgeldCustomized(false); handleReset(); }}
-            className="py-2.5 px-5 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-valuon-red cursor-pointer hover:bg-red-100 transition-colors"
+            className="py-2.5 px-5 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-valuon-red cursor-pointer hover:bg-red-100 transition-colors shadow-sm"
           >
             Reset
           </button>

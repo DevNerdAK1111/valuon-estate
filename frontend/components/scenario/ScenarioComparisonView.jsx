@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import ScenarioColumn from './ScenarioColumn';
 import { calculateInvestmentApi } from '../../lib/propertyApi';
 import { calculateInvestmentModel } from '../../utils/calculateInvestment';
-import { selectStyle } from '../../styles/formStyles';
 import { formatEuroInt } from '../../utils/formatters';
 
 export default function ScenarioComparisonView({ basePropertyData, dbProperties, setFormData }) {
@@ -167,9 +166,9 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     <div className="flex flex-col gap-6 w-full">
       
       {/* HEADER BAR */}
-      <div className="bg-white border border-valuon-border p-5 rounded-xl flex flex-row items-center justify-between flex-wrap gap-4 shadow-sm">
+      <div className="bg-white border border-valuon-border p-5 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-valuon-green text-valuon-cream flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-lg bg-valuon-green text-valuon-cream flex items-center justify-center font-black shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>
               <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -187,14 +186,14 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
         </div>
 
         {/* DATABASE SELECTOR */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-extrabold text-valuon-green">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+          <label className="text-xs font-extrabold text-valuon-green whitespace-nowrap">
             Basis-Objekt laden:
           </label>
-          <div className="w-56">
+          <div className="w-full sm:w-56 relative">
             <select
               onChange={(e) => handleSelectDbProperty(e.target.value)}
-              style={selectStyle}
+              className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
             >
               <option value="">{scenarioA?.obj_name || 'Aktuelles Objekt'}</option>
               {dbProperties?.map((p) => (
@@ -207,8 +206,8 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
         </div>
 
         {/* QUICK PRESETS */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-extrabold text-slate-500 mr-1">Presets für B:</span>
+        <div className="flex items-center gap-2 flex-wrap mt-2 md:mt-0 w-full md:w-auto border-t border-valuon-border md:border-none pt-3 md:pt-0">
+          <span className="text-xs font-extrabold text-slate-500 mr-1 w-full sm:w-auto">Presets für B:</span>
           
           <button 
             type="button"

@@ -5,23 +5,22 @@ import SectionBewirtschaftung from './sections/SectionBewirtschaftung';
 import SectionFinanzierung from './sections/SectionFinanzierung';
 import SectionSteuern from './sections/SectionSteuern';
 import { BUNDESLAENDER_DEFAULT } from '../../constants/realEstate';
+import { useProperty } from '../../context/PropertyContext';
 
-export default function Parametrisierung({
-  formData,
-  updateField,
-  pingBackend,
-  handleQmChange,
-  handleHausgeldChange,
-  handleHausgeldNichtUmlegbarChange,
-  grunderwerbsteuerSätze,
-  capexList,
-  handleCapexChange,
-  removeCapexRow,
-  addCapexRow,
-  loading,
-  handleReset,
-  setFormData
-}) {
+export default function Parametrisierung({ loading }) {
+  const {
+    formData,
+    updateField,
+    handleQmChange,
+    handleHausgeldChange,
+    handleHausgeldNichtUmlegbarChange,
+    handleReset,
+    capexList,
+    handleCapexChange,
+    removeCapexRow,
+    addCapexRow
+  } = useProperty();
+
   const [openSections, setOpenSections] = useState({
     basisdaten: true,
     bewirtschaftung: true,
@@ -51,14 +50,12 @@ export default function Parametrisierung({
   const allSectionsOpen = Object.values(openSections).every(Boolean);
 
   const onFieldChange = (field, value) => {
-    if (updateField) updateField(field, value);
-    else if (setFormData) setFormData(prev => ({ ...prev, [field]: value }));
-    if (pingBackend) pingBackend();
+    updateField(field, value);
   };
 
   const handleBundeslandChange = (bl) => {
     onFieldChange('bundesland', bl);
-    const rates = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
+    const rates = BUNDESLAENDER_DEFAULT;
     if (rates[bl] !== undefined) onFieldChange('grwt_p', rates[bl]);
   };
 
@@ -76,7 +73,7 @@ export default function Parametrisierung({
   const ekEuro = Number(formData?.ek_euro || 0);
   const isEkCoveringNk = Math.round(ekEuro) >= Math.round(displayNkTotal);
 
-  const bundeslaenderMap = grunderwerbsteuerSätze || BUNDESLAENDER_DEFAULT;
+  const bundeslaenderMap = BUNDESLAENDER_DEFAULT;
   const bundeslaenderList = Object.keys(bundeslaenderMap);
 
   const handleLocalIstMonat = (val) => {
@@ -118,20 +115,17 @@ export default function Parametrisierung({
   };
 
   const handleLocalHausgeldGesamt = (val) => {
-    if (handleHausgeldChange) handleHausgeldChange(val);
-    else onFieldChange('hausgeld', val);
+    handleHausgeldChange(val);
 
     if (!isHausgeldCustomized) {
       const nichtUmlegbar = Math.round(val * 0.25 * 100) / 100;
-      if (handleHausgeldNichtUmlegbarChange) handleHausgeldNichtUmlegbarChange(nichtUmlegbar);
-      else onFieldChange('hausgeld_nicht_umlegbar', nichtUmlegbar);
+      handleHausgeldNichtUmlegbarChange(nichtUmlegbar);
     }
   };
 
   const handleLocalHausgeldNichtUmlegbar = (val) => {
     setIsHausgeldCustomized(true);
-    if (handleHausgeldNichtUmlegbarChange) handleHausgeldNichtUmlegbarChange(val);
-    else onFieldChange('hausgeld_nicht_umlegbar', val);
+    handleHausgeldNichtUmlegbarChange(val);
   };
 
   return (

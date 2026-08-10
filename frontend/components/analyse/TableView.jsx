@@ -7,160 +7,137 @@ export default function TableView({ slicedProjection, totals }) {
 
   const data = slicedProjection || [];
   const sumData = totals || {
-    miete: 0,
-    opex: 0,
-    noi: 0,
-    zins: 0,
-    tilgung: 0,
-    kapitaldienst: 0,
-    afaEuro: 0,
-    zuVersteuerndesEinkommen: 0,
-    steuerErgebnis: 0,
-    cashflowNachSteuerPa: 0
+    miete: 0, opex: 0, noi: 0, zins: 0, tilgung: 0, kapitaldienst: 0,
+    afaEuro: 0, zuVersteuerndesEinkommen: 0, steuerErgebnis: 0, cashflowNachSteuerPa: 0
   };
 
   const lastRow = data[data.length - 1] || {};
 
   return (
-    <div style={{ background: 'white', border: '1px solid #E2D9CE', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', width: '100%', boxSizing: 'border-box' }}>
+    <div className="bg-white border border-valuon-border rounded-xl p-5 shadow-sm w-full box-border">
       
       {/* HEADER & ANSICHTS-UMSCHALTER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#13381A' }}>
+          <h3 className="m-0 text-[1.05rem] font-extrabold text-valuon-green">
             Jahresbezogene Finanzfluss-Prognose
           </h3>
-          <span style={{ fontSize: '0.75rem', color: '#718096' }}>
+          <span className="text-xs text-slate-500">
             Detaillierte Entwicklung aller Einnahmen, Ausgaben, Tilgungs- und Steuerflüsse pro Jahr
           </span>
         </div>
 
-        <div style={{ display: 'flex', background: '#FAF8F5', padding: '4px', borderRadius: '8px', border: '1px solid #E2D9CE', gap: '4px' }}>
+        <div className="flex bg-valuon-cream p-1 rounded-lg border border-valuon-border gap-1">
           <button
             type="button"
             onClick={() => setViewMode('kompakt')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: 'none',
-              background: viewMode === 'kompakt' ? '#13381A' : 'transparent',
-              color: viewMode === 'kompakt' ? 'white' : '#4A5568',
-              fontWeight: viewMode === 'kompakt' ? '800' : '600',
-              fontSize: '0.75rem',
-              cursor: 'pointer'
-            }}
+            className={`py-1.5 px-3 rounded-md border-none text-[0.75rem] cursor-pointer transition-colors ${
+              viewMode === 'kompakt' ? 'bg-valuon-green text-white font-extrabold' : 'bg-transparent text-slate-600 font-bold hover:text-valuon-green'
+            }`}
           >
             Kompakt-Ansicht
           </button>
           <button
             type="button"
             onClick={() => setViewMode('vollstaendig')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: 'none',
-              background: viewMode === 'vollstaendig' ? '#13381A' : 'transparent',
-              color: viewMode === 'vollstaendig' ? 'white' : '#4A5568',
-              fontWeight: viewMode === 'vollstaendig' ? '800' : '600',
-              fontSize: '0.75rem',
-              cursor: 'pointer'
-            }}
+            className={`py-1.5 px-3 rounded-md border-none text-[0.75rem] cursor-pointer transition-colors ${
+              viewMode === 'vollstaendig' ? 'bg-valuon-green text-white font-extrabold' : 'bg-transparent text-slate-600 font-bold hover:text-valuon-green'
+            }`}
           >
             Vollständige Details
           </button>
         </div>
       </div>
 
-      {/* ISOLIERTER SCROLL-CONTAINER */}
-      <div style={{ width: '100%', overflowX: 'auto', border: '1px solid #E2D9CE', borderRadius: '8px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+      {/* ISOLIERTER SCROLL-CONTAINER FÜR MOBILE */}
+      <div className="w-full overflow-x-auto border border-valuon-border rounded-lg shadow-inner">
+        <table className="w-full border-collapse text-[0.78rem] text-right whitespace-nowrap">
           <thead>
-            
-            <tr style={{ background: '#FAF8F5', color: '#13381A', borderBottom: '1px solid #E2D9CE', fontWeight: '800' }}>
-              <th style={{ ...thStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 2 }}>Jahr</th>
-              <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Operativ & Miete</th>
-              <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Bank & Kapitaldienst</th>
+            <tr className="bg-valuon-cream text-valuon-green border-b border-valuon-border font-extrabold">
+              <th className="py-1.5 px-2.5 text-[0.72rem] tracking-wide uppercase text-center sticky left-0 bg-valuon-cream z-20 border-r border-valuon-border">Jahr</th>
+              <th colSpan="3" className="py-1.5 px-2.5 text-[0.72rem] tracking-wide uppercase text-center border-l border-valuon-border">Operativ & Miete</th>
+              <th colSpan="3" className="py-1.5 px-2.5 text-[0.72rem] tracking-wide uppercase text-center border-l border-valuon-border">Bank & Kapitaldienst</th>
               {viewMode === 'vollstaendig' && (
-                <th colSpan="3" style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Steuer & AfA</th>
+                <th colSpan="3" className="py-1.5 px-2.5 text-[0.72rem] tracking-wide uppercase text-center border-l border-valuon-border">Steuer & AfA</th>
               )}
-              <th colSpan={viewMode === 'vollstaendig' ? "5" : "3"} style={{ ...thStyle, textAlign: 'center', borderLeft: '1px solid #E2D9CE' }}>Ergebnis & Vermögen</th>
+              <th colSpan={viewMode === 'vollstaendig' ? "5" : "3"} className="py-1.5 px-2.5 text-[0.72rem] tracking-wide uppercase text-center border-l border-valuon-border">Ergebnis & Vermögen</th>
             </tr>
 
-            <tr style={{ background: '#13381A', color: 'white', fontWeight: '700' }}>
-              <th style={{ ...thSubStyle, position: 'sticky', left: 0, background: '#13381A', zIndex: 2, textAlign: 'center' }}>Jahr</th>
+            <tr className="bg-valuon-green text-white font-bold">
+              <th className="py-2 px-2 text-[0.73rem] sticky left-0 bg-valuon-green z-20 text-center border-r border-white/20">Jahr</th>
               
-              <th style={thSubStyle}>Kaltmiete p.a.</th>
-              <th style={thSubStyle}>Bewirtschaftung</th>
-              <th style={thSubStyle}>Nettomiete (NOI)</th>
+              <th className="py-2 px-2 text-[0.73rem]">Kaltmiete p.a.</th>
+              <th className="py-2 px-2 text-[0.73rem]">Bewirtschaftung</th>
+              <th className="py-2 px-2 text-[0.73rem]">Nettomiete (NOI)</th>
 
-              <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>Zins p.a.</th>
-              <th style={thSubStyle}>Tilgung p.a.</th>
-              <th style={thSubStyle}>Kapitaldienst</th>
+              <th className="py-2 px-2 text-[0.73rem] border-l border-white/20">Zins p.a.</th>
+              <th className="py-2 px-2 text-[0.73rem]">Tilgung p.a.</th>
+              <th className="py-2 px-2 text-[0.73rem]">Kapitaldienst</th>
 
               {viewMode === 'vollstaendig' && (
                 <>
-                  <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>AfA € p.a.</th>
-                  <th style={thSubStyle}>zu verst. Eink.</th>
-                  <th style={thSubStyle}>Steuer-Ergebnis</th>
+                  <th className="py-2 px-2 text-[0.73rem] border-l border-white/20">AfA € p.a.</th>
+                  <th className="py-2 px-2 text-[0.73rem]">zu verst. Eink.</th>
+                  <th className="py-2 px-2 text-[0.73rem]">Steuer-Ergebnis</th>
                 </>
               )}
 
               {viewMode === 'vollstaendig' && (
-                <th style={{ ...thSubStyle, borderLeft: '1px solid rgba(255,255,255,0.2)' }}>CF v. St. / Mo.</th>
+                <th className="py-2 px-2 text-[0.73rem] border-l border-white/20">CF v. St. / Mo.</th>
               )}
-              <th style={{ ...thSubStyle, borderLeft: viewMode === 'vollstaendig' ? 'none' : '1px solid rgba(255,255,255,0.2)' }}>CF n. St. / Mo.</th>
-              <th style={thSubStyle}>CF n. St. p.a.</th>
-              <th style={thSubStyle}>Restschuld</th>
-              {viewMode === 'vollstaendig' && <th style={thSubStyle}>Netto-EK (NAV)</th>}
+              <th className={`py-2 px-2 text-[0.73rem] ${viewMode !== 'vollstaendig' ? 'border-l border-white/20' : ''}`}>CF n. St. / Mo.</th>
+              <th className="py-2 px-2 text-[0.73rem]">CF n. St. p.a.</th>
+              <th className="py-2 px-2 text-[0.73rem]">Restschuld</th>
+              {viewMode === 'vollstaendig' && <th className="py-2 px-2 text-[0.73rem]">Netto-EK (NAV)</th>}
             </tr>
           </thead>
 
           <tbody>
             {data.map((row, idx) => {
               const isEven = idx % 2 === 0;
-              const bg = isEven ? 'white' : '#FAF8F5';
+              const bgClass = isEven ? 'bg-white' : 'bg-slate-50';
               const cfMo = row.cashflowNachSteuerMo;
               const cfPa = row.cashflowNachSteuer;
               const isCfPos = cfMo >= 0;
 
               return (
-                <tr key={row.jahr} style={{ background: bg, borderBottom: '1px solid #E2D9CE' }}>
-                  <td style={{ ...tdStyle, fontWeight: '800', textAlign: 'center', position: 'sticky', left: 0, background: bg, zIndex: 1, borderRight: '1px solid #E2D9CE' }}>
+                <tr key={row.jahr} className={`${bgClass} border-b border-valuon-border hover:bg-slate-100 transition-colors`}>
+                  <td className={`py-1.5 px-2 font-extrabold text-center sticky left-0 z-10 border-r border-valuon-border ${bgClass}`}>
                     {row.jahr}
                   </td>
 
-                  <td style={tdStyle}>{formatEuroInt(row.miete)} €</td>
-                  <td style={{ ...tdStyle, color: '#9B2C2C' }}>-{formatEuroInt(row.opex)} €</td>
-                  <td style={{ ...tdStyle, fontWeight: '700' }}>{formatEuroInt(row.noi)} €</td>
+                  <td className="py-1.5 px-2 text-slate-700">{formatEuroInt(row.miete)} €</td>
+                  <td className="py-1.5 px-2 text-valuon-red">-{formatEuroInt(row.opex)} €</td>
+                  <td className="py-1.5 px-2 font-bold text-slate-800">{formatEuroInt(row.noi)} €</td>
 
-                  <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: '#9B2C2C' }}>-{formatEuroInt(row.zins)} €</td>
-                  <td style={{ ...tdStyle, color: '#A37841' }}>-{formatEuroInt(row.tilgung)} €</td>
-                  <td style={{ ...tdStyle, fontWeight: '700' }}>-{formatEuroInt(row.kapitaldienst)} €</td>
+                  <td className="py-1.5 px-2 border-l border-valuon-border text-valuon-red">-{formatEuroInt(row.zins)} €</td>
+                  <td className="py-1.5 px-2 text-valuon-gold">-{formatEuroInt(row.tilgung)} €</td>
+                  <td className="py-1.5 px-2 font-bold text-slate-800">-{formatEuroInt(row.kapitaldienst)} €</td>
 
                   {viewMode === 'vollstaendig' && (
                     <>
-                      <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: '#718096' }}>{formatEuroInt(row.afaEuro)} €</td>
-                      <td style={tdStyle}>{formatEuroInt(row.zuVersteuerndesEinkommen)} €</td>
-                      <td style={{ ...tdStyle, fontWeight: '700', color: row.steuerErgebnis > 0 ? '#9B2C2C' : '#276749' }}>
+                      <td className="py-1.5 px-2 border-l border-valuon-border text-slate-500">{formatEuroInt(row.afaEuro)} €</td>
+                      <td className="py-1.5 px-2 text-slate-700">{formatEuroInt(row.zuVersteuerndesEinkommen)} €</td>
+                      <td className={`py-1.5 px-2 font-bold ${row.steuerErgebnis > 0 ? 'text-valuon-red' : 'text-emerald-800'}`}>
                         {row.steuerErgebnis > 0 ? `-${formatEuroInt(row.steuerErgebnis)} €` : `+${formatEuroInt(Math.abs(row.steuerErgebnis))} €`}
                       </td>
                     </>
                   )}
 
                   {viewMode === 'vollstaendig' && (
-                    <td style={{ ...tdStyle, borderLeft: '1px solid #E2D9CE', color: row.cashflowVorSteuerMo >= 0 ? '#276749' : '#9B2C2C' }}>
+                    <td className={`py-1.5 px-2 border-l border-valuon-border ${row.cashflowVorSteuerMo >= 0 ? 'text-emerald-800' : 'text-valuon-red'}`}>
                       {row.cashflowVorSteuerMo >= 0 ? '+' : ''}{formatEuroInt(row.cashflowVorSteuerMo)} €
                     </td>
                   )}
-                  <td style={{ ...tdStyle, borderLeft: viewMode === 'vollstaendig' ? 'none' : '1px solid #E2D9CE', fontWeight: '900', color: isCfPos ? '#276749' : '#9B2C2C', background: isCfPos ? 'rgba(39, 103, 73, 0.05)' : 'rgba(155, 44, 44, 0.05)' }}>
+                  <td className={`py-1.5 px-2 font-black ${isCfPos ? 'text-emerald-800 bg-emerald-50/50' : 'text-valuon-red bg-red-50/50'} ${viewMode !== 'vollstaendig' ? 'border-l border-valuon-border' : ''}`}>
                     {isCfPos ? '+' : ''}{formatEuroInt(cfMo)} €
                   </td>
-                  <td style={{ ...tdStyle, fontWeight: '900', color: cfPa >= 0 ? '#276749' : '#9B2C2C' }}>
+                  <td className={`py-1.5 px-2 font-black ${cfPa >= 0 ? 'text-emerald-800' : 'text-valuon-red'}`}>
                     {cfPa >= 0 ? '+' : ''}{formatEuroInt(cfPa)} €
                   </td>
-                  <td style={{ ...tdStyle, color: '#9B2C2C' }}>{formatEuroInt(row.restschuld)} €</td>
+                  <td className="py-1.5 px-2 text-valuon-red">{formatEuroInt(row.restschuld)} €</td>
                   {viewMode === 'vollstaendig' && (
-                    <td style={{ ...tdStyle, fontWeight: '800', color: '#13381A' }}>{formatEuroInt(row.netEquity)} €</td>
+                    <td className="py-1.5 px-2 font-extrabold text-valuon-green">{formatEuroInt(row.netEquity)} €</td>
                   )}
                 </tr>
               );
@@ -168,39 +145,39 @@ export default function TableView({ slicedProjection, totals }) {
           </tbody>
 
           <tfoot>
-            <tr style={{ background: '#FAF8F5', color: '#13381A', fontWeight: '900', borderTop: '2px solid #13381A' }}>
-              <td style={{ ...tdStyle, textAlign: 'center', position: 'sticky', left: 0, background: '#FAF8F5', zIndex: 1, borderRight: '1px solid #CBD5E0' }}>
+            <tr className="bg-valuon-cream text-valuon-green font-black border-t-2 border-valuon-green">
+              <td className="py-2 px-2 text-center sticky left-0 bg-valuon-cream z-10 border-r border-slate-300">
                 Gesamt
               </td>
 
-              <td style={tdStyle}>{formatEuroInt(sumData.miete)} €</td>
-              <td style={{ ...tdStyle, color: '#9B2C2C' }}>-{formatEuroInt(sumData.opex)} €</td>
-              <td style={tdStyle}>{formatEuroInt(sumData.noi)} €</td>
+              <td className="py-2 px-2">{formatEuroInt(sumData.miete)} €</td>
+              <td className="py-2 px-2 text-valuon-red">-{formatEuroInt(sumData.opex)} €</td>
+              <td className="py-2 px-2">{formatEuroInt(sumData.noi)} €</td>
 
-              <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#9B2C2C' }}>-{formatEuroInt(sumData.zins)} €</td>
-              <td style={{ ...tdStyle, color: '#A37841' }}>-{formatEuroInt(sumData.tilgung)} €</td>
-              <td style={tdStyle}>-{formatEuroInt(sumData.kapitaldienst)} €</td>
+              <td className="py-2 px-2 border-l border-slate-300 text-valuon-red">-{formatEuroInt(sumData.zins)} €</td>
+              <td className="py-2 px-2 text-valuon-gold">-{formatEuroInt(sumData.tilgung)} €</td>
+              <td className="py-2 px-2">-{formatEuroInt(sumData.kapitaldienst)} €</td>
 
               {viewMode === 'vollstaendig' && (
                 <>
-                  <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0' }}>{formatEuroInt(sumData.afaEuro)} €</td>
-                  <td style={tdStyle}>{formatEuroInt(sumData.zuVersteuerndesEinkommen)} €</td>
-                  <td style={{ ...tdStyle, color: sumData.steuerErgebnis > 0 ? '#9B2C2C' : '#276749' }}>
+                  <td className="py-2 px-2 border-l border-slate-300">{formatEuroInt(sumData.afaEuro)} €</td>
+                  <td className="py-2 px-2">{formatEuroInt(sumData.zuVersteuerndesEinkommen)} €</td>
+                  <td className={`py-2 px-2 ${sumData.steuerErgebnis > 0 ? 'text-valuon-red' : 'text-emerald-800'}`}>
                     {sumData.steuerErgebnis > 0 ? `-${formatEuroInt(sumData.steuerErgebnis)} €` : `+${formatEuroInt(Math.abs(sumData.steuerErgebnis))} €`}
                   </td>
                 </>
               )}
 
               {viewMode === 'vollstaendig' && (
-                <td style={{ ...tdStyle, borderLeft: '1px solid #CBD5E0', color: '#718096' }}>-</td>
+                <td className="py-2 px-2 border-l border-slate-300 text-slate-500">-</td>
               )}
-              <td style={{ ...tdStyle, borderLeft: viewMode === 'vollstaendig' ? 'none' : '1px solid #CBD5E0', color: '#718096' }}>-</td>
-              <td style={{ ...tdStyle, fontWeight: '900', color: sumData.cashflowNachSteuerPa >= 0 ? '#276749' : '#9B2C2C' }}>
+              <td className={`py-2 px-2 text-slate-500 ${viewMode !== 'vollstaendig' ? 'border-l border-slate-300' : ''}`}>-</td>
+              <td className={`py-2 px-2 font-black ${sumData.cashflowNachSteuerPa >= 0 ? 'text-emerald-800' : 'text-valuon-red'}`}>
                 {sumData.cashflowNachSteuerPa >= 0 ? '+' : ''}{formatEuroInt(sumData.cashflowNachSteuerPa)} €
               </td>
-              <td style={{ ...tdStyle, color: '#9B2C2C' }}>{formatEuroInt(lastRow.restschuld || 0)} €</td>
+              <td className="py-2 px-2 text-valuon-red">{formatEuroInt(lastRow.restschuld || 0)} €</td>
               {viewMode === 'vollstaendig' && (
-                <td style={{ ...tdStyle, color: '#13381A' }}>{formatEuroInt(lastRow.netEquity || 0)} €</td>
+                <td className="py-2 px-2 text-valuon-green">{formatEuroInt(lastRow.netEquity || 0)} €</td>
               )}
             </tr>
           </tfoot>
@@ -209,21 +186,3 @@ export default function TableView({ slicedProjection, totals }) {
     </div>
   );
 }
-
-const thStyle = {
-  padding: '6px 10px',
-  fontSize: '0.72rem',
-  letterSpacing: '0.5px',
-  textTransform: 'uppercase'
-};
-
-const thSubStyle = {
-  padding: '7px 8px',
-  fontSize: '0.73rem',
-  fontWeight: '700'
-};
-
-const tdStyle = {
-  padding: '6px 8px',
-  color: '#2D3748'
-};

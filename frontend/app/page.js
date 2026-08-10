@@ -12,39 +12,25 @@ import ScenarioComparisonView from '../components/scenario/ScenarioComparisonVie
 import ProfileView from '../components/profile/ProfileView';
 
 import { useAuthProfile } from '../hooks/useAuthProfile';
-import { usePropertyForm } from '../hooks/usePropertyForm';
+import { useProperty } from '../context/PropertyContext';
 import { calculateInvestmentApi } from '../lib/propertyApi';
 import { useProperties, useSaveProperty, useDeleteProperty } from '../hooks/usePropertiesQuery';
-import { BUNDESLAENDER_DEFAULT } from '../constants/realEstate';
 
 export default function Home() {
   const [navChoice, setNavChoice] = useState('Startseite');
   const [backendStatus, setBackendStatus] = useState('ready');
 
   const {
-    user,
     userEmail,
     setUserEmail,
-    userProfile,
     setUserProfile,
     loadingProfile,
     updateUserProfile,
     handleLogout
   } = useAuthProfile();
 
-  const {
-    formData,
-    setFormData,
-    updateField,
-    handleQmChange,
-    handleHausgeldChange,
-    handleHausgeldNichtUmlegbarChange,
-    handleReset,
-    capexList,
-    handleCapexChange,
-    addCapexRow,
-    removeCapexRow
-  } = usePropertyForm();
+  // Globaler State via PropertyContext
+  const { formData, setFormData, capexList } = useProperty();
 
   const [calcResult, setCalcResult] = useState(null);
   const [loadingCalc, setLoadingCalc] = useState(false);
@@ -59,8 +45,6 @@ export default function Home() {
 
   const dbProperties = propertiesQuery.data || [];
   const loadingDb = propertiesQuery.isPending;
-
-  const pingBackend = async () => {};
 
   const handleCalculate = async (e) => {
     if (e) e.preventDefault();
@@ -99,7 +83,6 @@ export default function Home() {
     }
   };
 
-  // Handler für den Developer Direktzugang / Quick Login
   const handleDevLogin = (mockEmail = 'developer@valuon.de') => {
     if (setUserEmail) setUserEmail(mockEmail);
     if (setUserProfile) {
@@ -114,9 +97,6 @@ export default function Home() {
     }
   };
 
-  // -------------------------------------------------------------
-  // AUTH GATEKEEPER
-  // -------------------------------------------------------------
   if (loadingProfile) {
     return (
       <div className="min-h-screen bg-valuon-bg flex items-center justify-center text-valuon-green font-bold text-sm">
@@ -140,17 +120,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-valuon-bg text-valuon-green p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto box-border">
       
-      {/* HEADER NAVIGATION */}
       <Header 
         backendStatus={backendStatus} 
         navChoice={navChoice} 
         onLogout={handleLogout} 
         setNavChoice={setNavChoice} 
         userEmail={userEmail} 
-        userProfile={userProfile}
       />
 
-      {/* HAUPTINHALT NATIVE ROUTING */}
       <main className="w-full">
         {navChoice === 'Startseite' && (
           <StartseiteView 
@@ -162,22 +139,7 @@ export default function Home() {
 
         {navChoice === 'Analyse' && (
           <form onSubmit={handleCalculate} className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-            <Parametrisierung 
-              addCapexRow={addCapexRow} 
-              capexList={capexList} 
-              formData={formData} 
-              grunderwerbsteuerSätze={BUNDESLAENDER_DEFAULT} 
-              handleCapexChange={handleCapexChange} 
-              handleHausgeldChange={handleHausgeldChange} 
-              handleHausgeldNichtUmlegbarChange={handleHausgeldNichtUmlegbarChange} 
-              handleQmChange={handleQmChange} 
-              handleReset={handleReset} 
-              loading={loadingCalc} 
-              pingBackend={pingBackend} 
-              removeCapexRow={removeCapexRow} 
-              setFormData={setFormData} 
-              updateField={updateField}
-            />
+            <Parametrisierung loading={loadingCalc} />
 
             <ExecutiveDashboard 
               activeDashboardTab={activeDashboardTab} 
@@ -218,7 +180,6 @@ export default function Home() {
             setUserEmail={setUserEmail} 
             setUserProfile={setUserProfile} 
             userEmail={userEmail} 
-            userProfile={userProfile}
           />
         )}
       </main>

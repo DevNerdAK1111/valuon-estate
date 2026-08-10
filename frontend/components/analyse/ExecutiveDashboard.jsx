@@ -52,7 +52,7 @@ export default function ExecutiveDashboard({
     <div id="executive-dashboard-view" className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden box-border">
       
       {/* KOPFZEILE */}
-      <div className="bg-white p-5 rounded-xl border border-valuon-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white p-5 rounded-xl border border-valuon-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
         <div>
           <h2 className="text-xl font-black text-valuon-green m-0">{propertyTitle}</h2>
           <div className="text-xs text-slate-500 mt-0.5">
@@ -61,23 +61,21 @@ export default function ExecutiveDashboard({
         </div>
 
         {result && (
-          <div className="flex gap-2">
-            {/* PROMINENTER GREEN BUTTON FOR PIPELINE */}
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('pipeline')}
               disabled={saving}
-              className="py-2.5 px-4 bg-valuon-green text-white border-none rounded-lg font-extrabold text-xs cursor-pointer hover:bg-valuon-green-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              className="py-2.5 px-4 bg-valuon-green text-white border-none rounded-lg font-extrabold text-xs cursor-pointer hover:bg-valuon-green-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
               {saving ? 'Speichert...' : '+ In Pipeline speichern'}
             </button>
 
-            {/* SEKUNDÄRER BUTTON FÜR BESTAND */}
             <button
               type="button"
               onClick={() => handleSaveToDatabase && handleSaveToDatabase('bestand')}
               disabled={saving}
-              className="py-2.5 px-3.5 bg-valuon-cream text-valuon-green border border-valuon-green rounded-lg font-extrabold text-xs cursor-pointer hover:bg-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              className="py-2.5 px-3.5 bg-valuon-cream text-valuon-green border border-valuon-green rounded-lg font-extrabold text-xs cursor-pointer hover:bg-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
               {saving ? 'Speichert...' : 'In Bestand speichern'}
             </button>
@@ -85,7 +83,6 @@ export default function ExecutiveDashboard({
         )}
       </div>
 
-      {/* BENACHRICHTIGUNGS-BANNER */}
       {saveSuccess && (
         <div className={`p-3.5 rounded-lg text-xs font-bold border ${
           saveSuccess.includes('Fehler') || saveSuccess.includes('fehlgeschlagen') 
@@ -102,10 +99,9 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* BETRACHTUNGSHORIZONT SCHALTER */}
       {result && (
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border border-valuon-border gap-3">
-          <span className="text-xs font-extrabold text-valuon-green">Betrachtungshorizont:</span>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border border-valuon-border gap-3 shadow-sm">
+          <span className="text-xs font-extrabold text-valuon-green shrink-0">Betrachtungshorizont:</span>
           <div className="flex gap-2 flex-wrap">
             {[
               { label: '10 Jahre', value: '10' },
@@ -131,10 +127,8 @@ export default function ExecutiveDashboard({
         </div>
       )}
 
-      {/* KPI KARTEN */}
       {result && (
         <div className="flex flex-col gap-3">
-          
           <div className="flex justify-between items-center">
             <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
               Wichtigste Kennzahlen
@@ -149,7 +143,7 @@ export default function ExecutiveDashboard({
           </div>
 
           {isCustomizingKpis && (
-            <div className="bg-valuon-cream border border-valuon-border rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-valuon-cream border border-valuon-border rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shadow-sm">
               {selectedKpiIds.map((currentId, slotIdx) => (
                 <div key={slotIdx}>
                   <label className="block text-[0.72rem] font-extrabold text-valuon-green mb-1">
@@ -158,7 +152,7 @@ export default function ExecutiveDashboard({
                   <select
                     value={currentId}
                     onChange={(e) => handleKpiSelect(slotIdx, e.target.value)}
-                    className="w-full p-1.5 rounded-md border border-slate-300 text-xs font-semibold text-slate-700 bg-white"
+                    className="w-full p-2 rounded-md border border-slate-300 text-xs font-semibold text-slate-700 bg-white outline-none focus:border-valuon-green"
                   >
                     {KPI_OPTIONS.map((opt) => (
                       <option key={opt.id} value={opt.id}>{opt.label}</option>
@@ -177,12 +171,12 @@ export default function ExecutiveDashboard({
               const cardColor = config.isPos ? (config.isPos(model) ? '#276749' : '#9B2C2C') : config.color;
 
               return (
-                <div key={idx} className="bg-white border border-valuon-border rounded-lg p-4 flex flex-col justify-between min-h-[100px]">
-                  <div className="text-xs font-extrabold text-slate-500 uppercase tracking-wider truncate">{config.label}</div>
+                <div key={idx} className="bg-white border border-valuon-border rounded-xl p-4 flex flex-col justify-between min-h-[100px] shadow-sm">
+                  <div className="text-[0.72rem] font-extrabold text-slate-500 uppercase tracking-wider truncate">{config.label}</div>
                   <div className="text-2xl font-black my-1" style={{ color: cardColor }}>
                     {valueStr}
                   </div>
-                  <div className="text-xs text-slate-500 truncate">{subStr}</div>
+                  <div className="text-[0.75rem] text-slate-500 truncate">{subStr}</div>
                 </div>
               );
             })}
@@ -191,7 +185,7 @@ export default function ExecutiveDashboard({
           <button
             type="button"
             onClick={() => setShowExtendedMatrix(!showExtendedMatrix)}
-            className="self-center bg-transparent border-none text-valuon-green font-extrabold text-xs cursor-pointer underline mt-1 hover:text-valuon-green-light"
+            className="self-center bg-transparent border-none text-valuon-green font-extrabold text-xs cursor-pointer underline mt-2 hover:text-valuon-green-light"
           >
             {showExtendedMatrix ? 'Erweiterte Metriken ausblenden' : 'Alle Bank- & Rendite-Metriken einblenden'}
           </button>
@@ -203,7 +197,7 @@ export default function ExecutiveDashboard({
       )}
 
       {/* TAB NAVIGATION */}
-      <div className="flex border-b-2 border-valuon-border gap-6">
+      <div className="flex border-b-2 border-valuon-border gap-6 overflow-x-auto whitespace-nowrap">
         {[
           { id: 'Executive Dashboard', label: 'Executive Dashboard' },
           { id: 'Jahresprognose & Detailanalyse', label: 'Jahresprognose & Detailanalyse' }
@@ -214,7 +208,7 @@ export default function ExecutiveDashboard({
             onClick={() => setActiveDashboardTab(tab.id)}
             className={`py-2.5 bg-transparent border-b-3 font-extrabold text-sm cursor-pointer -mb-[2px] transition-colors ${
               (activeDashboardTab === tab.id || (!activeDashboardTab && tab.id === 'Executive Dashboard'))
-                ? 'border-valuon-green text-valuon-green font-extrabold'
+                ? 'border-valuon-green text-valuon-green font-black'
                 : 'border-transparent text-slate-500 hover:text-valuon-green'
             }`}
           >
@@ -223,22 +217,19 @@ export default function ExecutiveDashboard({
         ))}
       </div>
 
-      {/* TAB 1: EXECUTIVE DASHBOARD */}
       {result && (activeDashboardTab === 'Executive Dashboard' || !activeDashboardTab) && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
          <ProjectionChart slicedProjection={model.slicedProjection} ekEuroInput={formData?.ek_euro} />
-          <DonutChart formData={formData} summe_nk={summe_nk} />
+          <DonutChart formData={formData} model={model} summe_nk={summe_nk} />
         </div>
       )}
 
-      {/* TAB 2: JAHRESPROGNOSE & DETAILANALYSE */}
       {result && activeDashboardTab === 'Jahresprognose & Detailanalyse' && (
         <TableView slicedProjection={model.slicedProjection} totals={model.totals} />
       )}
 
-      {/* RECHTLICHER HINWEIS / DISCLAIMER */}
       {result && (
-        <div className="mt-2 p-3.5 bg-valuon-cream border border-valuon-border rounded-lg text-[0.72rem] text-slate-500 leading-normal">
+        <div className="mt-2 p-3.5 bg-valuon-cream border border-valuon-border rounded-lg text-[0.75rem] text-slate-500 leading-relaxed shadow-sm">
           <strong>Hinweis zu den Modellrechnungen:</strong> Alle berechneten Kennzahlen (z. B. Cashflows, IRR, Renditen und Gesamtgewinne) sind zukunftsgerichtete Prognosen auf Basis deiner Parameter und mathematischer Standard-Investitionsmodelle. Sie dienen als Orientierungshilfe und stellen keine Garantie, Finanz- oder Steuerberatung dar.
         </div>
       )}
@@ -251,22 +242,22 @@ function ExtendedMetricsMatrix({ model }) {
   const { kpis, finanzierung, stammDaten } = model;
 
   return (
-    <div className="bg-white border border-valuon-border rounded-lg p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="bg-white border border-valuon-border rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-sm">
       <div>
         <div className="text-sm font-extrabold text-valuon-green border-b-2 border-valuon-border pb-1.5 mb-2">Rendite & Vervielfältiger</div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Kaufpreisfaktor:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{kpis.kaufpreisfaktor.toFixed(1)}x</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Netto-Kaufpreisfaktor:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{kpis.nettoKaufpreisfaktor.toFixed(1)}x</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Netto-Mietrendite (J1):</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{kpis.nettoMietrenditeInitial.toFixed(2)} %</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-transparent">
           <span className="text-xs text-slate-500 font-semibold">Cash-on-Cash Return (J1):</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{kpis.cashOnCashReturn.toFixed(2)} %</strong>
         </div>
@@ -274,19 +265,19 @@ function ExtendedMetricsMatrix({ model }) {
 
       <div>
         <div className="text-sm font-extrabold text-valuon-green border-b-2 border-valuon-border pb-1.5 mb-2">Bank & Risikoprofil</div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Beleihungsauslauf (LTV):</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{finanzierung.ltv.toFixed(1)} %</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Eigenkapital-Quote:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{finanzierung.ekQuote.toFixed(1)} %</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">DSCR (Deckung):</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{kpis.dscrInitial.toFixed(2)}x</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-transparent">
           <span className="text-xs text-slate-500 font-semibold">Break-Even-Miete:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{formatEuroInt(kpis.breakEvenMieteMo)} € / Mo ({kpis.breakEvenMieteSqmMo.toFixed(2)} €/m²)</strong>
         </div>
@@ -294,15 +285,15 @@ function ExtendedMetricsMatrix({ model }) {
 
       <div>
         <div className="text-sm font-extrabold text-valuon-green border-b-2 border-valuon-border pb-1.5 mb-2">Substanz & m²-Kennzahlen</div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Kaufpreis pro m²:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{formatEuroInt(stammDaten.kaufpreisProQm)} € / m²</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-amber-100/50">
           <span className="text-xs text-slate-500 font-semibold">Gesamtkosten pro m²:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{formatEuroInt(stammDaten.gesamtKostenProQm)} € / m²</strong>
         </div>
-        <div className="flex justify-between items-center py-1.5 border-b border-amber-100">
+        <div className="flex justify-between items-center py-1.5 border-b border-transparent">
           <span className="text-xs text-slate-500 font-semibold">Eigenkapital-Einsatz:</span>
           <strong className="text-xs text-valuon-green font-extrabold ml-3 text-right">{formatEuroInt(finanzierung.ekEuro)} €</strong>
         </div>

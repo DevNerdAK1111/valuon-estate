@@ -5,20 +5,23 @@ export default function DevNoticeModal({ devNotice, onClose }) {
   if (!devNotice) return null;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(13,31,18,0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div style={{ background: 'white', border: '2px solid #13381A', borderRadius: '16px', padding: '2rem', maxWidth: '480px', width: '90%', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#A37841', fontWeight: '800', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+    <div className="fixed inset-0 w-screen h-screen bg-valuon-green/60 backdrop-blur-sm flex items-center justify-center z-[9999]">
+      <div className="bg-white border-2 border-valuon-green rounded-2xl p-8 max-w-[480px] w-[90%] shadow-2xl">
+        <div className="flex items-center gap-2.5 text-valuon-gold font-extrabold text-[0.85rem] uppercase tracking-wide mb-2">
           <IconLock /> Funktion in Entwicklung
         </div>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: '1.4rem', color: '#13381A', fontWeight: '800' }}>
+        
+        <h3 className="m-0 mb-3 text-[1.4rem] text-valuon-green font-extrabold">
           {devNotice}
         </h3>
-        <p style={{ fontSize: '0.9rem', color: '#4A5568', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+        
+        <p className="text-[0.9rem] text-slate-600 leading-relaxed mb-6">
           Dieses Modul wird derzeit entwickelt und steht in Kürze zur Verfügung. Nutze in der Zwischenzeit unser voll funktionsfähiges Investitions-Analyse Tool für deine detaillierten Objektberechnungen.
         </p>
+        
         <button
           onClick={onClose}
-          style={{ width: '100%', padding: '12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer' }}
+          className="w-full p-3 bg-valuon-green text-white border-none rounded-lg font-extrabold text-[0.95rem] cursor-pointer hover:bg-valuon-green-light transition-colors shadow-sm"
         >
           Verstanden & Schließen
         </button>

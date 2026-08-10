@@ -2,7 +2,6 @@
 import StepperInput from '../../ui/StepperInput';
 import { MainCard, SubContainerCard } from '../../ui/CollapsibleCard';
 import { formatEuroInt } from '../../../utils/formatters';
-import { labelStyle, selectContainerStyle, selectStyle, grid2Style } from '../../../styles/formStyles';
 
 export default function SectionFinanzierung({
   formData,
@@ -24,26 +23,19 @@ export default function SectionFinanzierung({
         isCurrency={true}
       />
 
-      <div style={{
-        padding: '10px 12px',
-        borderRadius: '8px',
-        fontSize: '0.8rem',
-        fontWeight: '700',
-        background: isEkCoveringNk ? '#F0FFF4' : '#FFF5F5',
-        border: isEkCoveringNk ? '1px solid #C6F6D5' : '1px solid #FEB2B2',
-        color: isEkCoveringNk ? '#22543D' : '#9B2C2C',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '8px'
-      }}>
-        <span style={{ fontSize: '1rem', lineHeight: '1.2' }}>{isEkCoveringNk ? '✓' : '⚠'}</span>
+      <div className={`p-3 rounded-lg text-[0.8rem] font-bold flex items-start gap-2 border ${
+        isEkCoveringNk 
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+          : 'bg-red-50 border-red-200 text-valuon-red'
+      }`}>
+        <span className="text-[1rem] leading-none">{isEkCoveringNk ? '✓' : '⚠'}</span>
         <div>
           <div>
             {isEkCoveringNk
               ? `Eigenkapital deckt die Kaufnebenkosten (${formatEuroInt(displayNkTotal)} €) vollständig ab.`
               : `Eigenkapital deckt die Kaufnebenkosten (${formatEuroInt(displayNkTotal)} €) nicht vollständig ab.`}
           </div>
-          <div style={{ fontWeight: 'normal', fontSize: '0.75rem', marginTop: '4px', opacity: 0.9 }}>
+          <div className="font-normal text-[0.75rem] mt-1 opacity-90">
             {isEkCoveringNk
               ? 'Gute Voraussetzung für eine klassische 100%-Finanzierung des Kaufpreises durch die Bank.'
               : 'Hinweis: Müsste die Bank Kaufnebenkosten mitfinanzieren (> 100 % Beleihung), verlangen Kreditinstitute in der Regel Risikoaufschläge beim Sollzins sowie strengere Bonitätsanforderungen.'}
@@ -52,12 +44,12 @@ export default function SectionFinanzierung({
       </div>
 
       <div>
-        <label style={labelStyle}>Darlehensart</label>
-        <div style={selectContainerStyle}>
+        <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Darlehensart</label>
+        <div className="relative flex items-center w-full">
           <select
             value={formData?.loan_type || 'Annuitätendarlehen'}
             onChange={(e) => onFieldChange('loan_type', e.target.value)}
-            style={selectStyle}
+            className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
           >
             <option value="Annuitätendarlehen">Annuitätendarlehen (Konstante Monatsrate)</option>
             <option value="Endfälliges Darlehen">Endfälliges Darlehen (Nur Zinszahlung)</option>
@@ -65,7 +57,7 @@ export default function SectionFinanzierung({
         </div>
       </div>
 
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Sollzins Hausbank (%)"
           value={formData?.hb_zins || 3.8}
@@ -82,7 +74,7 @@ export default function SectionFinanzierung({
         />
       </div>
 
-      <div style={grid2Style}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Tilgungsfreie Jahre"
           value={formData?.grace_years || 0}
@@ -118,12 +110,12 @@ export default function SectionFinanzierung({
           isPercent={true}
         />
         <div>
-          <label style={labelStyle}>Anschluss-Modus</label>
-          <div style={selectContainerStyle}>
+          <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Anschluss-Modus</label>
+          <div className="relative flex items-center w-full">
             <select
               value={formData?.folge_mode || 'Rate konstant halten (Annuität)'}
               onChange={(e) => onFieldChange('folge_mode', e.target.value)}
-              style={selectStyle}
+              className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
             >
               <option value="Rate konstant halten (Annuität)">Rate konstant halten (Annuität)</option>
               <option value="Neuer Tilgungssatz festlegen">Neuen Tilgungssatz festlegen</option>
@@ -154,7 +146,7 @@ export default function SectionFinanzierung({
           step={5000}
           isCurrency={true}
         />
-        <div style={grid2Style}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StepperInput
             label="KfW Zins (%)"
             value={formData?.kfw_zins || 2.1}
@@ -170,7 +162,7 @@ export default function SectionFinanzierung({
             isPercent={true}
           />
         </div>
-        <div style={grid2Style}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StepperInput
             label="KfW Tilgungsfreie Jahre"
             value={formData?.kfw_grace_years || 0}

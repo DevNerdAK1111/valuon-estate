@@ -64,15 +64,12 @@ export default function DatabaseView({
       };
       const capexList = item.capex_list || [];
 
-      // 1. Frische Berechnung über das Backend anfordern
       const calcResult = await calculateInvestmentApi(formData, capexList);
       const model = calculateInvestmentModel(formData, '10', calcResult);
 
-      // 2. Dynamischer Client-Import von @react-pdf/renderer und dem PDF-Template
       const { pdf } = await import('@react-pdf/renderer');
       const PdfReportTemplate = (await import('../pdf/PdfReportTemplate')).default;
 
-      // 3. Vektor-PDF als Blob generieren
       const blob = await pdf(
         <PdfReportTemplate
           formData={formData}
@@ -81,7 +78,6 @@ export default function DatabaseView({
         />
       ).toBlob();
 
-      // 4. Download auslösen
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -99,137 +95,123 @@ export default function DatabaseView({
   };
 
   return (
-    <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', border: '1px solid #E2D9CE' }}>
+    <div className="bg-white p-6 sm:p-8 rounded-xl border border-valuon-border shadow-sm">
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h2 style={{ margin: 0, color: '#13381A' }}>Objekt Datenbank & Portfolio</h2>
-          <span style={{ fontSize: '0.82rem', color: '#718096' }}>
+          <h2 className="m-0 text-2xl font-black text-valuon-green">Objekt Datenbank & Portfolio</h2>
+          <span className="text-sm font-medium text-slate-500 mt-1 block">
             Verwalte deine Such-Pipeline und deinen gekauften Immobilienbestand
           </span>
         </div>
-        <button onClick={fetchDatabaseProperties} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FAF8F5', border: '1px solid #E2D9CE', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+        <button 
+          onClick={fetchDatabaseProperties} 
+          className="flex items-center gap-2 py-2 px-4 bg-valuon-cream border border-valuon-border rounded-lg cursor-pointer font-bold text-valuon-green hover:bg-white transition-colors"
+        >
           <IconRefresh /> Aktualisieren
         </button>
       </div>
 
       {/* TAB SWITCHER */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #E2D9CE', marginBottom: '1.5rem' }}>
+      <div className="flex gap-4 border-b-2 border-valuon-border mb-6 overflow-x-auto whitespace-nowrap">
         <button
           type="button"
           onClick={() => setActiveTab('pipeline')}
-          style={{
-            padding: '10px 16px',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'pipeline' ? '3px solid #13381A' : '3px solid transparent',
-            color: activeTab === 'pipeline' ? '#13381A' : '#718096',
-            fontWeight: activeTab === 'pipeline' ? '800' : '600',
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-            marginBottom: '-2px'
-          }}
+          className={`py-2.5 px-4 bg-transparent border-none text-[0.95rem] cursor-pointer -mb-[2px] transition-colors ${
+            activeTab === 'pipeline' 
+              ? 'border-b-3 border-valuon-green text-valuon-green font-black' 
+              : 'border-b-3 border-transparent text-slate-500 font-bold hover:text-valuon-green'
+          }`}
         >
           Pipeline ({pipelineItems.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('bestand')}
-          style={{
-            padding: '10px 16px',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'bestand' ? '3px solid #13381A' : '3px solid transparent',
-            color: activeTab === 'bestand' ? '#13381A' : '#718096',
-            fontWeight: activeTab === 'bestand' ? '800' : '600',
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-            marginBottom: '-2px'
-          }}
+          className={`py-2.5 px-4 bg-transparent border-none text-[0.95rem] cursor-pointer -mb-[2px] transition-colors ${
+            activeTab === 'bestand' 
+              ? 'border-b-3 border-valuon-green text-valuon-green font-black' 
+              : 'border-b-3 border-transparent text-slate-500 font-bold hover:text-valuon-green'
+          }`}
         >
           Bestand ({bestandItems.length})
         </button>
       </div>
 
       {loadingDb ? (
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Lade Objekte aus Supabase...</div>
+        <div className="p-8 text-center text-slate-500 font-semibold">Lade Objekte aus der Datenbank...</div>
       ) : displayedProperties.length === 0 ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: '#888', border: '2px dashed #E2D9CE', borderRadius: '8px' }}>
+        <div className="p-12 text-center text-slate-400 border-2 border-dashed border-valuon-border rounded-lg font-medium">
           Noch keine Objekte in {activeTab === 'pipeline' ? 'der Pipeline' : 'deinem Bestand'} gespeichert.
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+        <div className="w-full overflow-x-auto border border-valuon-border rounded-lg shadow-inner">
+          <table className="w-full border-collapse text-left text-[0.9rem] whitespace-nowrap">
             <thead>
-              <tr style={{ background: '#FAF8F5', borderBottom: '2px solid #E2D9CE' }}>
-                <th style={{ padding: '12px' }}>Objektname</th>
-                <th style={{ padding: '12px' }}>Typ</th>
-                <th style={{ padding: '12px' }}>Ort</th>
-                <th style={{ padding: '12px' }}>Kaufpreis</th>
-                <th style={{ padding: '12px' }}>Wohnfläche</th>
-                <th style={{ padding: '12px' }}>IRR Rendite</th>
-                <th style={{ padding: '12px' }}>Aktionen</th>
+              <tr className="bg-valuon-cream border-b border-valuon-border text-valuon-green">
+                <th className="p-3 font-extrabold sticky left-0 bg-valuon-cream z-10 border-r border-valuon-border">Objektname</th>
+                <th className="p-3 font-extrabold">Typ</th>
+                <th className="p-3 font-extrabold">Ort</th>
+                <th className="p-3 font-extrabold">Kaufpreis</th>
+                <th className="p-3 font-extrabold">Wohnfläche</th>
+                <th className="p-3 font-extrabold">IRR Rendite</th>
+                <th className="p-3 font-extrabold text-right">Aktionen</th>
               </tr>
             </thead>
             <tbody>
               {displayedProperties.map((item, idx) => {
                 const itemId = item.id || item._id;
                 const isExportingThis = exportingId === itemId;
+                const isEven = idx % 2 === 0;
+                const bgClass = isEven ? 'bg-white' : 'bg-slate-50';
 
                 return (
-                  <tr key={itemId || idx} style={{ borderBottom: '1px solid #E2D9CE' }}>
-                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#13381A' }}>{item.name || item.obj_name || item.form_data?.obj_name}</td>
-                    <td style={{ padding: '12px' }}>{item.objektart || item.form_data?.objektart}</td>
-                    <td style={{ padding: '12px' }}>{item.stadt || item.form_data?.stadt}</td>
-                    <td style={{ padding: '12px' }}>{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>
-                    <td style={{ padding: '12px' }}>{item.qm || item.form_data?.qm} m²</td>
-                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#A37841' }}>
+                  <tr key={itemId || idx} className={`${bgClass} border-b border-valuon-border hover:bg-slate-100 transition-colors`}>
+                    <td className={`p-3 font-bold text-valuon-green sticky left-0 z-10 border-r border-valuon-border ${bgClass}`}>
+                      {item.name || item.obj_name || item.form_data?.obj_name}
+                    </td>
+                    <td className="p-3 text-slate-600">{item.objektart || item.form_data?.objektart}</td>
+                    <td className="p-3 text-slate-600">{item.stadt || item.form_data?.stadt}</td>
+                    <td className="p-3 font-semibold text-slate-800">{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>
+                    <td className="p-3 text-slate-600">{item.qm || item.form_data?.qm} m²</td>
+                    <td className="p-3 font-black text-valuon-gold">
                       {item.irr ? formatPct(item.irr * 100) + ' %' : '–'}
                     </td>
-                    <td style={{ padding: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button onClick={() => loadPropertyFromDb(item)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#13381A', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                        <IconFolder /> In Analyse laden
+                    <td className="p-3 flex gap-2 items-center justify-end">
+                      <button 
+                        onClick={() => loadPropertyFromDb(item)} 
+                        className="flex items-center gap-1.5 py-1.5 px-3 bg-valuon-green text-white border-none rounded-md cursor-pointer text-xs font-bold hover:bg-valuon-green-light transition-colors"
+                      >
+                        <IconFolder /> Analyse
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleExportPdf(item)}
                         disabled={isExportingThis}
-                        style={{
-                          padding: '6px 10px',
-                          background: '#A37841',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: isExportingThis ? 'not-allowed' : 'pointer',
-                          fontSize: '0.8rem',
-                          fontWeight: 'bold',
-                          opacity: isExportingThis ? 0.6 : 1
-                        }}
+                        className={`py-1.5 px-3 bg-valuon-gold text-white border-none rounded-md text-xs font-bold transition-colors ${
+                          isExportingThis ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-amber-700'
+                        }`}
                       >
-                        {isExportingThis ? 'PDF lädt...' : 'PDF Export'}
+                        {isExportingThis ? 'Lädt...' : 'PDF'}
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleStatusChange(item, activeTab === 'pipeline' ? 'bestand' : 'pipeline')}
                         disabled={updatingId === itemId}
-                        style={{
-                          padding: '6px 10px',
-                          background: '#FAF8F5',
-                          color: '#13381A',
-                          border: '1px solid #13381A',
-                          borderRadius: '4px',
-                          cursor: updatingId === itemId ? 'not-allowed' : 'pointer',
-                          fontSize: '0.8rem',
-                          fontWeight: 'bold',
-                          opacity: updatingId === itemId ? 0.6 : 1
-                        }}
+                        className={`py-1.5 px-3 bg-valuon-cream text-valuon-green border border-valuon-green rounded-md text-xs font-bold transition-colors ${
+                          updatingId === itemId ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-white'
+                        }`}
                       >
                         {updatingId === itemId ? 'Speichert...' : (activeTab === 'pipeline' ? 'In Bestand' : 'In Pipeline')}
                       </button>
 
-                      <button onClick={() => deletePropertyFromDb(itemId)} style={{ padding: '6px 10px', background: '#FFF5F5', color: '#9B2C2C', border: '1px solid #FEB2B2', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      <button 
+                        onClick={() => deletePropertyFromDb(itemId)} 
+                        className="p-1.5 bg-red-50 text-valuon-red border border-red-200 rounded-md cursor-pointer hover:bg-red-100 transition-colors"
+                        title="Löschen"
+                      >
                         <IconTrash />
                       </button>
                     </td>

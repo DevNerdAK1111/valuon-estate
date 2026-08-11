@@ -1,6 +1,7 @@
 import os
 import json
-import requests
+import base64
+import cloudscraper
 from bs4 import BeautifulSoup
 import google.generativeai as genai
 
@@ -9,57 +10,73 @@ def get_gemini_api_key() -> str:
 
 def fetch_text_from_url(url: str) -> str:
     try:
-        # Basis-Scraper. Hinweis: Große Portale blocken dies oft (403 Forbidden).
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
-        }
-        response = requests.get(url, headers=headers, timeout=12)
+        # Cloudscraper simuliert einen echten Browser, um Anti-Bot-Sperren (Cloudflare) zu umgehen
+        scraper = cloudscraper.create_scraper(browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'desktop': True
+        })
+        response = scraper.get(url, timeout=15)
         response.raise_for_status()
+        
         soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Unnötigen Code entfernen
         for element in soup(["script", "style", "header", "footer", "nav", "noscript"]):
             element.extract()
+            
         return ' '.join(line.strip() for line in soup.get_text(separator=' ').splitlines() if line.strip())
     except Exception as e:
-        print(f"Fehler beim Abrufen der URL: {e}")
+        print(f"Fehler beim Abrufen der URL mit Cloudscraper: {e}")
         return ""
 
-def analyze_text_with_gemini(raw_text: str, api_key: str = None) -> dict:
+def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str = None) -> dict:
     key = api_key or get_gemini_api_key()
     if not key:
-        raise Exception("Kein GEMINI_API_KEY im Backend konfiguriert.")
+        raise Exception("Kein GEMINI_API_KEY konfiguriert.")
 
     try:
         genai.configure(api_key=key)
         
-        prompt = f"""
+        prompt = """
         Du bist ein hochpräziser Immobilien-Datenanalyst.
-        Analysiere den folgenden Immobilien-Anzeigentext (Exposé) und extrahiere NUR die relevanten Fakten.
+        Analysiere die folgenden Immobilien-Daten (Text oder PDF) und extrahiere NUR die relevanten Fakten.
         
-        Verwende EXAKT diese JSON-Struktur und Datentypen. Erfinde keine eigenen Felder:
-        {{
+        Verwende EXAKT diese JSON-Struktur und Datentypen. Erfinde keine eigenen Felder.
+        Falls ein Wert nicht zu finden ist, setze numerische Werte auf 0.0 und Strings auf "".
+        
+        {
             "obj_name": "Titel der Anzeige oder Adresse (max 50 Zeichen)",
-            "objektart": "Eigentumswohnung", # Wähle aus: Eigentumswohnung, Einfamilienhaus, Zweifamilienhaus, Reihenhaus / Doppelhaushälfte, Mehrfamilienhaus, Wohn- und Geschäftshaus, Gewerbeimmobilie / Sonstiges
+            "objektart": "Eigentumswohnung", # Aus: Eigentumswohnung, Einfamilienhaus, Zweifamilienhaus, Reihenhaus / Doppelhaushälfte, Mehrfamilienhaus, Wohn- und Geschäftshaus, Sonstiges
             "bundesland": "Bundesland, falls erkennbar",
             "stadt": "Stadtname",
             "stadtteil": "Stadtteilname",
-            "kaufpreis": 0.0, # Float
-            "qm": 0.0, # Float (Wohnfläche)
-            "baujahr": 2000, # Int
-            "kaltmiete_monat": 0.0, # Float (Ist-Kaltmiete pro Monat, falls vermietet)
-            "hausgeld": 0.0, # Float (Hausgeld pro Monat)
-            "sanierung": 0.0 # Float (Falls Sanierungskosten explizit genannt sind)
-        }}
-        
-        Falls ein Wert im Text absolut nicht zu finden ist, setze numerische Werte auf 0.0 bzw. 0 und Strings auf "".
-        
-        Hier ist der Exposé-Text:
-        {raw_text[:10000]}
+            "kaufpreis": 0.0,
+            "qm": 0.0,
+            "baujahr": 2000,
+            "kaltmiete_monat": 0.0,
+            "hausgeld": 0.0,
+            "sanierung": 0.0
+        }
         """
         
         model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
+        # Flexibler Content-Array für Gemini (Text + optionales PDF)
+        contents = [prompt]
+        
+        if pdf_base64:
+            pdf_bytes = base64.b64decode(pdf_base64)
+            contents.append({
+                "mime_type": "application/pdf",
+                "data": pdf_bytes
+            })
+            
+        if raw_text:
+            contents.append(f"Hier ist der extrahierte Text:\n{raw_text[:15000]}")
+            
         response = model.generate_content(
-            prompt,
+            contents,
             generation_config={"response_mime_type": "application/json"}
         )
         return json.loads(response.text)

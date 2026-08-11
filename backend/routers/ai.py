@@ -1,25 +1,34 @@
 from fastapi import APIRouter, HTTPException
-from schemas import AiAnalysisRequest
-from core.ai_service import analyze_text_with_gemini, fetch_text_from_url
+from pydantic import BaseModel
+from typing import Optional
+from core.ai_service import fetch_text_from_url, analyze_property_data
 
-router = APIRouter(prefix="/api", tags=["AI"])
+router = APIRouter()
 
+class AiParseRequest(BaseModel):
+    text: Optional[str] = ""
+    url: Optional[str] = ""
+    pdf_base64: Optional[str] = ""
 
 @router.post("/ai-analysis")
-async def ai_analysis(payload: AiAnalysisRequest):
+async def analyze_expose(req: AiParseRequest):
     try:
-        raw_text = payload.text or ""
-        if payload.url:
-            raw_text = fetch_text_from_url(payload.url)
+        content_to_analyze = req.text
+        
+        # Wenn eine URL gesendet wird, Text scrapen
+        if req.url:
+            scraped_text = fetch_text_from_url(req.url)
+            if not scraped_text:
+                raise HTTPException(status_code=400, detail="URL konnte nicht gelesen werden (evtl. Anti-Bot-Schutz). Bitte nutze Text oder PDF.")
+            content_to_analyze = scraped_text
+            
+        # Wenn weder Text, URL noch PDF da sind
+        if not content_to_analyze and not req.pdf_base64:
+            raise HTTPException(status_code=400, detail="Bitte Text, URL oder PDF übermitteln.")
 
-        if not raw_text:
-            raise HTTPException(status_code=400, detail="Kein Text oder Inhalt über die URL gefunden.")
-
-        result = analyze_text_with_gemini(raw_text)
-        return {"status": "success", "data": result}
-    except HTTPException:
-        # Fange HTTPExceptions ab und reiche sie unverändert weiter, 
-        # damit sie nicht vom generellen Exception-Block in einen 500er verwandelt werden.
-        raise
+        # Analyse starten
+        result = analyze_property_data(raw_text=content_to_analyze, pdf_base64=req.pdf_base64)
+        return {"data": result}
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"KI-Analysefehler: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

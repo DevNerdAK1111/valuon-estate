@@ -54,12 +54,12 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
     {
       id: 'ai-parser',
       title: 'KI Exposé-Parser',
-      description: 'Automatische Datenextraktion aus ImmoScout24-PDFs & Links via Gemini KI.',
-      badge: 'In Entwicklung',
-      badgeColor: 'bg-amber-100 text-amber-900',
-      action: () => setDevNotice('KI Exposé-Parser'),
+      description: 'Automatische Datenextraktion aus Exposé-Texten & Links via Gemini KI.',
+      badge: 'Aktiv',
+      badgeColor: 'bg-emerald-100 text-emerald-900',
+      action: () => setNavChoice('KI Exposé-Parser'), // <--- Geändert!
       icon: <IconLightning />,
-      isDev: true
+      isDev: false // <--- Geändert!
     },
     {
       id: 'portfolio-analytics',
@@ -86,7 +86,6 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
   return (
     <div className="flex flex-col gap-8 w-full">
       
-      {/* DEV NOTICE MODAL */}
       <DevNoticeModal devNotice={devNotice} onClose={() => setDevNotice(null)} />
 
       {/* HERO BANNER */}
@@ -114,7 +113,7 @@ export default function StartseiteView({ setNavChoice, dbProperties = [], loadPr
         </div>
       </div>
 
-      {/* MODULE GRID (AKTIVE & DEVELOPMENT KARTEN) */}
+      {/* MODULE GRID */}
       <div className="flex flex-col gap-4">
         <h2 className="text-lg font-black text-valuon-green m-0">Analyse-Module & Suite Features</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

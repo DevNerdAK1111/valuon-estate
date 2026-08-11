@@ -27,8 +27,9 @@ export default function AiParserView({ setNavChoice }) {
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) { // 5MB Limit für den Base64 Payload
-      toast.error('Die PDF-Datei ist zu groß (Maximal 5 MB).');
+    // Limit auf 30 MB erhöht (Institutional Grade)
+    if (file.size > 30 * 1024 * 1024) { 
+      toast.error('Die PDF-Datei ist zu groß (Maximal 30 MB).');
       return;
     }
 
@@ -158,7 +159,7 @@ export default function AiParserView({ setNavChoice }) {
             >
               <IconFolder className={pdfBase64 ? 'text-valuon-green text-3xl' : 'text-slate-400 text-3xl'} />
               <span className={`text-sm font-bold ${pdfBase64 ? 'text-valuon-green' : 'text-slate-500'}`}>
-                {pdfName ? pdfName : 'Klicke hier, um eine PDF-Datei auszuwählen'}
+                {pdfName ? pdfName : 'Klicke hier, um eine PDF-Datei auszuwählen (Max. 30 MB)'}
               </span>
               <input 
                 type="file" 

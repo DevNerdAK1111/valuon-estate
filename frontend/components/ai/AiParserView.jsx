@@ -26,8 +26,8 @@ export default function AiParserView({ setNavChoice }) {
       return;
     }
     
-    if (file.size > 30 * 1024 * 1024) { 
-      toast.error('Die PDF-Datei ist zu groß (Maximal 30 MB).');
+    if (file.size > 20 * 1024 * 1024) { 
+      toast.error('Die PDF-Datei ist zu groß (Maximal 20 MB).');
       return;
     }
 

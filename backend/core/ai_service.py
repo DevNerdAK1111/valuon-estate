@@ -1,6 +1,5 @@
 import os
 import json
-import base64
 import tempfile
 import cloudscraper
 import time
@@ -30,7 +29,8 @@ def fetch_text_from_url(url: str) -> str:
         print(f"Fehler beim Abrufen der URL mit Cloudscraper: {e}")
         return ""
 
-def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str = None) -> dict:
+# ÄNDERUNG: Akzeptiert jetzt direkt pdf_bytes
+def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: str = None) -> dict:
     key = api_key or get_gemini_api_key()
     if not key:
         raise Exception("Kein GEMINI_API_KEY konfiguriert.")
@@ -66,16 +66,14 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         contents = [prompt]
         
-        if pdf_base64:
-            pdf_bytes = base64.b64decode(pdf_base64)
+        # ÄNDERUNG: Arbeitet direkt mit den Bytes der echten Datei
+        if pdf_bytes:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                 tmp.write(pdf_bytes)
                 tmp_file_path = tmp.name
             
-            # Datei über die offizielle Gemini File API hochladen
             gemini_file = genai.upload_file(tmp_file_path, mime_type="application/pdf")
             
-            # WARTESCHLEIFE: Wir warten, bis Gemini die Datei vollständig indexiert hat
             while gemini_file.state.name == "PROCESSING":
                 print("Warte auf Gemini-Verarbeitung des PDFs...")
                 time.sleep(2)
@@ -100,7 +98,6 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
         raise Exception(f"Gemini API Fehler: {str(e)}")
         
     finally:
-        # Cleanup: Wird immer ausgeführt, um Datenlecks zu vermeiden
         if gemini_file:
             try:
                 genai.delete_file(gemini_file.name)

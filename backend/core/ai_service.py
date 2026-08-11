@@ -31,7 +31,6 @@ def fetch_text_from_url(url: str) -> str:
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     try:
-        # Extrahiert den Text lokal in Millisekunden, anstatt die Bilder an die KI zu senden
         reader = PdfReader(io.BytesIO(pdf_bytes))
         text = ""
         for page in reader.pages:
@@ -51,7 +50,6 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
     try:
         genai.configure(api_key=key)
         
-        # 1. Daten vorbereiten (rasend schnell)
         combined_text = raw_text
         
         if pdf_bytes:
@@ -62,7 +60,6 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
         if not combined_text.strip():
             raise Exception("Weder Text noch lesbarer PDF-Inhalt gefunden.")
 
-        # 2. Prompt aufbauen
         prompt = f"""
         Du bist ein hochpräziser Immobilien-Datenanalyst.
         Analysiere die folgenden Immobilien-Daten und extrahiere NUR die relevanten Fakten.
@@ -88,9 +85,9 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
         {combined_text[:25000]}
         """
         
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        # Der entscheidende Fix: strikt 'gemini-1.5-flash' und die neueste SDK-Version über requirements.txt
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # 3. Text-basierte Analyse ist für Gemini ein Kinderspiel und dauert nur wenige Sekunden
         response = model.generate_content(
             prompt,
             generation_config={"response_mime_type": "application/json"}

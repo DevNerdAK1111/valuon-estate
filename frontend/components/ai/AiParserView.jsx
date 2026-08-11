@@ -1,32 +1,70 @@
 'use client';
-import { useState } from 'react';
-import { IconLightning, IconArrowRight } from '../ui/Icons';
+import { useState, useRef } from 'react';
+import { IconLightning, IconArrowRight, IconFolder } from '../ui/Icons';
 import { useAiParser } from '../../hooks/useAiQuery';
 import { useProperty } from '../../context/PropertyContext';
+import toast from 'react-hot-toast';
 
 export default function AiParserView({ setNavChoice }) {
-  const [inputType, setInputType] = useState('text'); // 'text' | 'url'
+  const [inputType, setInputType] = useState('text'); // 'text' | 'url' | 'pdf'
   const [rawText, setRawText] = useState('');
   const [url, setUrl] = useState('');
   
+  // PDF States
+  const [pdfBase64, setPdfBase64] = useState('');
+  const [pdfName, setPdfName] = useState('');
+  const fileInputRef = useRef(null);
+  
   const aiMutation = useAiParser();
   const { setFormData } = useProperty();
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/pdf') {
+      toast.error('Bitte lade eine gültige PDF-Datei hoch.');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) { // 5MB Limit für den Base64 Payload
+      toast.error('Die PDF-Datei ist zu groß (Maximal 5 MB).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64String = reader.result.split(',')[1];
+      setPdfBase64(base64String);
+      setPdfName(file.name);
+    };
+    reader.onerror = () => {
+      toast.error('Fehler beim Lesen der PDF-Datei.');
+    };
+  };
 
   const handleParse = async (e) => {
     e.preventDefault();
     if (inputType === 'text' && !rawText.trim()) return;
     if (inputType === 'url' && !url.trim()) return;
+    if (inputType === 'pdf' && !pdfBase64) {
+      toast.error('Bitte lade zuerst ein PDF hoch.');
+      return;
+    }
 
     aiMutation.mutate(
-      { text: inputType === 'text' ? rawText : '', url: inputType === 'url' ? url : '' },
+      { 
+        text: inputType === 'text' ? rawText : '', 
+        url: inputType === 'url' ? url : '',
+        pdfBase64: inputType === 'pdf' ? pdfBase64 : '' 
+      },
       {
         onSuccess: (response) => {
           if (response?.data) {
-            // Daten in den globalen Formular-State mergen
             setFormData(prev => ({
               ...prev,
               ...response.data,
-              // Sichere Typkonvertierungen, falls die KI etwas Unerwartetes liefert
               kaufpreis: Number(response.data.kaufpreis || 0),
               qm: Number(response.data.qm || 0),
               baujahr: Number(response.data.baujahr || 2000),
@@ -35,7 +73,6 @@ export default function AiParserView({ setNavChoice }) {
               sanierung: Number(response.data.sanierung || 0)
             }));
             
-            // Nutzer direkt zur Analyse weiterleiten
             setNavChoice('Analyse');
           }
         }
@@ -53,7 +90,7 @@ export default function AiParserView({ setNavChoice }) {
         <div>
           <h2 className="m-0 text-2xl font-black text-valuon-green tracking-tight">KI Exposé-Parser</h2>
           <span className="text-sm font-medium text-slate-500 mt-0.5 block">
-            Automatische Datenextraktion via Gemini AI
+            Extrakte Objektdaten automatisch via Text, Link oder PDF.
           </span>
         </div>
       </div>
@@ -68,7 +105,18 @@ export default function AiParserView({ setNavChoice }) {
               : 'border-b-3 border-transparent text-slate-500 hover:text-valuon-green'
           }`}
         >
-          Rohtext (Empfohlen)
+          Rohtext
+        </button>
+        <button
+          type="button"
+          onClick={() => setInputType('pdf')}
+          className={`py-2 px-4 bg-transparent border-none text-[0.95rem] font-extrabold cursor-pointer -mb-[2px] transition-colors ${
+            inputType === 'pdf' 
+              ? 'border-b-3 border-valuon-green text-valuon-green' 
+              : 'border-b-3 border-transparent text-slate-500 hover:text-valuon-green'
+          }`}
+        >
+          PDF Upload
         </button>
         <button
           type="button"
@@ -79,19 +127,13 @@ export default function AiParserView({ setNavChoice }) {
               : 'border-b-3 border-transparent text-slate-500 hover:text-valuon-green'
           }`}
         >
-          URL Import (Beta)
+          Link Import
         </button>
       </div>
 
-      {inputType === 'url' && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm leading-relaxed font-medium">
-          <strong className="block mb-1 text-amber-900">Hinweis zu ImmoScout24 & Co:</strong>
-          Große Immobilienportale blockieren automatisierte Zugriffe (URLs) sehr streng. Wenn der Import fehlschlägt, nutze bitte die Option <strong>Rohtext</strong>, indem du den Text der Webseite einfach mit der Maus markierst (Strg+A), kopierst (Strg+C) und hier einfügst.
-        </div>
-      )}
-
       <form onSubmit={handleParse} className="flex flex-col gap-4">
-        {inputType === 'text' ? (
+        {/* TEXT TAB */}
+        {inputType === 'text' && (
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-slate-600">Exposé-Text einfügen (Strg+V)</label>
             <textarea
@@ -102,7 +144,35 @@ export default function AiParserView({ setNavChoice }) {
               required
             />
           </div>
-        ) : (
+        )}
+
+        {/* PDF TAB */}
+        {inputType === 'pdf' && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-slate-600">Exposé als PDF hochladen</label>
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className={`w-full h-[200px] border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${
+                pdfBase64 ? 'border-valuon-green bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-valuon-green'
+              }`}
+            >
+              <IconFolder className={pdfBase64 ? 'text-valuon-green text-3xl' : 'text-slate-400 text-3xl'} />
+              <span className={`text-sm font-bold ${pdfBase64 ? 'text-valuon-green' : 'text-slate-500'}`}>
+                {pdfName ? pdfName : 'Klicke hier, um eine PDF-Datei auszuwählen'}
+              </span>
+              <input 
+                type="file" 
+                accept="application/pdf"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* URL TAB */}
+        {inputType === 'url' && (
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-slate-600">Immobilien-URL eingeben</label>
             <input
@@ -113,15 +183,18 @@ export default function AiParserView({ setNavChoice }) {
               className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-sm font-medium outline-none bg-white focus:border-valuon-green focus:ring-1 focus:ring-valuon-green transition-colors"
               required
             />
+            <div className="bg-slate-50 border border-slate-200 text-slate-600 p-3 rounded-lg text-xs leading-relaxed font-medium mt-1">
+              <strong>Info:</strong> Wir nutzen erweiterte Anti-Bot-Umgangstechniken, aber Portale wie ImmoScout24 blockieren dennoch gelegentlich. Wenn es hakt, nutze einfach die Rohtext- oder PDF-Funktion.
+            </div>
           </div>
         )}
 
         <button
           type="submit"
-          disabled={aiMutation.isPending}
+          disabled={aiMutation.isPending || (inputType === 'pdf' && !pdfBase64)}
           className="mt-2 py-4 px-6 bg-valuon-green text-white border-none rounded-xl text-[1.05rem] font-extrabold cursor-pointer shadow-md hover:bg-valuon-green-light transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {aiMutation.isPending ? 'KI analysiert Daten...' : 'Daten extrahieren & Analyse starten'}
+          {aiMutation.isPending ? 'KI liest Dokument...' : 'Daten extrahieren & Analyse starten'}
           {!aiMutation.isPending && <IconArrowRight />}
         </button>
       </form>

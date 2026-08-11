@@ -10,11 +10,16 @@ import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
 import ScenarioComparisonView from '../components/scenario/ScenarioComparisonView';
 import ProfileView from '../components/profile/ProfileView';
+import AiParserView from '../components/ai/AiParserView'; // <--- Neu!
 
 import { useAuthProfile } from '../hooks/useAuthProfile';
 import { useProperty } from '../context/PropertyContext';
-import { calculateInvestmentApi } from '../lib/propertyApi';
-import { useProperties, useSaveProperty, useDeleteProperty } from '../hooks/usePropertiesQuery';
+import { 
+  useProperties, 
+  useSaveProperty, 
+  useDeleteProperty, 
+  useCalculateInvestment 
+} from '../hooks/usePropertiesQuery';
 
 export default function Home() {
   const [navChoice, setNavChoice] = useState('Startseite');
@@ -29,35 +34,23 @@ export default function Home() {
     handleLogout
   } = useAuthProfile();
 
-  // Globaler State via PropertyContext
   const { formData, setFormData, capexList } = useProperty();
-
-  const [calcResult, setCalcResult] = useState(null);
-  const [loadingCalc, setLoadingCalc] = useState(false);
 
   const [projectionHorizon, setProjectionHorizon] = useState('10');
   const [activeDashboardTab, setActiveDashboardTab] = useState('Executive Dashboard');
 
-  // React Query Hooks
   const propertiesQuery = useProperties(userEmail);
   const saveMutation = useSaveProperty();
   const deleteMutation = useDeleteProperty(userEmail);
+  const calculateMutation = useCalculateInvestment();
 
   const dbProperties = propertiesQuery.data || [];
   const loadingDb = propertiesQuery.isPending;
+  const calcResult = calculateMutation.data || null;
 
-  const handleCalculate = async (e) => {
+  const handleCalculate = (e) => {
     if (e) e.preventDefault();
-    setLoadingCalc(true);
-    try {
-      const res = await calculateInvestmentApi(formData, capexList);
-      setCalcResult(res);
-      toast.success('Kalkulation erfolgreich abgeschlossen!');
-    } catch (err) {
-      toast.error(err.message || 'Fehler bei der Berechnung');
-    } finally {
-      setLoadingCalc(false);
-    }
+    calculateMutation.mutate({ formData, capexList });
   };
 
   const handleSaveToDatabase = (statusTarget = 'pipeline') => {
@@ -136,10 +129,15 @@ export default function Home() {
             setNavChoice={setNavChoice}
           />
         )}
+        
+        {/* NEUE ROUTE FÜR DEN PARSER */}
+        {navChoice === 'KI Exposé-Parser' && (
+          <AiParserView setNavChoice={setNavChoice} />
+        )}
 
         {navChoice === 'Analyse' && (
           <form onSubmit={handleCalculate} className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-            <Parametrisierung loading={loadingCalc} />
+            <Parametrisierung loading={calculateMutation.isPending} />
 
             <ExecutiveDashboard 
               activeDashboardTab={activeDashboardTab} 

@@ -12,3 +12,4 @@ beautifulsoup4
 pytest
 httpx
 cloudscraper
+python-multipart

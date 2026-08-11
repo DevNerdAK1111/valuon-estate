@@ -6,11 +6,10 @@ import { useProperty } from '../../context/PropertyContext';
 import toast from 'react-hot-toast';
 
 export default function AiParserView({ setNavChoice }) {
-  const [inputType, setInputType] = useState('text'); // 'text' | 'url' | 'pdf'
+  const [inputType, setInputType] = useState('text');
   const [rawText, setRawText] = useState('');
   const [url, setUrl] = useState('');
   
-  // PDF States (Speichert jetzt die echte Datei, nicht mehr Base64)
   const [pdfFile, setPdfFile] = useState(null);
   const fileInputRef = useRef(null);
   
@@ -31,7 +30,6 @@ export default function AiParserView({ setNavChoice }) {
       return;
     }
 
-    // Speichert einfach das File-Objekt (Kein Base64 Lesen mehr nötig!)
     setPdfFile(file);
   };
 
@@ -86,7 +84,8 @@ export default function AiParserView({ setNavChoice }) {
         </div>
       </div>
 
-      <div className="flex gap-4 border-b-2 border-valuon-border overflow-x-auto whitespace-nowrap">
+      {/* FIX: overflow-x-auto whitespace-nowrap entfernt, stattdessen flex-wrap genutzt */}
+      <div className="flex flex-wrap gap-4 border-b-2 border-valuon-border">
         <button
           type="button"
           onClick={() => setInputType('text')}
@@ -147,7 +146,7 @@ export default function AiParserView({ setNavChoice }) {
             >
               <IconFolder className={pdfFile ? 'text-valuon-green text-3xl' : 'text-slate-400 text-3xl'} />
               <span className={`text-sm font-bold ${pdfFile ? 'text-valuon-green' : 'text-slate-500'}`}>
-                {pdfFile ? pdfFile.name : 'Klicke hier, um eine PDF-Datei auszuwählen (Max. 30 MB)'}
+                {pdfFile ? pdfFile.name : 'Klicke hier, um eine PDF-Datei auszuwählen (Max. 20 MB)'}
               </span>
               <input 
                 type="file" 

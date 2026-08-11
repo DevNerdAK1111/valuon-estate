@@ -5,6 +5,7 @@ from core.ai_service import fetch_text_from_url, analyze_property_data
 
 router = APIRouter()
 
+# WICHTIG: Hier muss pdf_base64 als mögliches Feld definiert sein!
 class AiParseRequest(BaseModel):
     text: Optional[str] = ""
     url: Optional[str] = ""
@@ -22,11 +23,11 @@ async def analyze_expose(req: AiParseRequest):
                 raise HTTPException(status_code=400, detail="URL konnte nicht gelesen werden (evtl. Anti-Bot-Schutz). Bitte nutze Text oder PDF.")
             content_to_analyze = scraped_text
             
-        # Wenn weder Text, URL noch PDF da sind
+        # NEUE LOGIK: Prüft jetzt auch, ob pdf_base64 vorhanden ist!
         if not content_to_analyze and not req.pdf_base64:
             raise HTTPException(status_code=400, detail="Bitte Text, URL oder PDF übermitteln.")
 
-        # Analyse starten
+        # Analyse starten (leitet pdf_base64 an den Service weiter)
         result = analyze_property_data(raw_text=content_to_analyze, pdf_base64=req.pdf_base64)
         return {"data": result}
         

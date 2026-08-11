@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchPropertiesApi, savePropertyApi, updatePropertyStatusApi, deletePropertyApi } from '../lib/propertyApi';
+import { fetchPropertiesApi, savePropertyApi, updatePropertyStatusApi, deletePropertyApi, calculateInvestmentApi } from '../lib/propertyApi';
 import toast from 'react-hot-toast';
 
 export function useProperties(userEmail) {
@@ -52,6 +52,18 @@ export function useDeleteProperty(userEmail) {
     },
     onError: (err) => {
       toast.error(`Fehler beim Löschen: ${err.message}`);
+    }
+  });
+}
+
+export function useCalculateInvestment() {
+  return useMutation({
+    mutationFn: ({ formData, capexList }) => calculateInvestmentApi(formData, capexList),
+    onSuccess: () => {
+      toast.success('Kalkulation erfolgreich abgeschlossen!');
+    },
+    onError: (err) => {
+      toast.error(`Fehler bei der Berechnung: ${err.message}`);
     }
   });
 }

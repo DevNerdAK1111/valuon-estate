@@ -4,10 +4,10 @@ import cloudscraper
 import io
 from pypdf import PdfReader
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+from openai import OpenAI
 
-def get_gemini_api_key() -> str:
-    return os.getenv("GEMINI_API_KEY", "")
+def get_openai_api_key() -> str:
+    return os.getenv("OPENAI_API_KEY", "")
 
 def fetch_text_from_url(url: str) -> str:
     try:
@@ -43,12 +43,12 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
         return ""
 
 def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: str = None) -> dict:
-    key = api_key or get_gemini_api_key()
+    key = api_key or get_openai_api_key()
     if not key:
-        raise Exception("Kein GEMINI_API_KEY konfiguriert.")
+        raise Exception("Kein OPENAI_API_KEY konfiguriert.")
 
     try:
-        genai.configure(api_key=key)
+        client = OpenAI(api_key=key)
         
         combined_text = raw_text
         
@@ -69,7 +69,7 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
         
         {{
             "obj_name": "Titel der Anzeige oder Adresse (max 50 Zeichen)",
-            "objektart": "Eigentumswohnung", # Aus: Eigentumswohnung, Einfamilienhaus, Zweifamilienhaus, Reihenhaus / Doppelhaushälfte, Mehrfamilienhaus, Wohn- und Geschäftshaus, Sonstiges
+            "objektart": "Eigentumswohnung",
             "bundesland": "Bundesland, falls erkennbar",
             "stadt": "Stadtname",
             "stadtteil": "Stadtteilname",
@@ -85,15 +85,18 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
         {combined_text[:25000]}
         """
         
-        # Der entscheidende Fix: strikt 'gemini-1.5-flash' und die neueste SDK-Version über requirements.txt
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        # Native JSON-Erzwingung durch OpenAI
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={ "type": "json_object" },
+            messages=[
+                {"role": "system", "content": "Du bist ein hilfreicher Assistent, der ausschließlich in validem JSON antwortet."},
+                {"role": "user", "content": prompt}
+            ]
         )
-        return json.loads(response.text)
+        
+        return json.loads(response.choices[0].message.content)
         
     except Exception as e:
         print(f"Fehler bei KI-Analyse: {e}")
-        raise Exception(f"Gemini API Fehler: {str(e)}")
+        raise Exception(f"OpenAI API Fehler: {str(e)}")

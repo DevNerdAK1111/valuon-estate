@@ -3,6 +3,7 @@ import json
 import base64
 import tempfile
 import cloudscraper
+import time
 from bs4 import BeautifulSoup
 import google.generativeai as genai
 
@@ -11,7 +12,6 @@ def get_gemini_api_key() -> str:
 
 def fetch_text_from_url(url: str) -> str:
     try:
-        # Cloudscraper simuliert einen echten Browser, um Anti-Bot-Sperren (Cloudflare) zu umgehen
         scraper = cloudscraper.create_scraper(browser={
             'browser': 'chrome',
             'platform': 'windows',
@@ -22,7 +22,6 @@ def fetch_text_from_url(url: str) -> str:
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Unnötigen Code entfernen
         for element in soup(["script", "style", "header", "footer", "nav", "noscript"]):
             element.extract()
             
@@ -69,13 +68,22 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
         
         if pdf_base64:
             pdf_bytes = base64.b64decode(pdf_base64)
-            # Temporäre Datei anlegen, da wir das 20MB Limit für Inline-Base64 umgehen wollen
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                 tmp.write(pdf_bytes)
                 tmp_file_path = tmp.name
             
             # Datei über die offizielle Gemini File API hochladen
             gemini_file = genai.upload_file(tmp_file_path, mime_type="application/pdf")
+            
+            # WARTESCHLEIFE: Wir warten, bis Gemini die Datei vollständig indexiert hat
+            while gemini_file.state.name == "PROCESSING":
+                print("Warte auf Gemini-Verarbeitung des PDFs...")
+                time.sleep(2)
+                gemini_file = genai.get_file(gemini_file.name)
+                
+            if gemini_file.state.name == "FAILED":
+                raise Exception("Gemini konnte das PDF nicht verarbeiten.")
+                
             contents.append(gemini_file)
             
         if raw_text:
@@ -92,7 +100,7 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
         raise Exception(f"Gemini API Fehler: {str(e)}")
         
     finally:
-        # Cleanup: Extrem wichtig, um Speicherlecks zu vermeiden!
+        # Cleanup: Wird immer ausgeführt, um Datenlecks zu vermeiden
         if gemini_file:
             try:
                 genai.delete_file(gemini_file.name)

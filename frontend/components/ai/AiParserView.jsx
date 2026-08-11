@@ -10,9 +10,8 @@ export default function AiParserView({ setNavChoice }) {
   const [rawText, setRawText] = useState('');
   const [url, setUrl] = useState('');
   
-  // PDF States
-  const [pdfBase64, setPdfBase64] = useState('');
-  const [pdfName, setPdfName] = useState('');
+  // PDF States (Speichert jetzt die echte Datei, nicht mehr Base64)
+  const [pdfFile, setPdfFile] = useState(null);
   const fileInputRef = useRef(null);
   
   const aiMutation = useAiParser();
@@ -27,29 +26,20 @@ export default function AiParserView({ setNavChoice }) {
       return;
     }
     
-    // Limit auf 30 MB erhöht (Institutional Grade)
     if (file.size > 30 * 1024 * 1024) { 
       toast.error('Die PDF-Datei ist zu groß (Maximal 30 MB).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64String = reader.result.split(',')[1];
-      setPdfBase64(base64String);
-      setPdfName(file.name);
-    };
-    reader.onerror = () => {
-      toast.error('Fehler beim Lesen der PDF-Datei.');
-    };
+    // Speichert einfach das File-Objekt (Kein Base64 Lesen mehr nötig!)
+    setPdfFile(file);
   };
 
   const handleParse = async (e) => {
     e.preventDefault();
     if (inputType === 'text' && !rawText.trim()) return;
     if (inputType === 'url' && !url.trim()) return;
-    if (inputType === 'pdf' && !pdfBase64) {
+    if (inputType === 'pdf' && !pdfFile) {
       toast.error('Bitte lade zuerst ein PDF hoch.');
       return;
     }
@@ -58,7 +48,7 @@ export default function AiParserView({ setNavChoice }) {
       { 
         text: inputType === 'text' ? rawText : '', 
         url: inputType === 'url' ? url : '',
-        pdfBase64: inputType === 'pdf' ? pdfBase64 : '' 
+        file: inputType === 'pdf' ? pdfFile : null 
       },
       {
         onSuccess: (response) => {
@@ -133,7 +123,6 @@ export default function AiParserView({ setNavChoice }) {
       </div>
 
       <form onSubmit={handleParse} className="flex flex-col gap-4">
-        {/* TEXT TAB */}
         {inputType === 'text' && (
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-slate-600">Exposé-Text einfügen (Strg+V)</label>
@@ -147,19 +136,18 @@ export default function AiParserView({ setNavChoice }) {
           </div>
         )}
 
-        {/* PDF TAB */}
         {inputType === 'pdf' && (
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-slate-600">Exposé als PDF hochladen</label>
             <div 
               onClick={() => fileInputRef.current?.click()}
               className={`w-full h-[200px] border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors ${
-                pdfBase64 ? 'border-valuon-green bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-valuon-green'
+                pdfFile ? 'border-valuon-green bg-emerald-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-valuon-green'
               }`}
             >
-              <IconFolder className={pdfBase64 ? 'text-valuon-green text-3xl' : 'text-slate-400 text-3xl'} />
-              <span className={`text-sm font-bold ${pdfBase64 ? 'text-valuon-green' : 'text-slate-500'}`}>
-                {pdfName ? pdfName : 'Klicke hier, um eine PDF-Datei auszuwählen (Max. 30 MB)'}
+              <IconFolder className={pdfFile ? 'text-valuon-green text-3xl' : 'text-slate-400 text-3xl'} />
+              <span className={`text-sm font-bold ${pdfFile ? 'text-valuon-green' : 'text-slate-500'}`}>
+                {pdfFile ? pdfFile.name : 'Klicke hier, um eine PDF-Datei auszuwählen (Max. 30 MB)'}
               </span>
               <input 
                 type="file" 
@@ -172,7 +160,6 @@ export default function AiParserView({ setNavChoice }) {
           </div>
         )}
 
-        {/* URL TAB */}
         {inputType === 'url' && (
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-slate-600">Immobilien-URL eingeben</label>
@@ -192,10 +179,10 @@ export default function AiParserView({ setNavChoice }) {
 
         <button
           type="submit"
-          disabled={aiMutation.isPending || (inputType === 'pdf' && !pdfBase64)}
+          disabled={aiMutation.isPending || (inputType === 'pdf' && !pdfFile)}
           className="mt-2 py-4 px-6 bg-valuon-green text-white border-none rounded-xl text-[1.05rem] font-extrabold cursor-pointer shadow-md hover:bg-valuon-green-light transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {aiMutation.isPending ? 'KI liest Dokument...' : 'Daten extrahieren & Analyse starten'}
+          {aiMutation.isPending ? 'KI analysiert Dokument...' : 'Daten extrahieren & Analyse starten'}
           {!aiMutation.isPending && <IconArrowRight />}
         </button>
       </form>

@@ -5,11 +5,11 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://valuon-estat
 
 export function useAiParser() {
   return useMutation({
-    mutationFn: async ({ text, url }) => {
+    mutationFn: async ({ text, url, pdfBase64 }) => {
       const res = await fetch(`${BACKEND_URL}/api/ai-analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, url })
+        body: JSON.stringify({ text, url, pdf_base64: pdfBase64 })
       });
       
       if (!res.ok) {

@@ -23,7 +23,25 @@ import {
 
 export default function Home() {
   const [navChoice, setNavChoice] = useState('Startseite');
-  const [backendStatus, setBackendStatus] = useState('ready');
+  const [backendStatus, setBackendStatus] = useState('waking'); // Startet im Status "waking"
+
+  // Backend-Erreichbarkeit beim Start prüfen
+  useEffect(() => {
+    let isMounted = true;
+    const checkServer = async () => {
+      const { pingBackendApi } = await import('../lib/propertyApi');
+      const isReady = await pingBackendApi();
+      if (isMounted) {
+        setBackendStatus(isReady ? 'ready' : 'sleeping');
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 30000); // Alle 30 Sek. prüfen
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const {
     userEmail,

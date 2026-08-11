@@ -1,8 +1,6 @@
 import os
 import json
-import tempfile
 import cloudscraper
-import time
 from bs4 import BeautifulSoup
 import google.generativeai as genai
 
@@ -29,14 +27,10 @@ def fetch_text_from_url(url: str) -> str:
         print(f"Fehler beim Abrufen der URL mit Cloudscraper: {e}")
         return ""
 
-# ÄNDERUNG: Akzeptiert jetzt direkt pdf_bytes
 def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: str = None) -> dict:
     key = api_key or get_gemini_api_key()
     if not key:
         raise Exception("Kein GEMINI_API_KEY konfiguriert.")
-
-    tmp_file_path = None
-    gemini_file = None
 
     try:
         genai.configure(api_key=key)
@@ -66,23 +60,13 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         contents = [prompt]
         
-        # ÄNDERUNG: Arbeitet direkt mit den Bytes der echten Datei
+        # High-Speed Inline Data: Die Bytes werden direkt im Request mitgeschickt.
+        # Kein Warten, kein Polling, keine temporären Server-Dateien.
         if pdf_bytes:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(pdf_bytes)
-                tmp_file_path = tmp.name
-            
-            gemini_file = genai.upload_file(tmp_file_path, mime_type="application/pdf")
-            
-            while gemini_file.state.name == "PROCESSING":
-                print("Warte auf Gemini-Verarbeitung des PDFs...")
-                time.sleep(2)
-                gemini_file = genai.get_file(gemini_file.name)
-                
-            if gemini_file.state.name == "FAILED":
-                raise Exception("Gemini konnte das PDF nicht verarbeiten.")
-                
-            contents.append(gemini_file)
+            contents.append({
+                "mime_type": "application/pdf",
+                "data": pdf_bytes
+            })
             
         if raw_text:
             contents.append(f"Hier ist der extrahierte Text:\n{raw_text[:15000]}")
@@ -96,13 +80,3 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
     except Exception as e:
         print(f"Fehler bei KI-Analyse: {e}")
         raise Exception(f"Gemini API Fehler: {str(e)}")
-        
-    finally:
-        if gemini_file:
-            try:
-                genai.delete_file(gemini_file.name)
-            except Exception as cleanup_err:
-                print(f"Fehler beim Löschen der Gemini Datei: {cleanup_err}")
-                
-        if tmp_file_path and os.path.exists(tmp_file_path):
-            os.remove(tmp_file_path)

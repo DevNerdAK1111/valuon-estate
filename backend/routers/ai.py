@@ -23,7 +23,7 @@ async def analyze_expose(
         if not content_to_analyze and not pdf_file:
             raise HTTPException(status_code=400, detail="Bitte Text, URL oder PDF übermitteln.")
 
-        # Datei in Bytes lesen, falls hochgeladen (viel effizienter als Base64)
+        # Datei in Bytes lesen, falls hochgeladen
         pdf_bytes = None
         if pdf_file:
             pdf_bytes = await pdf_file.read()

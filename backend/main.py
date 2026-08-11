@@ -20,8 +20,8 @@ app.add_middleware(
 
 app.include_router(calculation.router)
 app.include_router(properties.router)
-app.include_router(ai.router)
-
+# Hier ist der entscheidende Fix:
+app.include_router(ai.router, prefix="/api")
 
 @app.get("/")
 async def root():

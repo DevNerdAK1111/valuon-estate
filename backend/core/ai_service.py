@@ -1,6 +1,7 @@
 import os
 import json
 import base64
+import tempfile
 import cloudscraper
 from bs4 import BeautifulSoup
 import google.generativeai as genai
@@ -35,6 +36,9 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
     if not key:
         raise Exception("Kein GEMINI_API_KEY konfiguriert.")
 
+    tmp_file_path = None
+    gemini_file = None
+
     try:
         genai.configure(api_key=key)
         
@@ -61,16 +65,18 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
         """
         
         model = genai.GenerativeModel('models/gemini-1.5-flash')
-        
-        # Flexibler Content-Array für Gemini (Text + optionales PDF)
         contents = [prompt]
         
         if pdf_base64:
             pdf_bytes = base64.b64decode(pdf_base64)
-            contents.append({
-                "mime_type": "application/pdf",
-                "data": pdf_bytes
-            })
+            # Temporäre Datei anlegen, da wir das 20MB Limit für Inline-Base64 umgehen wollen
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(pdf_bytes)
+                tmp_file_path = tmp.name
+            
+            # Datei über die offizielle Gemini File API hochladen
+            gemini_file = genai.upload_file(tmp_file_path, mime_type="application/pdf")
+            contents.append(gemini_file)
             
         if raw_text:
             contents.append(f"Hier ist der extrahierte Text:\n{raw_text[:15000]}")
@@ -80,6 +86,18 @@ def analyze_property_data(raw_text: str = "", pdf_base64: str = "", api_key: str
             generation_config={"response_mime_type": "application/json"}
         )
         return json.loads(response.text)
+        
     except Exception as e:
         print(f"Fehler bei KI-Analyse: {e}")
         raise Exception(f"Gemini API Fehler: {str(e)}")
+        
+    finally:
+        # Cleanup: Extrem wichtig, um Speicherlecks zu vermeiden!
+        if gemini_file:
+            try:
+                genai.delete_file(gemini_file.name)
+            except Exception as cleanup_err:
+                print(f"Fehler beim Löschen der Gemini Datei: {cleanup_err}")
+                
+        if tmp_file_path and os.path.exists(tmp_file_path):
+            os.remove(tmp_file_path)

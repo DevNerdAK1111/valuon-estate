@@ -7,7 +7,7 @@ import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { formatEuroInt } from '../../utils/formatters';
 
 const KPI_OPTIONS = [
-  { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
+  { id: 'cf', label: 'Netto-Cashflow', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} €`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
   { id: 'brutto', label: 'Brutto-Mietrendite (Ø p.a.)', getValue: (m) => `${m.kpis.avgBruttoRendite.toFixed(2)} %`, getSub: () => 'Ø Miete p.a. / Kaufpreis', color: '#13381A' },
   { id: 'irr', label: 'Progn. EK-Rendite (IRR)', getValue: (m) => `${m.kpis.validIrr.toFixed(2)} %`, getSub: (m) => `Erwartete EK-Verzinsung bei Exit (${m.kpis.horizonYears} J.)`, color: '#A37841' },
   { id: 'gewinn', label: 'Progn. Gesamtgewinn', getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: (m) => `Erwarteter Kum. Cashflow + NAV (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.gesamtGewinn >= 0 },

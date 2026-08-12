@@ -80,7 +80,7 @@ export default function SectionBasisdaten({
 
       <StepperInput
         label="Kaufpreis (€)"
-        value={formData?.kaufpreis || 0}
+        value={formData?.kaufpreis ?? 0}
         onChange={(v) => onFieldChange('kaufpreis', v)}
         step={5000}
         isCurrency={true}
@@ -89,7 +89,7 @@ export default function SectionBasisdaten({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Wohnfläche (m²)"
-          value={formData?.qm || 0}
+          value={formData?.qm ?? 0}
           onChange={(v) => handleQmChange ? handleQmChange(v) : onFieldChange('qm', v)}
           step={5}
           isSqm={true}
@@ -99,8 +99,8 @@ export default function SectionBasisdaten({
           <input
             type="number"
             step="1"
-            value={formData?.baujahr || 2000}
-            onChange={(e) => onFieldChange('baujahr', parseInt(e.target.value, 10) || 2000)}
+            value={formData?.baujahr ?? 2000}
+            onChange={(e) => onFieldChange('baujahr', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
             className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
           />
         </div>

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SectionBasisdaten from './sections/SectionBasisdaten';
 import SectionBewirtschaftung from './sections/SectionBewirtschaftung';
 import SectionFinanzierung from './sections/SectionFinanzierung';
@@ -53,6 +53,25 @@ export default function Parametrisierung({ loading }) {
     updateField(field, value);
   };
 
+  // 1. KI-SYNC-AUTOMATIK: 
+  // Füllt die pro-qm- und Ziel-Mieten automatisch aus, wenn die KI Daten einfügt, 
+  // ohne dass der User das Feld anklicken muss.
+  useEffect(() => {
+    const qm = Number(formData?.qm) || 0;
+    const km = Number(formData?.kaltmiete_monat) || 0;
+    const currentSqm = Number(formData?.ist_sqm) || 0;
+    const targetKm = Number(formData?.target_monat) || 0;
+
+    if (km > 0 && qm > 0 && currentSqm === 0) {
+      const calculatedSqm = km / qm;
+      updateField('ist_sqm', calculatedSqm);
+      if (!isTargetCustomized && targetKm === 0) {
+        updateField('target_monat', km);
+        updateField('target_sqm', calculatedSqm);
+      }
+    }
+  }, [formData?.kaltmiete_monat, formData?.qm, formData?.ist_sqm, formData?.target_monat, isTargetCustomized, updateField]);
+
   const handleBundeslandChange = (bl) => {
     onFieldChange('bundesland', bl);
     const rates = BUNDESLAENDER_DEFAULT;
@@ -76,56 +95,76 @@ export default function Parametrisierung({ loading }) {
   const bundeslaenderMap = BUNDESLAENDER_DEFAULT;
   const bundeslaenderList = Object.keys(bundeslaenderMap);
 
+  // 2. ROBUSTE EINGABE-HANDLER: 
+  // Erlauben das vollständige Leeren (Backspace) ohne Zwang zur Null
   const handleLocalIstMonat = (val) => {
+    const cleanVal = val === '' ? '' : Number(val);
     const qm = Number(formData?.qm || 0);
-    const sqmVal = qm > 0 ? val / qm : 0;
-    onFieldChange('kaltmiete_monat', val);
-    onFieldChange('ist_sqm', sqmVal);
+    const numVal = Number(cleanVal) || 0;
+    const sqmVal = qm > 0 ? numVal / qm : 0;
+
+    onFieldChange('kaltmiete_monat', cleanVal);
+    onFieldChange('ist_sqm', cleanVal === '' ? '' : sqmVal);
+
     if (!isTargetCustomized) {
-      onFieldChange('target_monat', val);
-      onFieldChange('target_sqm', sqmVal);
+      onFieldChange('target_monat', cleanVal);
+      onFieldChange('target_sqm', cleanVal === '' ? '' : sqmVal);
     }
   };
 
   const handleLocalIstSqm = (val) => {
+    const cleanVal = val === '' ? '' : Number(val);
     const qm = Number(formData?.qm || 0);
-    const monatVal = val * qm;
-    onFieldChange('ist_sqm', val);
-    onFieldChange('kaltmiete_monat', monatVal);
+    const numVal = Number(cleanVal) || 0;
+    const monatVal = numVal * qm;
+
+    onFieldChange('ist_sqm', cleanVal);
+    onFieldChange('kaltmiete_monat', cleanVal === '' ? '' : monatVal);
+
     if (!isTargetCustomized) {
-      onFieldChange('target_monat', monatVal);
-      onFieldChange('target_sqm', val);
+      onFieldChange('target_sqm', cleanVal);
+      onFieldChange('target_monat', cleanVal === '' ? '' : monatVal);
     }
   };
 
   const handleLocalZielMonat = (val) => {
     setIsTargetCustomized(true);
+    const cleanVal = val === '' ? '' : Number(val);
     const qm = Number(formData?.qm || 0);
-    const sqmVal = qm > 0 ? val / qm : 0;
-    onFieldChange('target_monat', val);
-    onFieldChange('target_sqm', sqmVal);
+    const numVal = Number(cleanVal) || 0;
+    const sqmVal = qm > 0 ? numVal / qm : 0;
+
+    onFieldChange('target_monat', cleanVal);
+    onFieldChange('target_sqm', cleanVal === '' ? '' : sqmVal);
   };
 
   const handleLocalZielSqm = (val) => {
     setIsTargetCustomized(true);
+    const cleanVal = val === '' ? '' : Number(val);
     const qm = Number(formData?.qm || 0);
-    const monatVal = val * qm;
-    onFieldChange('target_sqm', val);
-    onFieldChange('target_monat', monatVal);
+    const numVal = Number(cleanVal) || 0;
+    const monatVal = numVal * qm;
+
+    onFieldChange('target_sqm', cleanVal);
+    onFieldChange('target_monat', cleanVal === '' ? '' : monatVal);
   };
 
   const handleLocalHausgeldGesamt = (val) => {
-    handleHausgeldChange(val);
+    const cleanVal = val === '' ? '' : Number(val);
+    handleHausgeldChange(cleanVal);
 
-    if (!isHausgeldCustomized) {
-      const nichtUmlegbar = Math.round(val * 0.25 * 100) / 100;
+    if (!isHausgeldCustomized && cleanVal !== '') {
+      const nichtUmlegbar = Math.round(cleanVal * 0.25 * 100) / 100;
       handleHausgeldNichtUmlegbarChange(nichtUmlegbar);
+    } else if (cleanVal === '') {
+      handleHausgeldNichtUmlegbarChange('');
     }
   };
 
   const handleLocalHausgeldNichtUmlegbar = (val) => {
     setIsHausgeldCustomized(true);
-    handleHausgeldNichtUmlegbarChange(val);
+    const cleanVal = val === '' ? '' : Number(val);
+    handleHausgeldNichtUmlegbarChange(cleanVal);
   };
 
   return (

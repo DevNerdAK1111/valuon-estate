@@ -30,14 +30,14 @@ export default function SectionBewirtschaftung({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Ist-Kaltmiete (€ / Mo)"
-          value={formData?.kaltmiete_monat || 0}
+          value={formData?.kaltmiete_monat ?? 0}
           onChange={handleLocalIstMonat}
           step={25}
           isCurrency={true}
         />
         <StepperInput
           label="Ist-Miete (€ / m²)"
-          value={formData?.ist_sqm || 0}
+          value={formData?.ist_sqm ?? 0}
           onChange={handleLocalIstSqm}
           step={0.5}
         />
@@ -46,14 +46,14 @@ export default function SectionBewirtschaftung({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Ziel-Kaltmiete (€ / Mo)"
-          value={formData?.target_monat || 0}
+          value={formData?.target_monat ?? 0}
           onChange={handleLocalZielMonat}
           step={25}
           isCurrency={true}
         />
         <StepperInput
           label="Ziel-Miete (€ / m²)"
-          value={formData?.target_sqm || 0}
+          value={formData?.target_sqm ?? 0}
           onChange={handleLocalZielSqm}
           step={0.5}
         />
@@ -65,15 +65,15 @@ export default function SectionBewirtschaftung({
           type="number"
           step="1"
           min="1"
-          value={formData?.adj_year || 1}
-          onChange={(e) => onFieldChange('adj_year', parseInt(e.target.value, 10) || 1)}
+          value={formData?.adj_year ?? 1}
+          onChange={(e) => onFieldChange('adj_year', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
           className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
         />
       </div>
 
       <StepperInput
         label="Hausgeld gesamt (€ / Mo)"
-        value={formData?.hausgeld || 0}
+        value={formData?.hausgeld ?? 0}
         onChange={handleLocalHausgeldGesamt}
         step={10}
         isCurrency={true}
@@ -86,7 +86,7 @@ export default function SectionBewirtschaftung({
       >
         <StepperInput
           label="Nicht umlegbar (€ / Mo)"
-          value={formData?.hausgeld_nicht_umlegbar || 0}
+          value={formData?.hausgeld_nicht_umlegbar ?? 0}
           onChange={handleLocalHausgeldNichtUmlegbar}
           step={5}
           isCurrency={true}
@@ -105,7 +105,7 @@ export default function SectionBewirtschaftung({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Instandhaltung (€ / m²)"
-          value={formData?.inst_sqm || 12}
+          value={formData?.inst_sqm ?? 12}
           onChange={(v) => onFieldChange('inst_sqm', v)}
           step={1}
           tooltip="Jährliche Angabe p.a. – orientiert sich standardmäßig am Baujahr und der Objektart."
@@ -113,7 +113,7 @@ export default function SectionBewirtschaftung({
 
         <StepperInput
           label="Verwaltung (€ / Mo)"
-          value={formData?.mgt_monat || 30}
+          value={formData?.mgt_monat ?? 30}
           onChange={(v) => onFieldChange('mgt_monat', v)}
           step={5}
           isCurrency={true}
@@ -124,14 +124,14 @@ export default function SectionBewirtschaftung({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Mietausfallwagnis (%)"
-          value={formData?.vac_rate_pct || 2.0}
+          value={formData?.vac_rate_pct ?? 2.0}
           onChange={(v) => onFieldChange('vac_rate_pct', v)}
           step={0.5}
           isPercent={true}
         />
         <StepperInput
           label="Sanierung / Umbau (€)"
-          value={formData?.sanierung || 0}
+          value={formData?.sanierung ?? 0}
           onChange={(v) => onFieldChange('sanierung', v)}
           step={1000}
           isCurrency={true}

@@ -105,7 +105,7 @@ export default function SectionSteuern({
         ) : (
           <StepperInput
             label="AfA %"
-            value={formData?.afa_lin || 2.0}
+            value={formData?.afa_lin ?? 2.0}
             onChange={(v) => onFieldChange('afa_lin', v)}
             step={0.5}
             isPercent={true}
@@ -145,7 +145,7 @@ export default function SectionSteuern({
               max="30"
               step="1"
               value={formData?.denkmal_fertigstellung_jahr ?? 1}
-              onChange={(e) => onFieldChange('denkmal_fertigstellung_jahr', parseInt(e.target.value, 10) || 1)}
+              onChange={(e) => onFieldChange('denkmal_fertigstellung_jahr', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
               className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
             />
           </div>
@@ -206,7 +206,7 @@ export default function SectionSteuern({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Mietsteigerung p.a. (%)"
-          value={formData?.miet_inc || 1.0}
+          value={formData?.miet_inc ?? 1.0}
           onChange={(v) => onFieldChange('miet_inc', v)}
           step={0.1}
           isPercent={true}
@@ -214,7 +214,7 @@ export default function SectionSteuern({
 
         <StepperInput
           label="Wertsteigerung p.a. (%)"
-          value={formData?.val_inc || 1.0}
+          value={formData?.val_inc ?? 1.0}
           onChange={(v) => onFieldChange('val_inc', v)}
           step={0.1}
           isPercent={true}
@@ -225,7 +225,7 @@ export default function SectionSteuern({
 
       <StepperInput
         label="Verkaufsnebenkosten / Exit (%)"
-        value={formData?.exit_cost || 0.0}
+        value={formData?.exit_cost ?? 0.0}
         onChange={(v) => onFieldChange('exit_cost', v)}
         step={0.5}
         isPercent={true}
@@ -253,15 +253,15 @@ export default function SectionSteuern({
                 <input
                   type="number"
                   min="1"
-                  value={row.year || row.jahr || 1}
-                  onChange={(e) => handleCapexChange && handleCapexChange(idx, 'year', parseInt(e.target.value, 10))}
+                  value={row.year ?? row.jahr ?? 1}
+                  onChange={(e) => handleCapexChange && handleCapexChange(idx, 'year', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                   placeholder="z. B. Jahr 3"
                   className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
                 />
                 <input
                   type="number"
-                  value={row.amount || row.betrag || 0}
-                  onChange={(e) => handleCapexChange && handleCapexChange(idx, 'amount', parseFloat(e.target.value))}
+                  value={row.amount ?? row.betrag ?? 0}
+                  onChange={(e) => handleCapexChange && handleCapexChange(idx, 'amount', e.target.value === '' ? '' : parseFloat(e.target.value))}
                   placeholder="Betrag €"
                   className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
                 />

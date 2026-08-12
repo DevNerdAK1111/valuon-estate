@@ -9,7 +9,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
-      <body className="m-0 p-0 bg-valuon-bg text-valuon-green font-sans min-h-screen">
+      {/* overflow-y-scroll erzwingt die Scrollbar dauerhaft, wodurch das "Wackeln" der Navbar verschwindet */}
+      <body className="m-0 p-0 bg-valuon-bg text-valuon-green font-sans min-h-screen overflow-y-scroll">
         <Providers>
           {children}
         </Providers>

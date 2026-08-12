@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 import Header from '../components/layout/Header';
@@ -10,7 +10,7 @@ import ExecutiveDashboard from '../components/analyse/ExecutiveDashboard';
 import DatabaseView from '../components/database/DatabaseView';
 import ScenarioComparisonView from '../components/scenario/ScenarioComparisonView';
 import ProfileView from '../components/profile/ProfileView';
-import AiParserView from '../components/ai/AiParserView'; // <--- Neu!
+import AiParserView from '../components/ai/AiParserView';
 
 import { useAuthProfile } from '../hooks/useAuthProfile';
 import { useProperty } from '../context/PropertyContext';
@@ -20,10 +20,11 @@ import {
   useDeleteProperty, 
   useCalculateInvestment 
 } from '../hooks/usePropertiesQuery';
+import { pingBackendApi } from '../lib/propertyApi';
 
 export default function Home() {
   const [navChoice, setNavChoice] = useState('Startseite');
-  const [backendStatus, setBackendStatus] = useState('ready');
+  const [backendStatus, setBackendStatus] = useState('waking');
 
   const {
     userEmail,
@@ -47,6 +48,23 @@ export default function Home() {
   const dbProperties = propertiesQuery.data || [];
   const loadingDb = propertiesQuery.isPending;
   const calcResult = calculateMutation.data || null;
+
+  // Automatischer Backend-Ping Check
+  useEffect(() => {
+    let isMounted = true;
+    const checkServer = async () => {
+      const isReady = await pingBackendApi();
+      if (isMounted) {
+        setBackendStatus(isReady ? 'ready' : 'sleeping');
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 30000); // Alle 30 Sekunden im Hintergrund prüfen
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleCalculate = (e) => {
     if (e) e.preventDefault();
@@ -130,7 +148,6 @@ export default function Home() {
           />
         )}
         
-        {/* NEUE ROUTE FÜR DEN PARSER */}
         {navChoice === 'KI Exposé-Parser' && (
           <AiParserView setNavChoice={setNavChoice} />
         )}

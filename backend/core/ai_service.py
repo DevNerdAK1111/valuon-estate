@@ -9,17 +9,9 @@ from playwright.async_api import async_playwright
 def get_openai_api_key() -> str:
     return os.getenv("OPENAI_API_KEY", "")
 
-# Guardrail 1: Erlaubte Immobilienportale
-ALLOWED_DOMAINS = ["immoscout24.de", "immowelt.de", "kleinanzeigen.de", "neubaukompass.de", "ohne-makler.net"]
-
 async def fetch_text_from_url(url: str) -> str:
     url = url.strip()
     
-    # Prüfen, ob die URL zu einem der erlaubten Portale gehört
-    is_allowed = any(domain in url for domain in ALLOWED_DOMAINS)
-    if not is_allowed:
-        raise Exception("Ungültige URL. Bitte verwende einen direkten Link von ImmoScout24, Immowelt oder Kleinanzeigen.")
-
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -32,7 +24,7 @@ async def fetch_text_from_url(url: str) -> str:
             
             page_text = await page.evaluate("document.body.innerText")
             
-            # Guardrail 2: Prüfen ob es sich um eine Immobilienanzeige handelt
+            # Guardrail: Prüfen ob es sich um eine echte Immobilienanzeige handelt
             keywords = ["kaufpreis", "wohnfläche", "zimmer", "m²", "baujahr"]
             found_keywords = sum(1 for kw in keywords if re.search(kw, page_text, re.IGNORECASE))
             

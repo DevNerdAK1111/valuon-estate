@@ -1,33 +1,51 @@
 import os
 import json
-import cloudscraper
 import io
+import re
 from pypdf import PdfReader
-from bs4 import BeautifulSoup
 from openai import OpenAI
+from playwright.async_api import async_playwright
 
 def get_openai_api_key() -> str:
     return os.getenv("OPENAI_API_KEY", "")
 
-def fetch_text_from_url(url: str) -> str:
+# Guardrail 1: Erlaubte Immobilienportale
+ALLOWED_DOMAINS = ["immoscout24.de", "immowelt.de", "kleinanzeigen.de", "neubaukompass.de", "ohne-makler.net"]
+
+async def fetch_text_from_url(url: str) -> str:
+    url = url.strip()
+    
+    # Prüfen, ob die URL zu einem der erlaubten Portale gehört
+    is_allowed = any(domain in url for domain in ALLOWED_DOMAINS)
+    if not is_allowed:
+        raise Exception("Ungültige URL. Bitte verwende einen direkten Link von ImmoScout24, Immowelt oder Kleinanzeigen.")
+
     try:
-        scraper = cloudscraper.create_scraper(browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'desktop': True
-        })
-        response = scraper.get(url, timeout=15)
-        response.raise_for_status()
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        for element in soup(["script", "style", "header", "footer", "nav", "noscript"]):
-            element.extract()
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page = await context.new_page()
             
-        return ' '.join(line.strip() for line in soup.get_text(separator=' ').splitlines() if line.strip())
+            await page.goto(url, timeout=30000, wait_until="domcontentloaded")
+            
+            page_text = await page.evaluate("document.body.innerText")
+            
+            # Guardrail 2: Prüfen ob es sich um eine Immobilienanzeige handelt
+            keywords = ["kaufpreis", "wohnfläche", "zimmer", "m²", "baujahr"]
+            found_keywords = sum(1 for kw in keywords if re.search(kw, page_text, re.IGNORECASE))
+            
+            if found_keywords < 2:
+                await browser.close()
+                raise Exception("Die Zielseite scheint keine gültige Immobilienanzeige zu sein (zu wenig Immobiliendaten gefunden).")
+                
+            await browser.close()
+            return page_text
+            
     except Exception as e:
-        print(f"Fehler beim Abrufen der URL mit Cloudscraper: {e}")
-        return ""
+        print(f"Fehler beim Abrufen der URL mit Playwright: {e}")
+        raise Exception(f"Fehler beim Laden der Webseite: {str(e)}")
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     try:
@@ -85,7 +103,6 @@ def analyze_property_data(raw_text: str = "", pdf_bytes: bytes = None, api_key: 
         {combined_text[:25000]}
         """
         
-        # Native JSON-Erzwingung durch OpenAI
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             response_format={ "type": "json_object" },

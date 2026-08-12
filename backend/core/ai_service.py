@@ -15,23 +15,26 @@ async def fetch_text_from_url(url: str) -> str:
     try:
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
+            
+            # Verbesserte Tarnung: Wir simulieren einen echten Mac-Nutzer mit deutschem Chrome
             context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                viewport={"width": 1920, "height": 1080},
+                locale="de-DE",
+                timezone_id="Europe/Berlin"
             )
             page = await context.new_page()
             
-            await page.goto(url, timeout=30000, wait_until="domcontentloaded")
+            # Warten, bis das Netzwerk komplett ruhig ist (wichtig für ImmoScout, da viel nachgeladen wird)
+            await page.goto(url, timeout=30000, wait_until="networkidle")
             
+            # Ein kleiner künstlicher Delay von 2 Sekunden, um letzte Skripte laden zu lassen
+            await page.wait_for_timeout(2000)
+            
+            # Gesamten Text der Seite ziehen
             page_text = await page.evaluate("document.body.innerText")
             
-            # Guardrail: Prüfen ob es sich um eine echte Immobilienanzeige handelt
-            keywords = ["kaufpreis", "wohnfläche", "zimmer", "m²", "baujahr"]
-            found_keywords = sum(1 for kw in keywords if re.search(kw, page_text, re.IGNORECASE))
-            
-            if found_keywords < 2:
-                await browser.close()
-                raise Exception("Die Zielseite scheint keine gültige Immobilienanzeige zu sein (zu wenig Immobiliendaten gefunden).")
-                
+            # Guardrail entfernt: Wir übergeben den Text jetzt immer direkt an OpenAI.
             await browser.close()
             return page_text
             

@@ -13,9 +13,9 @@ async def analyze_expose(
     try:
         content_to_analyze = text
         
-        # Wenn eine URL gesendet wird, Text scrapen
+        # Wenn eine URL gesendet wird, Text asynchron scrapen
         if url:
-            scraped_text = fetch_text_from_url(url)
+            scraped_text = await fetch_text_from_url(url)
             if not scraped_text:
                 raise HTTPException(status_code=400, detail="URL konnte nicht gelesen werden (evtl. Anti-Bot-Schutz). Bitte nutze Text oder PDF.")
             content_to_analyze = scraped_text

@@ -17,7 +17,7 @@ export default function SectionFinanzierung({
     <MainCard title="3. Finanzierung & Eigenkapital" isOpen={isOpen} onToggle={onToggle}>
       <StepperInput
         label="Eigenkapital-Einsatz (€)"
-        value={formData?.ek_euro || 0}
+        value={formData?.ek_euro ?? 0}
         onChange={(v) => onFieldChange('ek_euro', v)}
         step={2500}
         isCurrency={true}
@@ -60,14 +60,14 @@ export default function SectionFinanzierung({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Sollzins Hausbank (%)"
-          value={formData?.hb_zins || 3.8}
+          value={formData?.hb_zins ?? 3.8}
           onChange={(v) => onFieldChange('hb_zins', v)}
           step={0.1}
           isPercent={true}
         />
         <StepperInput
           label="Anfängliche Tilgung (%)"
-          value={formData?.hb_tilg || 2.0}
+          value={formData?.hb_tilg ?? 2.0}
           onChange={(v) => onFieldChange('hb_tilg', v)}
           step={0.1}
           isPercent={true}
@@ -77,13 +77,13 @@ export default function SectionFinanzierung({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StepperInput
           label="Tilgungsfreie Jahre"
-          value={formData?.grace_years || 0}
+          value={formData?.grace_years ?? 0}
           onChange={(v) => onFieldChange('grace_years', v)}
           step={1}
         />
         <StepperInput
           label="Zinsbindung (Jahre)"
-          value={formData?.zinsbindung || 10}
+          value={formData?.zinsbindung ?? 10}
           onChange={(v) => onFieldChange('zinsbindung', v)}
           step={1}
         />
@@ -91,7 +91,7 @@ export default function SectionFinanzierung({
 
       <StepperInput
         label="Sondertilgung (€ / J.)"
-        value={formData?.sondertilg || 0}
+        value={formData?.sondertilg ?? 0}
         onChange={(v) => onFieldChange('sondertilg', v)}
         step={500}
         isCurrency={true}
@@ -104,7 +104,7 @@ export default function SectionFinanzierung({
       >
         <StepperInput
           label="Folgezins (%)"
-          value={formData?.folge_zins || 3.8}
+          value={formData?.folge_zins ?? 3.8}
           onChange={(v) => onFieldChange('folge_zins', v)}
           step={0.1}
           isPercent={true}
@@ -126,7 +126,7 @@ export default function SectionFinanzierung({
         {formData?.folge_mode !== 'Rate konstant halten (Annuität)' && (
           <StepperInput
             label="Folge-Tilgung (%)"
-            value={formData?.folge_tilg || 2.0}
+            value={formData?.folge_tilg ?? 2.0}
             onChange={(v) => onFieldChange('folge_tilg', v)}
             step={0.1}
             isPercent={true}
@@ -141,7 +141,7 @@ export default function SectionFinanzierung({
       >
         <StepperInput
           label="KfW-Darlehensbetrag (€)"
-          value={formData?.kfw_amt || 0}
+          value={formData?.kfw_amt ?? 0}
           onChange={(v) => onFieldChange('kfw_amt', v)}
           step={5000}
           isCurrency={true}
@@ -149,14 +149,14 @@ export default function SectionFinanzierung({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StepperInput
             label="KfW Zins (%)"
-            value={formData?.kfw_zins || 2.1}
+            value={formData?.kfw_zins ?? 2.1}
             onChange={(v) => onFieldChange('kfw_zins', v)}
             step={0.1}
             isPercent={true}
           />
           <StepperInput
             label="KfW Tilgung (%)"
-            value={formData?.kfw_tilg || 3.0}
+            value={formData?.kfw_tilg ?? 3.0}
             onChange={(v) => onFieldChange('kfw_tilg', v)}
             step={0.1}
             isPercent={true}
@@ -165,13 +165,13 @@ export default function SectionFinanzierung({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StepperInput
             label="KfW Tilgungsfreie Jahre"
-            value={formData?.kfw_grace_years || 0}
+            value={formData?.kfw_grace_years ?? 0}
             onChange={(v) => onFieldChange('kfw_grace_years', v)}
             step={1}
           />
           <StepperInput
             label="KfW Tilgungszuschuss (€)"
-            value={formData?.kfw_grant || 0}
+            value={formData?.kfw_grant ?? 0}
             onChange={(v) => onFieldChange('kfw_grant', v)}
             step={1000}
             isCurrency={true}

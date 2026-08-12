@@ -8,7 +8,7 @@ import { calculateInvestmentModel } from '../../utils/calculateInvestment';
 import { useUpdatePropertyStatus } from '../../hooks/usePropertiesQuery';
 
 const DEFAULT_PDF_KPIS = [
-  { id: 'cf', label: 'Netto-Cashflow (Ø / Mo)', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} € / Mo.`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
+  { id: 'cf', label: 'Netto-Cashflow', getValue: (m) => `${m.kpis.isCfPositive ? '+' : ''}${formatEuroInt(m.kpis.avgMonthlyCashflow)} €`, getSub: (m) => `Ø pro Monat n. St. (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.isCfPositive },
   { id: 'brutto', label: 'Brutto-Mietrendite (Ø p.a.)', getValue: (m) => `${m.kpis.avgBruttoRendite.toFixed(2)} %`, getSub: () => 'Ø Miete p.a. / Kaufpreis', color: '#13381A' },
   { id: 'irr', label: 'Progn. EK-Rendite (IRR)', getValue: (m) => `${m.kpis.validIrr.toFixed(2)} %`, getSub: (m) => `Erwartete EK-Verzinsung bei Exit (${m.kpis.horizonYears} J.)`, color: '#A37841' },
   { id: 'gewinn', label: 'Progn. Gesamtgewinn', getValue: (m) => `${m.kpis.gesamtGewinn >= 0 ? '+' : ''}${formatEuroInt(m.kpis.gesamtGewinn)} €`, getSub: (m) => `Erwarteter Kum. Cashflow + NAV (${m.kpis.horizonYears} J.)`, isPos: (m) => m.kpis.gesamtGewinn >= 0 }
@@ -160,6 +160,12 @@ export default function DatabaseView({
                 const isEven = idx % 2 === 0;
                 const bgClass = isEven ? 'bg-white' : 'bg-slate-50';
 
+                // Fallback Fix für alte 400% IRR Datenbank-Einträge: 
+                // Wenn die Zahl größer als 1 (100%) ist, wurde sie früher falsch gespeichert. Dann nehmen wir sie unmultipliziert.
+                const displayIrr = item.irr !== null && item.irr !== undefined
+                  ? (Math.abs(item.irr) > 1 ? item.irr : item.irr * 100)
+                  : null;
+
                 return (
                   <tr key={itemId || idx} className={`${bgClass} border-b border-valuon-border hover:bg-slate-100 transition-colors`}>
                     <td className={`p-3 font-bold text-valuon-green sticky left-0 z-10 border-r border-valuon-border ${bgClass}`}>
@@ -170,7 +176,7 @@ export default function DatabaseView({
                     <td className="p-3 font-semibold text-slate-800">{formatEuroInt(item.kaufpreis || item.form_data?.kaufpreis)} €</td>
                     <td className="p-3 text-slate-600">{item.qm || item.form_data?.qm} m²</td>
                     <td className="p-3 font-black text-valuon-gold">
-                      {item.irr ? formatPct(item.irr * 100) + ' %' : '–'}
+                      {displayIrr !== null ? formatPct(displayIrr) + ' %' : '–'}
                     </td>
                     <td className="p-3 flex gap-2 items-center justify-end">
                       <button 

@@ -140,28 +140,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
     }
   };
 
-  const applyPreset = (presetType) => {
-    switch (presetType) {
-      case 'interest_plus':
-        setScenarioB(prev => ({ ...prev, hb_zins: Math.round(((parseFloat(prev.hb_zins) || 0) + 1.5) * 10) / 10 }));
-        break;
-      case 'discount_price':
-        setScenarioB(prev => ({ ...prev, kaufpreis: Math.round((parseFloat(prev.kaufpreis) || 0) * 0.9) }));
-        break;
-      case 'rent_plus':
-        setScenarioB(prev => ({ ...prev, kaltmiete_monat: Math.round((parseFloat(prev.kaltmiete_monat) || 0) * 1.1) }));
-        break;
-      case 'vacancy_risk':
-        setScenarioB(prev => ({ ...prev, vac_rate_pct: 8.33 }));
-        break;
-      case 'reset':
-        setScenarioB({ ...scenarioA });
-        break;
-      default:
-        break;
-    }
-  };
-
   return (
     <div className="flex flex-col gap-6 w-full">
       
@@ -190,7 +168,7 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
           <label className="text-xs font-extrabold text-valuon-green whitespace-nowrap">
             Basis-Objekt laden:
           </label>
-          <div className="w-full sm:w-56 relative">
+          <div className="w-full sm:w-64 relative">
             <select
               onChange={(e) => handleSelectDbProperty(e.target.value)}
               className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
@@ -203,51 +181,6 @@ export default function ScenarioComparisonView({ basePropertyData, dbProperties,
               ))}
             </select>
           </div>
-        </div>
-
-        {/* QUICK PRESETS */}
-        <div className="flex items-center gap-2 flex-wrap mt-2 md:mt-0 w-full md:w-auto border-t border-valuon-border md:border-none pt-3 md:pt-0">
-          <span className="text-xs font-extrabold text-slate-500 mr-1 w-full sm:w-auto">Presets für B:</span>
-          
-          <button 
-            type="button"
-            onClick={() => applyPreset('interest_plus')}
-            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
-          >
-            Zins +1,5 %
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => applyPreset('discount_price')}
-            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
-          >
-            Kaufpreis -10 %
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => applyPreset('rent_plus')}
-            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
-          >
-            Miete +10 %
-          </button>
-
-          <button 
-            type="button"
-            onClick={() => applyPreset('vacancy_risk')}
-            className="py-1.5 px-3.5 bg-valuon-cream border border-valuon-border rounded-full text-xs font-bold text-valuon-green cursor-pointer hover:bg-white transition-colors"
-          >
-            1 Mo. Leerstand
-          </button>
-
-          <button 
-            type="button"
-            onClick={() => applyPreset('reset')}
-            className="py-1.5 px-3.5 bg-valuon-green border-none rounded-full text-xs font-extrabold text-white cursor-pointer hover:bg-valuon-green-light transition-colors"
-          >
-            Szenario A kopieren
-          </button>
         </div>
       </div>
 

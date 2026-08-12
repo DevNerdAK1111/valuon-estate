@@ -29,6 +29,7 @@ export default function Home() {
   const {
     userEmail,
     setUserEmail,
+    userProfile,     // <-- Hier regulär aus dem Hook extrahiert
     setUserProfile,
     loadingProfile,
     updateUserProfile,
@@ -136,7 +137,7 @@ export default function Home() {
         onLogout={handleLogout} 
         setNavChoice={setNavChoice} 
         userEmail={userEmail} 
-        userProfile={useAuthProfile().userProfile}
+        userProfile={userProfile} 
       />
 
       <main className="w-full">

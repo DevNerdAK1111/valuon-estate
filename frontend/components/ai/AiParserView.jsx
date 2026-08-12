@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { IconLightning, IconArrowRight, IconFolder } from '../ui/Icons';
+import { IconLightning, IconArrowRight, IconFolder, IconLock } from '../ui/Icons';
 import { useAiParser } from '../../hooks/useAiQuery';
 import { useProperty } from '../../context/PropertyContext';
 import toast from 'react-hot-toast';
@@ -9,12 +9,18 @@ export default function AiParserView({ setNavChoice }) {
   const [inputType, setInputType] = useState('text');
   const [rawText, setRawText] = useState('');
   const [url, setUrl] = useState('');
+  const [showBotWarning, setShowBotWarning] = useState(false);
   
   const [pdfFile, setPdfFile] = useState(null);
   const fileInputRef = useRef(null);
   
   const aiMutation = useAiParser();
   const { setFormData } = useProperty();
+
+  const handleInputTypeChange = (type) => {
+    setInputType(type);
+    setShowBotWarning(false);
+  };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -31,10 +37,13 @@ export default function AiParserView({ setNavChoice }) {
     }
 
     setPdfFile(file);
+    setShowBotWarning(false);
   };
 
   const handleParse = async (e) => {
     e.preventDefault();
+    setShowBotWarning(false);
+
     if (inputType === 'text' && !rawText.trim()) return;
     if (inputType === 'url' && !url.trim()) return;
     if (inputType === 'pdf' && !pdfFile) {
@@ -64,6 +73,11 @@ export default function AiParserView({ setNavChoice }) {
             
             setNavChoice('Analyse');
           }
+        },
+        onError: () => {
+          if (inputType === 'url') {
+            setShowBotWarning(true);
+          }
         }
       }
     );
@@ -84,11 +98,10 @@ export default function AiParserView({ setNavChoice }) {
         </div>
       </div>
 
-      {/* FIX: overflow-x-auto whitespace-nowrap entfernt, stattdessen flex-wrap genutzt */}
       <div className="flex flex-wrap gap-4 border-b-2 border-valuon-border">
         <button
           type="button"
-          onClick={() => setInputType('text')}
+          onClick={() => handleInputTypeChange('text')}
           className={`py-2 px-4 bg-transparent border-none text-[0.95rem] font-extrabold cursor-pointer -mb-[2px] transition-colors ${
             inputType === 'text' 
               ? 'border-b-3 border-valuon-green text-valuon-green' 
@@ -99,7 +112,7 @@ export default function AiParserView({ setNavChoice }) {
         </button>
         <button
           type="button"
-          onClick={() => setInputType('pdf')}
+          onClick={() => handleInputTypeChange('pdf')}
           className={`py-2 px-4 bg-transparent border-none text-[0.95rem] font-extrabold cursor-pointer -mb-[2px] transition-colors ${
             inputType === 'pdf' 
               ? 'border-b-3 border-valuon-green text-valuon-green' 
@@ -110,7 +123,7 @@ export default function AiParserView({ setNavChoice }) {
         </button>
         <button
           type="button"
-          onClick={() => setInputType('url')}
+          onClick={() => handleInputTypeChange('url')}
           className={`py-2 px-4 bg-transparent border-none text-[0.95rem] font-extrabold cursor-pointer -mb-[2px] transition-colors ${
             inputType === 'url' 
               ? 'border-b-3 border-valuon-green text-valuon-green' 
@@ -170,9 +183,31 @@ export default function AiParserView({ setNavChoice }) {
               className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-sm font-medium outline-none bg-white focus:border-valuon-green focus:ring-1 focus:ring-valuon-green transition-colors"
               required
             />
-            <div className="bg-slate-50 border border-slate-200 text-slate-600 p-3 rounded-lg text-xs leading-relaxed font-medium mt-1">
-              <strong>Info:</strong> Wir nutzen erweiterte Anti-Bot-Umgangstechniken, aber Portale wie ImmoScout24 blockieren dennoch gelegentlich. Wenn es hakt, nutze einfach die Rohtext- oder PDF-Funktion.
-            </div>
+            
+            {!showBotWarning ? (
+              <div className="bg-slate-50 border border-slate-200 text-slate-600 p-3 rounded-lg text-xs leading-relaxed font-medium mt-1">
+                <strong>Info:</strong> Wir nutzen erweiterte Anti-Bot-Umgangstechniken, aber Portale wie ImmoScout24 blockieren dennoch gelegentlich. Wenn es hakt, nutze einfach die Rohtext- oder PDF-Funktion.
+              </div>
+            ) : (
+              <div className="mt-2 p-5 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col gap-3 shadow-sm animate-fade-in">
+                <div className="flex items-center gap-2 text-emerald-800 font-black text-[1.05rem]">
+                  <IconLock /> 
+                  <span>Portal hat den Abruf blockiert</span>
+                </div>
+                <p className="m-0 text-sm text-emerald-900/80 leading-relaxed font-medium">
+                  Keine Sorge, wir können nichts dafür! Portale wie ImmoScout24 nutzen strikte Anti-Bot-Systeme, die uns hier gerade aussperren.
+                </p>
+                <div className="bg-white p-4 rounded-lg border border-emerald-100 shadow-sm mt-1">
+                  <span className="font-extrabold text-valuon-green text-sm mb-2 block">Dein 10-Sekunden Workaround:</span>
+                  <ol className="m-0 pl-5 text-sm text-slate-700 leading-relaxed flex flex-col gap-1.5 font-medium list-decimal">
+                    <li>Öffne die Immobilienanzeige ganz normal in deinem Browser.</li>
+                    <li>Drücke <strong className="text-valuon-green">Strg + P</strong> (Windows) oder <strong className="text-valuon-green">Cmd + P</strong> (Mac).</li>
+                    <li>Wähle als Drucker <strong className="text-valuon-green">"Als PDF speichern"</strong>.</li>
+                    <li>Lade das PDF hier über den Reiter <strong className="text-valuon-green">"PDF Upload"</strong> hoch!</li>
+                  </ol>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

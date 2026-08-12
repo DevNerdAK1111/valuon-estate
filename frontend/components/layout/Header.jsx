@@ -55,7 +55,7 @@ export default function Header({ navChoice, setNavChoice, backendStatus, userEma
           )}
           {backendStatus === 'waking' && (
             <>
-              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse"></span>
               <span className="text-amber-600">Startet...</span>
             </>
           )}

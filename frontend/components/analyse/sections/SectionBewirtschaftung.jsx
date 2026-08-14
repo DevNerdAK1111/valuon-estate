@@ -23,7 +23,8 @@ export default function SectionBewirtschaftung({
   displayNkTotal,
   displayGrwtEuro,
   displayNotarEuro,
-  displayMaklerEuro
+  displayMaklerEuro,
+  idPrefix = ""
 }) {
   return (
     <MainCard title="2. Bewirtschaftung & Nebenkosten" isOpen={isOpen} onToggle={onToggle}>
@@ -34,12 +35,14 @@ export default function SectionBewirtschaftung({
           onChange={handleLocalIstMonat}
           step={25}
           isCurrency={true}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Ist-Miete (€ / m²)"
           value={formData?.ist_sqm ?? 0}
           onChange={handleLocalIstSqm}
           step={0.5}
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -50,18 +53,21 @@ export default function SectionBewirtschaftung({
           onChange={handleLocalZielMonat}
           step={25}
           isCurrency={true}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Ziel-Miete (€ / m²)"
           value={formData?.target_sqm ?? 0}
           onChange={handleLocalZielSqm}
           step={0.5}
+          idPrefix={idPrefix}
         />
       </div>
 
       <div>
-        <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Anpassung ab Jahr</label>
+        <label htmlFor={`${idPrefix}adj_year`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Anpassung ab Jahr</label>
         <input
+          id={`${idPrefix}adj_year`}
           type="number"
           step="1"
           min="1"
@@ -77,6 +83,7 @@ export default function SectionBewirtschaftung({
         onChange={handleLocalHausgeldGesamt}
         step={10}
         isCurrency={true}
+        idPrefix={idPrefix}
       />
 
       <SubContainerCard
@@ -90,6 +97,7 @@ export default function SectionBewirtschaftung({
           onChange={handleLocalHausgeldNichtUmlegbar}
           step={5}
           isCurrency={true}
+          idPrefix={idPrefix}
         />
 
         <div className="bg-white border border-valuon-border rounded-lg p-3 text-[0.85rem] text-valuon-green">
@@ -109,6 +117,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('inst_sqm', v)}
           step={1}
           tooltip="Jährliche Angabe p.a. – orientiert sich standardmäßig am Baujahr und der Objektart."
+          idPrefix={idPrefix}
         />
 
         <StepperInput
@@ -118,6 +127,7 @@ export default function SectionBewirtschaftung({
           step={5}
           isCurrency={true}
           tooltip="Monatliche Angabe – orientiert sich standardmäßig am Baujahr und der Objektart."
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -128,6 +138,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('vac_rate_pct', v)}
           step={0.5}
           isPercent={true}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Sanierung / Umbau (€)"
@@ -135,6 +146,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('sanierung', v)}
           step={1000}
           isCurrency={true}
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -151,6 +163,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('grwt_p', v)}
           step={0.25}
           isPercent={true}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Notar & Grundbuch (%)"
@@ -158,6 +171,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('notar_p', v)}
           step={0.1}
           isPercent={true}
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -168,6 +182,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('makler_p', v)}
           step={0.01}
           isPercent={true}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Sonstige Nebenkosten (€)"
@@ -175,6 +190,7 @@ export default function SectionBewirtschaftung({
           onChange={(v) => onFieldChange('sonst_nk', v)}
           step={250}
           isCurrency={true}
+          idPrefix={idPrefix}
         />
       </div>
 

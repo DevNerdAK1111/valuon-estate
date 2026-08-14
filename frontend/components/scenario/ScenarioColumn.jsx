@@ -141,6 +141,7 @@ export default function ScenarioColumn({
           handleBundeslandChange={handleBundeslandChange}
           handleQmChange={handleQmChange}
           bundeslaenderList={bundeslaenderList}
+          idPrefix={isBaseline ? "scenA_" : "scenB_"}
         />
 
         <SectionBewirtschaftung
@@ -164,6 +165,7 @@ export default function ScenarioColumn({
           displayGrwtEuro={displayGrwtEuro}
           displayNotarEuro={displayNotarEuro}
           displayMaklerEuro={displayMaklerEuro}
+          idPrefix={isBaseline ? "scenA_" : "scenB_"}
         />
 
         <SectionFinanzierung
@@ -175,6 +177,7 @@ export default function ScenarioColumn({
           onFieldChange={onFieldChange}
           isEkCoveringNk={isEkCoveringNk}
           displayNkTotal={displayNkTotal}
+          idPrefix={isBaseline ? "scenA_" : "scenB_"}
         />
 
         <SectionSteuern
@@ -188,6 +191,7 @@ export default function ScenarioColumn({
           handleCapexChange={handleCapexChange}
           removeCapexRow={removeCapexRow}
           addCapexRow={addCapexRow}
+          idPrefix={isBaseline ? "scenA_" : "scenB_"}
         />
 
       </div>

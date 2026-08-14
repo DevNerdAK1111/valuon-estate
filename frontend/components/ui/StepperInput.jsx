@@ -13,10 +13,14 @@ export default function StepperInput({
   isPercent = false, 
   disabled = false, 
   tooltip = null, 
-  onFocus = null 
+  onFocus = null,
+  idPrefix = "" 
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const [localValue, setLocalValue] = useState('');
+
+  // Dynamische HTML-ID generieren für Fokus-Stabilität im Szenario-Vergleich
+  const inputId = idPrefix ? `${idPrefix}${label.replace(/[^a-zA-Z0-9]/g, '_')}` : undefined;
 
   const getFormattedValue = (v) => {
     if (v === undefined || v === null || isNaN(v)) return '';
@@ -81,7 +85,7 @@ export default function StepperInput({
   return (
     <div>
       <div className="flex justify-between items-center mb-1 h-[18px]">
-        <label className="block text-[0.8rem] font-semibold text-slate-600">
+        <label htmlFor={inputId} className="block text-[0.8rem] font-semibold text-slate-600">
           {label}
         </label>
         {tooltip && (
@@ -99,6 +103,7 @@ export default function StepperInput({
           : 'bg-white border-slate-300 focus-within:border-valuon-green focus-within:ring-1 focus-within:ring-valuon-green'
       }`}>
         <input
+          id={inputId}
           type="text"
           disabled={disabled}
           onFocus={handleFocus}

@@ -11,7 +11,8 @@ export default function SectionFinanzierung({
   toggleSubSection,
   onFieldChange,
   isEkCoveringNk,
-  displayNkTotal
+  displayNkTotal,
+  idPrefix = ""
 }) {
   return (
     <MainCard title="3. Finanzierung & Eigenkapital" isOpen={isOpen} onToggle={onToggle}>
@@ -21,6 +22,7 @@ export default function SectionFinanzierung({
         onChange={(v) => onFieldChange('ek_euro', v)}
         step={2500}
         isCurrency={true}
+        idPrefix={idPrefix}
       />
 
       <div className={`p-3 rounded-lg text-[0.8rem] font-bold flex items-start gap-2 border ${
@@ -44,9 +46,10 @@ export default function SectionFinanzierung({
       </div>
 
       <div>
-        <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Darlehensart</label>
+        <label htmlFor={`${idPrefix}loan_type`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Darlehensart</label>
         <div className="relative flex items-center w-full">
           <select
+            id={`${idPrefix}loan_type`}
             value={formData?.loan_type || 'Annuitätendarlehen'}
             onChange={(e) => onFieldChange('loan_type', e.target.value)}
             className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
@@ -64,6 +67,7 @@ export default function SectionFinanzierung({
           onChange={(v) => onFieldChange('hb_zins', v)}
           step={0.1}
           isPercent={true}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Anfängliche Tilgung (%)"
@@ -71,6 +75,7 @@ export default function SectionFinanzierung({
           onChange={(v) => onFieldChange('hb_tilg', v)}
           step={0.1}
           isPercent={true}
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -80,12 +85,14 @@ export default function SectionFinanzierung({
           value={formData?.grace_years ?? 0}
           onChange={(v) => onFieldChange('grace_years', v)}
           step={1}
+          idPrefix={idPrefix}
         />
         <StepperInput
           label="Zinsbindung (Jahre)"
           value={formData?.zinsbindung ?? 10}
           onChange={(v) => onFieldChange('zinsbindung', v)}
           step={1}
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -95,6 +102,7 @@ export default function SectionFinanzierung({
         onChange={(v) => onFieldChange('sondertilg', v)}
         step={500}
         isCurrency={true}
+        idPrefix={idPrefix}
       />
 
       <SubContainerCard
@@ -108,11 +116,13 @@ export default function SectionFinanzierung({
           onChange={(v) => onFieldChange('folge_zins', v)}
           step={0.1}
           isPercent={true}
+          idPrefix={idPrefix}
         />
         <div>
-          <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Anschluss-Modus</label>
+          <label htmlFor={`${idPrefix}folge_mode`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Anschluss-Modus</label>
           <div className="relative flex items-center w-full">
             <select
+              id={`${idPrefix}folge_mode`}
               value={formData?.folge_mode || 'Rate konstant halten (Annuität)'}
               onChange={(e) => onFieldChange('folge_mode', e.target.value)}
               className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
@@ -130,6 +140,7 @@ export default function SectionFinanzierung({
             onChange={(v) => onFieldChange('folge_tilg', v)}
             step={0.1}
             isPercent={true}
+            idPrefix={idPrefix}
           />
         )}
       </SubContainerCard>
@@ -145,6 +156,7 @@ export default function SectionFinanzierung({
           onChange={(v) => onFieldChange('kfw_amt', v)}
           step={5000}
           isCurrency={true}
+          idPrefix={idPrefix}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <StepperInput
@@ -153,6 +165,7 @@ export default function SectionFinanzierung({
             onChange={(v) => onFieldChange('kfw_zins', v)}
             step={0.1}
             isPercent={true}
+            idPrefix={idPrefix}
           />
           <StepperInput
             label="KfW Tilgung (%)"
@@ -160,6 +173,7 @@ export default function SectionFinanzierung({
             onChange={(v) => onFieldChange('kfw_tilg', v)}
             step={0.1}
             isPercent={true}
+            idPrefix={idPrefix}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,6 +182,7 @@ export default function SectionFinanzierung({
             value={formData?.kfw_grace_years ?? 0}
             onChange={(v) => onFieldChange('kfw_grace_years', v)}
             step={1}
+            idPrefix={idPrefix}
           />
           <StepperInput
             label="KfW Tilgungszuschuss (€)"
@@ -175,6 +190,7 @@ export default function SectionFinanzierung({
             onChange={(v) => onFieldChange('kfw_grant', v)}
             step={1000}
             isCurrency={true}
+            idPrefix={idPrefix}
           />
         </div>
       </SubContainerCard>

@@ -13,7 +13,8 @@ export default function SectionSteuern({
   capexList,
   handleCapexChange,
   removeCapexRow,
-  addCapexRow
+  addCapexRow,
+  idPrefix = ""
 }) {
   const currentModel = formData?.afa_model || 'Linear Standard';
 
@@ -44,12 +45,13 @@ export default function SectionSteuern({
       {/* GRENZSTEUERSATZ */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
-          <label className="block text-[0.8rem] font-bold text-slate-600">Grenzsteuersatz (%)</label>
+          <label htmlFor={`${idPrefix}tax_rate_pct`} className="block text-[0.8rem] font-bold text-slate-600">Grenzsteuersatz (%)</label>
           <span className="text-[0.9rem] font-extrabold text-valuon-green">
             {(Number(formData?.tax_rate_pct ?? 42)).toFixed(2).replace('.', ',')} %
           </span>
         </div>
         <input
+          id={`${idPrefix}tax_rate_pct`}
           type="range"
           min="0"
           max="50"
@@ -62,9 +64,10 @@ export default function SectionSteuern({
 
       {/* AFA MODELL SELEKTION */}
       <div>
-        <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">AfA-Modell</label>
+        <label htmlFor={`${idPrefix}afa_model`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">AfA-Modell</label>
         <div className="relative flex items-center w-full">
           <select
+            id={`${idPrefix}afa_model`}
             value={currentModel}
             onChange={(e) => handleAfaModelChange(e.target.value)}
             className="w-full h-[42px] px-3 pr-7 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 cursor-pointer focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
@@ -87,14 +90,16 @@ export default function SectionSteuern({
           step={5}
           isPercent={true}
           tooltip="Standardmäßig entfallen ca. 80 % des Kaufpreises auf das Gebäude (steuerlich abschreibungsfähig) und 20 % auf den Grund- und Bodenanteil (nicht abschreibungsfähig)."
+          idPrefix={idPrefix}
         />
 
         {isAfaRateFixed ? (
           <div>
-            <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">
+            <label htmlFor={`${idPrefix}afa_lin_fixed`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">
               {currentModel === 'Kombination: Degressiv + Sonder-AfA' ? 'Degressive AfA % (Fixiert)' : 'AfA % (Fixiert)'}
             </label>
             <input
+              id={`${idPrefix}afa_lin_fixed`}
               type="text"
               readOnly
               disabled
@@ -109,14 +114,16 @@ export default function SectionSteuern({
             onChange={(v) => onFieldChange('afa_lin', v)}
             step={0.5}
             isPercent={true}
+            idPrefix={idPrefix}
           />
         )}
       </div>
 
       {currentModel === 'Kombination: Degressiv + Sonder-AfA' && (
         <div>
-          <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Sonder-AfA % (Fixiert)</label>
+          <label htmlFor={`${idPrefix}sonder_afa_fixed`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Sonder-AfA % (Fixiert)</label>
           <input
+            id={`${idPrefix}sonder_afa_fixed`}
             type="text"
             readOnly
             disabled
@@ -135,11 +142,13 @@ export default function SectionSteuern({
             step={5000}
             isCurrency={true}
             tooltip="Nur der durch die Denkmalschutzbehörde offiziell bescheinigte Sanierungsanteil darf nach § 7h/7i EStG erhöht abgeschrieben werden."
+            idPrefix={idPrefix}
           />
 
           <div>
-            <label className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Fertigstellung im Jahr</label>
+            <label htmlFor={`${idPrefix}denkmal_fertigstellung_jahr`} className="block text-[0.8rem] font-bold text-slate-600 mb-1.5">Fertigstellung im Jahr</label>
             <input
+              id={`${idPrefix}denkmal_fertigstellung_jahr`}
               type="number"
               min="1"
               max="30"
@@ -210,6 +219,7 @@ export default function SectionSteuern({
           onChange={(v) => onFieldChange('miet_inc', v)}
           step={0.1}
           isPercent={true}
+          idPrefix={idPrefix}
         />
 
         <StepperInput
@@ -218,6 +228,7 @@ export default function SectionSteuern({
           onChange={(v) => onFieldChange('val_inc', v)}
           step={0.1}
           isPercent={true}
+          idPrefix={idPrefix}
         />
       </div>
 
@@ -229,6 +240,7 @@ export default function SectionSteuern({
         onChange={(v) => onFieldChange('exit_cost', v)}
         step={0.5}
         isPercent={true}
+        idPrefix={idPrefix}
       />
 
       <SubContainerCard
@@ -251,6 +263,7 @@ export default function SectionSteuern({
             {capexList.map((row, idx) => (
               <div key={idx} className="grid grid-cols-[1fr_1fr_36px] gap-2 items-center">
                 <input
+                  aria-label={`CapEx Jahr ${idx + 1}`}
                   type="number"
                   min="1"
                   value={row.year ?? row.jahr ?? 1}
@@ -259,6 +272,7 @@ export default function SectionSteuern({
                   className="w-full h-[42px] px-3 rounded-lg border border-slate-300 text-[0.9rem] font-medium outline-none bg-white text-slate-700 focus:border-valuon-green focus:ring-1 focus:ring-valuon-green box-border"
                 />
                 <input
+                  aria-label={`CapEx Betrag ${idx + 1}`}
                   type="number"
                   value={row.amount ?? row.betrag ?? 0}
                   onChange={(e) => handleCapexChange && handleCapexChange(idx, 'amount', e.target.value === '' ? '' : parseFloat(e.target.value))}

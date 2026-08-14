@@ -7,7 +7,7 @@ import SectionSteuern from './sections/SectionSteuern';
 import { BUNDESLAENDER_DEFAULT } from '../../constants/realEstate';
 import { useProperty } from '../../context/PropertyContext';
 
-export default function Parametrisierung({ loading }) {
+export default function Parametrisierung({ loading, idPrefix = "" }) {
   const {
     formData,
     updateField,
@@ -53,9 +53,7 @@ export default function Parametrisierung({ loading }) {
     updateField(field, value);
   };
 
-  // 1. KI-SYNC-AUTOMATIK: 
-  // Füllt die pro-qm- und Ziel-Mieten automatisch aus, wenn die KI Daten einfügt, 
-  // ohne dass der User das Feld anklicken muss.
+  // 1. KI-SYNC-AUTOMATIK
   useEffect(() => {
     const qm = Number(formData?.qm) || 0;
     const km = Number(formData?.kaltmiete_monat) || 0;
@@ -95,8 +93,7 @@ export default function Parametrisierung({ loading }) {
   const bundeslaenderMap = BUNDESLAENDER_DEFAULT;
   const bundeslaenderList = Object.keys(bundeslaenderMap);
 
-  // 2. ROBUSTE EINGABE-HANDLER: 
-  // Erlauben das vollständige Leeren (Backspace) ohne Zwang zur Null
+  // 2. ROBUSTE EINGABE-HANDLER
   const handleLocalIstMonat = (val) => {
     const cleanVal = val === '' ? '' : Number(val);
     const qm = Number(formData?.qm || 0);
@@ -205,6 +202,7 @@ export default function Parametrisierung({ loading }) {
         handleBundeslandChange={handleBundeslandChange}
         handleQmChange={handleQmChange}
         bundeslaenderList={bundeslaenderList}
+        idPrefix={idPrefix}
       />
 
       <SectionBewirtschaftung
@@ -228,6 +226,7 @@ export default function Parametrisierung({ loading }) {
         displayGrwtEuro={calcGrwt}
         displayNotarEuro={calcNotar}
         displayMaklerEuro={calcMakler}
+        idPrefix={idPrefix}
       />
 
       <SectionFinanzierung
@@ -239,6 +238,7 @@ export default function Parametrisierung({ loading }) {
         onFieldChange={onFieldChange}
         isEkCoveringNk={isEkCoveringNk}
         displayNkTotal={displayNkTotal}
+        idPrefix={idPrefix}
       />
 
       <SectionSteuern
@@ -252,6 +252,7 @@ export default function Parametrisierung({ loading }) {
         handleCapexChange={handleCapexChange}
         removeCapexRow={removeCapexRow}
         addCapexRow={addCapexRow}
+        idPrefix={idPrefix}
       />
 
       {/* SUBMIT BUTTON */}

@@ -31,23 +31,15 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     ek_euro = float(_get_val(payload, "ek_euro", 0.0) or 0.0)
     sanierung = float(_get_val(payload, "sanierung", 0.0) or 0.0)
 
-    # KAUFNEBENKOSTEN
+    # KAUFNEBENKOSTEN (Punkt 1: Direkte Division durch 100)
     grwt_p = float(_get_val(payload, "grwt_p", 5.0) or 5.0)
     notar_p = float(_get_val(payload, "notar_p", 2.0) or 2.0)
     makler_p = float(_get_val(payload, "makler_p", 3.57) or 3.57)
     sonst_nk = float(_get_val(payload, "sonst_nk", 0.0) or 0.0)
 
     grwt_proz = float(_get_val(payload, "grwt_proz", 0.0) or (grwt_p / 100.0))
-    if grwt_proz > 1.0:
-        grwt_proz /= 100.0
-
     notar_proz = float(_get_val(payload, "notar_proz", 0.0) or (notar_p / 100.0))
-    if notar_proz > 1.0:
-        notar_proz /= 100.0
-
     makler_proz = float(_get_val(payload, "makler_proz", 0.0) or (makler_p / 100.0))
-    if makler_proz > 1.0:
-        makler_proz /= 100.0
 
     grwt_euro = kaufpreis * grwt_proz
     notar_euro = kaufpreis * notar_proz
@@ -61,7 +53,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     kaufpreis_pro_qm = kaufpreis / qm if qm > 0 else 0.0
     gesamt_kosten_pro_qm = gesamt_kosten / qm if qm > 0 else 0.0
 
-    # 2. FINANZIERUNGSSTRUKTUR
+    # 2. FINANZIERUNGSSTRUKTUR (Punkt 1: Direkte Division durch 100)
     gesamt_darlehen = max(0.0, gesamt_kosten - ek_euro)
     kfw_amt = float(_get_val(payload, "kfw_amt", 0.0) or 0.0)
     kfw_loan = min(gesamt_darlehen, kfw_amt)
@@ -70,52 +62,31 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     ltv = (gesamt_darlehen / kaufpreis) * 100.0 if kaufpreis > 0 else 0.0
     ek_quote = (ek_euro / gesamt_kosten) * 100.0 if gesamt_kosten > 0 else 0.0
 
-    hb_zins = float(_get_val(payload, "hb_zins", 0.04) or 0.04)
-    if hb_zins > 1.0:
-        hb_zins /= 100.0
-
-    hb_tilg = float(_get_val(payload, "hb_tilg", 0.02) or 0.02)
-    if hb_tilg > 1.0:
-        hb_tilg /= 100.0
+    hb_zins = float(_get_val(payload, "hb_zins", 3.8) or 3.8) / 100.0
+    hb_tilg = float(_get_val(payload, "hb_tilg", 2.0) or 2.0) / 100.0
 
     grace_years = int(_get_val(payload, "grace_years", 0) or 0)
     zinsbindung = int(_get_val(payload, "zinsbindung", 10) or 10)
     sondertilg = float(_get_val(payload, "sondertilg", 0.0) or 0.0)
 
-    folge_zins = float(_get_val(payload, "folge_zins", 0.038) or 0.038)
-    if folge_zins > 1.0:
-        folge_zins /= 100.0
-
+    folge_zins = float(_get_val(payload, "folge_zins", 3.8) or 3.8) / 100.0
     folge_mode = str(_get_val(payload, "folge_mode", "Rate konstant halten (Annuität)") or "Rate konstant halten (Annuität)")
-    
-    folge_tilg = float(_get_val(payload, "folge_tilg", 0.02) or 0.02)
-    if folge_tilg > 1.0:
-        folge_tilg /= 100.0
+    folge_tilg = float(_get_val(payload, "folge_tilg", 2.0) or 2.0) / 100.0
 
-    kfw_zins = float(_get_val(payload, "kfw_zins", 0.021) or 0.021)
-    if kfw_zins > 1.0:
-        kfw_zins /= 100.0
-
-    kfw_tilg = float(_get_val(payload, "kfw_tilg", 0.03) or 0.03)
-    if kfw_tilg > 1.0:
-        kfw_tilg /= 100.0
-
+    kfw_zins = float(_get_val(payload, "kfw_zins", 2.1) or 2.1) / 100.0
+    kfw_tilg = float(_get_val(payload, "kfw_tilg", 3.0) or 3.0) / 100.0
     kfw_grace_years = int(_get_val(payload, "kfw_grace_years", 0) or 0)
 
-    # 3. STEUER- & AFA-MODELL
+    # 3. STEUER- & AFA-MODELL (Punkt 1: Direkte Division durch 100)
     tax_rate_pct = float(_get_val(payload, "tax_rate_pct", 42.0) or 42.0)
     tax_rate = float(_get_val(payload, "tax_rate", 0.0) or (tax_rate_pct / 100.0))
-    if tax_rate > 1.0:
-        tax_rate /= 100.0
 
     gebaeude_anteil_pct = float(_get_val(payload, "gebaeude_anteil_pct", 80.0) or 80.0)
     gebaeude_wert = kaufpreis * (gebaeude_anteil_pct / 100.0)
     gebaeude_wert_pro_qm = gebaeude_wert / qm if qm > 0 else 0.0
 
     afa_model = str(_get_val(payload, "afa_model", "Linear Standard") or "Linear Standard")
-    afa_lin = float(_get_val(payload, "afa_lin", 0.02) or 0.02)
-    if afa_lin > 1.0:
-        afa_lin /= 100.0
+    afa_lin = float(_get_val(payload, "afa_lin", 2.0) or 2.0) / 100.0
 
     ist_sonder_afa_berechtigt = gebaeude_wert_pro_qm > 0 and gebaeude_wert_pro_qm <= 5200.0
     sonder_afa_bemessungsgrundlage = min(gebaeude_wert, 4000.0 * qm)
@@ -134,8 +105,6 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
 
     vac_rate_pct = float(_get_val(payload, "vac_rate_pct", 2.0) or 2.0)
     vac_rate = float(_get_val(payload, "vac_rate", 0.0) or (vac_rate_pct / 100.0))
-    if vac_rate > 1.0:
-        vac_rate /= 100.0
 
     vac_initial_pa = miete_initial_pa * vac_rate
     opex_initial_pa = (hausgeld_nicht_umlegbar + mgt_monat) * 12.0 + (inst_sqm * qm) + vac_initial_pa
@@ -175,17 +144,9 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     property_value = kaufpreis
 
     adj_year = int(_get_val(payload, "adj_year", 1) or 1)
-    miet_inc = float(_get_val(payload, "miet_inc", 0.01) or 0.01)
-    if miet_inc > 1.0:
-        miet_inc /= 100.0
-
-    cost_inc = float(_get_val(payload, "cost_inc", 0.02) or 0.02)
-    if cost_inc > 1.0:
-        cost_inc /= 100.0
-
-    val_inc = float(_get_val(payload, "val_inc", 0.01) or 0.01)
-    if val_inc > 1.0:
-        val_inc /= 100.0
+    miet_inc = float(_get_val(payload, "miet_inc", 1.0) or 1.0) / 100.0
+    cost_inc = float(_get_val(payload, "cost_inc", 2.0) or 2.0) / 100.0
+    val_inc = float(_get_val(payload, "val_inc", 1.0) or 1.0) / 100.0
 
     for year in range(1, 51):
         if year < adj_year:
@@ -258,19 +219,23 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         total_debt_service = hb_debt_service + kfw_debt_service
         total_remaining_debt = hb_rest + kfw_rest
 
-        # AFA BERECHNUNG
+        # AFA BERECHNUNG (Punkt 2: Dynamischer AfA-Satz und Deckelung beim Degressiv-Verlauf)
         afa_amount = 0.0
         if afa_model == "Linear Standard":
             afa_amount = gebaeude_wert * afa_lin
         elif afa_model == "Linear Neubau":
-            afa_amount = gebaeude_wert * 0.03
+            afa_amount = gebaeude_wert * afa_lin
         elif afa_model == "Degressiv":
-            afa_amount = current_gebaeude_buchwert * 0.05
+            degressive_afa = current_gebaeude_buchwert * 0.05
+            lineare_afa = gebaeude_wert * afa_lin
+            afa_amount = max(degressive_afa, lineare_afa)
             current_gebaeude_buchwert = max(0.0, current_gebaeude_buchwert - afa_amount)
         elif afa_model == "Kombination: Degressiv + Sonder-AfA":
-            degressiv_part = current_gebaeude_buchwert * 0.05
+            degressive_afa = current_gebaeude_buchwert * 0.05
+            lineare_afa = gebaeude_wert * afa_lin
+            base_afa = max(degressive_afa, lineare_afa)
             sonder_part = (sonder_afa_bemessungsgrundlage * 0.05) if (year <= 4 and ist_sonder_afa_berechtigt) else 0.0
-            afa_amount = degressiv_part + sonder_part
+            afa_amount = base_afa + sonder_part
             current_gebaeude_buchwert = max(0.0, current_gebaeude_buchwert - afa_amount)
         elif afa_model == "Denkmalgeschützt":
             altbestand_afa = gebaeude_wert * 0.02

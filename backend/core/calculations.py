@@ -23,6 +23,22 @@ def _get_val(payload: Any, key: str, default: Any = None) -> Any:
     return getattr(payload, key, default)
 
 
+def _safe_pct(val: float, is_large: bool = False) -> float:
+    """
+    Konvertiert Prozentwerte intelligent, um alte Datenbank-Einträge (z. B. 0.04 = 4%) 
+    und neue Frontend-Eingaben (z. B. 0.8 = 0.8% oder 3.8 = 3.8%) korrekt zu handhaben.
+    """
+    if val is None or val == 0.0:
+        return 0.0
+    
+    # Für Steuern (42.0) oder Gebäudeanteil (80.0) liegt der Schwellenwert bei 1.0.
+    # Für Zinsen, Tilgung, AfA etc. (kleine Werte) liegt er bei 0.15 (15 %).
+    threshold = 1.0 if is_large else 0.15
+    if val > threshold:
+        return val / 100.0
+    return val
+
+
 def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     # 1. STAMMDATEN & BASISWERTE
     kaufpreis = float(_get_val(payload, "kaufpreis", 0.0) or 0.0)
@@ -31,15 +47,11 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     ek_euro = float(_get_val(payload, "ek_euro", 0.0) or 0.0)
     sanierung = float(_get_val(payload, "sanierung", 0.0) or 0.0)
 
-    # KAUFNEBENKOSTEN (Punkt 1: Direkte Division durch 100)
-    grwt_p = float(_get_val(payload, "grwt_p", 5.0) or 5.0)
-    notar_p = float(_get_val(payload, "notar_p", 2.0) or 2.0)
-    makler_p = float(_get_val(payload, "makler_p", 3.57) or 3.57)
+    # KAUFNEBENKOSTEN
+    grwt_proz = _safe_pct(float(_get_val(payload, "grwt_proz", 0.0) or _get_val(payload, "grwt_p", 5.0) or 5.0))
+    notar_proz = _safe_pct(float(_get_val(payload, "notar_proz", 0.0) or _get_val(payload, "notar_p", 2.0) or 2.0))
+    makler_proz = _safe_pct(float(_get_val(payload, "makler_proz", 0.0) or _get_val(payload, "makler_p", 3.57) or 3.57))
     sonst_nk = float(_get_val(payload, "sonst_nk", 0.0) or 0.0)
-
-    grwt_proz = float(_get_val(payload, "grwt_proz", 0.0) or (grwt_p / 100.0))
-    notar_proz = float(_get_val(payload, "notar_proz", 0.0) or (notar_p / 100.0))
-    makler_proz = float(_get_val(payload, "makler_proz", 0.0) or (makler_p / 100.0))
 
     grwt_euro = kaufpreis * grwt_proz
     notar_euro = kaufpreis * notar_proz
@@ -53,7 +65,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     kaufpreis_pro_qm = kaufpreis / qm if qm > 0 else 0.0
     gesamt_kosten_pro_qm = gesamt_kosten / qm if qm > 0 else 0.0
 
-    # 2. FINANZIERUNGSSTRUKTUR (Punkt 1: Direkte Division durch 100)
+    # 2. FINANZIERUNGSSTRUKTUR
     gesamt_darlehen = max(0.0, gesamt_kosten - ek_euro)
     kfw_amt = float(_get_val(payload, "kfw_amt", 0.0) or 0.0)
     kfw_loan = min(gesamt_darlehen, kfw_amt)
@@ -62,31 +74,30 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     ltv = (gesamt_darlehen / kaufpreis) * 100.0 if kaufpreis > 0 else 0.0
     ek_quote = (ek_euro / gesamt_kosten) * 100.0 if gesamt_kosten > 0 else 0.0
 
-    hb_zins = float(_get_val(payload, "hb_zins", 3.8) or 3.8) / 100.0
-    hb_tilg = float(_get_val(payload, "hb_tilg", 2.0) or 2.0) / 100.0
+    hb_zins = _safe_pct(float(_get_val(payload, "hb_zins", 3.8) or 3.8))
+    hb_tilg = _safe_pct(float(_get_val(payload, "hb_tilg", 2.0) or 2.0))
 
     grace_years = int(_get_val(payload, "grace_years", 0) or 0)
     zinsbindung = int(_get_val(payload, "zinsbindung", 10) or 10)
     sondertilg = float(_get_val(payload, "sondertilg", 0.0) or 0.0)
 
-    folge_zins = float(_get_val(payload, "folge_zins", 3.8) or 3.8) / 100.0
+    folge_zins = _safe_pct(float(_get_val(payload, "folge_zins", 3.8) or 3.8))
     folge_mode = str(_get_val(payload, "folge_mode", "Rate konstant halten (Annuität)") or "Rate konstant halten (Annuität)")
-    folge_tilg = float(_get_val(payload, "folge_tilg", 2.0) or 2.0) / 100.0
+    folge_tilg = _safe_pct(float(_get_val(payload, "folge_tilg", 2.0) or 2.0))
 
-    kfw_zins = float(_get_val(payload, "kfw_zins", 2.1) or 2.1) / 100.0
-    kfw_tilg = float(_get_val(payload, "kfw_tilg", 3.0) or 3.0) / 100.0
+    kfw_zins = _safe_pct(float(_get_val(payload, "kfw_zins", 2.1) or 2.1))
+    kfw_tilg = _safe_pct(float(_get_val(payload, "kfw_tilg", 3.0) or 3.0))
     kfw_grace_years = int(_get_val(payload, "kfw_grace_years", 0) or 0)
 
-    # 3. STEUER- & AFA-MODELL (Punkt 1: Direkte Division durch 100)
-    tax_rate_pct = float(_get_val(payload, "tax_rate_pct", 42.0) or 42.0)
-    tax_rate = float(_get_val(payload, "tax_rate", 0.0) or (tax_rate_pct / 100.0))
+    # 3. STEUER- & AFA-MODELL
+    tax_rate = _safe_pct(float(_get_val(payload, "tax_rate", 0.0) or _get_val(payload, "tax_rate_pct", 42.0) or 42.0), is_large=True)
 
-    gebaeude_anteil_pct = float(_get_val(payload, "gebaeude_anteil_pct", 80.0) or 80.0)
-    gebaeude_wert = kaufpreis * (gebaeude_anteil_pct / 100.0)
+    gebaeude_anteil = _safe_pct(float(_get_val(payload, "gebaeude_anteil_pct", 80.0) or 80.0), is_large=True)
+    gebaeude_wert = kaufpreis * gebaeude_anteil
     gebaeude_wert_pro_qm = gebaeude_wert / qm if qm > 0 else 0.0
 
     afa_model = str(_get_val(payload, "afa_model", "Linear Standard") or "Linear Standard")
-    afa_lin = float(_get_val(payload, "afa_lin", 2.0) or 2.0) / 100.0
+    afa_lin = _safe_pct(float(_get_val(payload, "afa_lin", 2.0) or 2.0))
 
     ist_sonder_afa_berechtigt = gebaeude_wert_pro_qm > 0 and gebaeude_wert_pro_qm <= 5200.0
     sonder_afa_bemessungsgrundlage = min(gebaeude_wert, 4000.0 * qm)
@@ -103,8 +114,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     mgt_monat = float(_get_val(payload, "mgt_monat", 30.0) or 30.0)
     inst_sqm = float(_get_val(payload, "inst_sqm", 12.0) or 12.0)
 
-    vac_rate_pct = float(_get_val(payload, "vac_rate_pct", 2.0) or 2.0)
-    vac_rate = float(_get_val(payload, "vac_rate", 0.0) or (vac_rate_pct / 100.0))
+    vac_rate = _safe_pct(float(_get_val(payload, "vac_rate", 0.0) or _get_val(payload, "vac_rate_pct", 2.0) or 2.0))
 
     vac_initial_pa = miete_initial_pa * vac_rate
     opex_initial_pa = (hausgeld_nicht_umlegbar + mgt_monat) * 12.0 + (inst_sqm * qm) + vac_initial_pa
@@ -144,9 +154,9 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     property_value = kaufpreis
 
     adj_year = int(_get_val(payload, "adj_year", 1) or 1)
-    miet_inc = float(_get_val(payload, "miet_inc", 1.0) or 1.0) / 100.0
-    cost_inc = float(_get_val(payload, "cost_inc", 2.0) or 2.0) / 100.0
-    val_inc = float(_get_val(payload, "val_inc", 1.0) or 1.0) / 100.0
+    miet_inc = _safe_pct(float(_get_val(payload, "miet_inc", 1.0) or 1.0))
+    cost_inc = _safe_pct(float(_get_val(payload, "cost_inc", 2.0) or 2.0))
+    val_inc = _safe_pct(float(_get_val(payload, "val_inc", 1.0) or 1.0))
 
     for year in range(1, 51):
         if year < adj_year:
@@ -219,7 +229,7 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
         total_debt_service = hb_debt_service + kfw_debt_service
         total_remaining_debt = hb_rest + kfw_rest
 
-        # AFA BERECHNUNG (Punkt 2: Dynamischer AfA-Satz und Deckelung beim Degressiv-Verlauf)
+        # AFA BERECHNUNG
         afa_amount = 0.0
         if afa_model == "Linear Standard":
             afa_amount = gebaeude_wert * afa_lin
@@ -331,7 +341,9 @@ def calculate_investment_metrics(payload: Any) -> Dict[str, Any]:
     last_row_horizon = sliced_projection[-1] if sliced_projection else projection[0]
     exit_property_value = last_row_horizon["immobilienwert"]
     exit_restschuld = last_row_horizon["restschuld"]
-    exit_costs = exit_property_value * (float(_get_val(payload, "exit_cost", 0.0) or 0.0) / 100.0)
+    
+    exit_cost_rate = _safe_pct(float(_get_val(payload, "exit_cost", 0.0) or 0.0))
+    exit_costs = exit_property_value * exit_cost_rate
     net_exit_proceeds = exit_property_value - exit_costs - exit_restschuld
 
     irr_cashflows = [-ek_euro]

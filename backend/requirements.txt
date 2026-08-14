@@ -13,5 +13,4 @@ pytest
 httpx
 cloudscraper
 python-multipart
-pypdf
 playwright
